@@ -1,0 +1,62 @@
+# PomoFlow
+
+A beautiful Pomodoro-style timer with task tracking, session history, and focus analytics.
+
+## Features
+
+### Timer
+
+- **Pomodoro Timer** - 25-minute work sessions with short (5 min) and long (15 min) breaks
+- **Customizable Durations** - Adjust work/break times to fit your workflow
+- **Smart Auto-Advance** - Automatically transition between work and break sessions
+- **Visual Progress Ring** - Animated circular progress indicator
+- **Audio Notifications** - Subtle sound when sessions complete
+
+### Task Tracking
+
+- **Task Management** - Create, complete, and delete tasks
+- **Time Tracking** - Track focused time spent on each task
+- **Session History** - View completed sessions filtered by All/Today/This Week
+
+### Focus Analytics
+
+- **Today's Focus Time** - Total time spent in work sessions
+- **Sessions Completed** - Number of work sessions done today
+- **Day Streak** - Consecutive days with completed focus sessions
+
+### Keyboard Shortcuts
+
+| Key     | Action                |
+| ------- | --------------------- |
+| `Space` | Start/Pause timer     |
+| `R`     | Reset current session |
+| `N`     | Skip to next session  |
+| `1`     | Switch to Work mode   |
+| `2`     | Switch to Short Break |
+| `3`     | Switch to Long Break  |
+
+## Getting Started
+
+1. Open `index.html` in any modern browser
+2. Add tasks you want to work on
+3. Click the play button on a task to start tracking
+4. Focus until the timer completes
+
+## Browser Support
+
+- Chrome/Edge 80+
+- Firefox 75+
+- Safari 14+
+
+## Data Storage
+
+All data is stored locally in your browser using localStorage:
+
+- Tasks and time tracking
+- Session history
+- User preferences
+- Timer state (survives page refresh)
+
+## License
+
+MIT
