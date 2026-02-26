@@ -223,23 +223,107 @@ header {
 
 .task-item {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
+    align-items: stretch;
     background: var(--bg);
     border-radius: 8px;
+    position: relative;
+    min-height: 50px;
+    overflow: hidden;
+}
+
+.task-item.menu-open .task-slide-wrapper {
+    transform: translateX(-160px);
+}
+
+.task-slide-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    transition: transform 200ms ease;
+    z-index: 2;
+    background: var(--bg);
+    border-radius: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.task-more {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
     cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    opacity: 0.7;
     transition: all 200ms ease;
-    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
 }
 
-.task-item:hover {
+.task-more:hover {
+    opacity: 1;
     background: var(--surface-elevated);
 }
 
-.task-item.active {
-    border-color: var(--primary);
+.task-menu {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    padding-right: 8px;
     background: var(--surface-elevated);
+    border-radius: 8px;
+    z-index: 1;
+}
+
+.task-menu button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 1;
+    transition: all 200ms ease;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 50px;
+    height: auto;
+    font-size: 10px;
+}
+
+.task-menu button span {
+    font-size: 10px;
+}
+
+.task-menu button:hover {
+    opacity: 1;
+    color: var(--primary);
+    background: rgba(255,255,255,0.2);
+}
+
+.task-menu button.completed:hover {
+    color: var(--success);
+}
+
+.task-menu button.danger:hover {
+    color: #ff6b6b;
+    background: rgba(255,255,255,0.2);
 }
 
 .task-item.active .task-play-btn {
@@ -257,13 +341,15 @@ header {
     flex-shrink: 0;
     transition: all 200ms ease;
     background: var(--surface);
+    cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 10;
 }
 
 .task-play-btn:hover {
     color: var(--success);
-    background: rgba(63, 185, 80, 0.15);
 }
 
 .task-play-btn svg {
@@ -283,12 +369,15 @@ header {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    padding: 12px;
 }
 
 .task-actions {
     display: flex;
-    gap: 2px;
+    gap: 8px;
     margin-left: auto;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .task-name {
@@ -296,6 +385,18 @@ header {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.task-name-input {
+    padding: 2px 4px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-primary);
+    width: 100%;
 }
 
 .task-time {
@@ -312,17 +413,8 @@ header {
     opacity: 0.7;
 }
 
-.task-delete {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    opacity: 0.5;
-    transition: all 200ms ease;
-}
-
+.task-edit,
+.task-delete,
 .task-check {
     background: transparent;
     border: none;
@@ -332,6 +424,27 @@ header {
     border-radius: 4px;
     opacity: 0.5;
     transition: all 200ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-edit:hover {
+    opacity: 1;
+    color: var(--primary);
+    background: var(--surface-elevated);
+}
+
+.task-check:hover {
+    opacity: 1;
+    color: var(--text-primary);
+    background: rgba(63, 185, 80, 0.15);
+}
+
+.task-delete:hover {
+    opacity: 1;
+    color: var(--danger);
+    background: rgba(248, 81, 73, 0.1);
 }
 
 .task-item.completed .task-check {
@@ -344,21 +457,6 @@ header {
     stroke-linecap: round;
     stroke-linejoin: round;
     fill: none !important;
-}
-
-.task-item:hover .task-check,
-.task-item:hover .task-delete {
-    opacity: 1;
-}
-
-.task-check:hover {
-    color: var(--text-primary);
-    background: rgba(63, 185, 80, 0.15);
-}
-
-.task-delete:hover {
-    color: var(--danger);
-    background: rgba(248, 81, 73, 0.1);
 }
 
 .task-hint {
@@ -733,15 +831,6 @@ header {
     overflow-y: auto;
 }
 
-.history-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--bg);
-    border-radius: 8px;
-}
-
 .history-icon {
     width: 32px;
     height: 32px;
@@ -771,6 +860,114 @@ header {
 .history-info {
     flex: 1;
     min-width: 0;
+    padding: 12px;
+}
+
+.history-item {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg);
+    border-radius: 8px;
+    position: relative;
+    min-height: 60px;
+}
+
+.history-slide-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    transition: transform 200ms ease;
+    z-index: 2;
+    background: var(--bg);
+    border-radius: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.history-item.menu-open .history-slide-wrapper {
+    transform: translateX(-130px);
+}
+
+.history-menu {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    padding-right: 8px;
+    background: var(--surface-elevated);
+    border-radius: 8px;
+    z-index: 1;
+}
+
+.history-menu button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    opacity: 1;
+    transition: all 200ms ease;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 50px;
+    height: auto;
+    font-size: 10px;
+}
+
+.history-menu button span {
+    font-size: 10px;
+}
+
+.history-menu button:hover {
+    opacity: 1;
+    color: var(--primary);
+    background: rgba(255,255,255,0.2);
+}
+
+.history-menu button.danger:hover {
+    color: #ff6b6b;
+    background: rgba(255,255,255,0.2);
+}
+
+.history-info {
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.history-more {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    opacity: 0.7;
+    transition: all 200ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-more:hover {
+    opacity: 1;
+    background: var(--surface-elevated);
 }
 
 .history-task {
@@ -816,6 +1013,35 @@ header {
 .history-time {
     color: var(--text-secondary);
     font-family: var(--font-time);
+}
+
+.duration-save,
+.duration-cancel {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: all 200ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.duration-save:hover,
+.duration-cancel:hover {
+    opacity: 1;
+    background: var(--surface-elevated);
+}
+
+.duration-save:hover {
+    color: var(--success);
+}
+
+.duration-cancel:hover {
+    color: var(--danger);
 }
 
 .settings-btn {
@@ -916,6 +1142,46 @@ header {
     font-size: 16px;
     margin-bottom: 24px;
     color: var(--text-primary);
+}
+
+.session-edit-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.session-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.session-edit-field label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.session-edit-taskname {
+    font-size: 14px;
+    color: var(--text-primary);
+    padding: 8px 0;
+    background: transparent;
+    border: none;
+}
+
+.session-edit-input {
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.session-edit-input:focus {
+    border-color: var(--primary);
 }
 
 .confirm-buttons {

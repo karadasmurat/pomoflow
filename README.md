@@ -14,10 +14,12 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 
 ### Task Tracking
 
-- **Task Management** - Create, complete, and delete tasks
+- **Task Management** - Create, edit, complete, and delete tasks
 - **Time Tracking** - Track focused time spent on each task with visual totals
 - **Quick Controls** - Play/pause timer directly from task items
+- **Sliding Menu** - Edit task name, complete, or delete via sliding action menu
 - **Session History** - View completed sessions with charts filtered by Today/This Week/All
+- **Session Editing** - Adjust duration or correct unintended logs after completion
 
 ### Focus Analytics
 

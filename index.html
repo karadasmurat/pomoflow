@@ -248,6 +248,52 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="sessionEditModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Session</h2>
+                <button class="modal-close" id="closeSessionEdit">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div class="session-edit-content">
+                <div class="session-edit-field">
+                    <label>Task</label>
+                    <div id="sessionEditTaskName" class="session-edit-taskname"></div>
+                </div>
+                <div class="session-edit-field">
+                    <label>Duration (minutes)</label>
+                    <input type="number" id="sessionEditDuration" class="session-edit-input" min="1" max="480">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSessionEdit">Cancel</button>
+                <button class="btn btn-primary" id="saveSessionEdit">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="taskEditModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Task</h2>
+                <button class="modal-close" id="closeTaskEdit">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div class="session-edit-content">
+                <div class="session-edit-field">
+                    <label>Task Name</label>
+                    <input type="text" id="taskEditName" class="session-edit-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelTaskEdit">Cancel</button>
+                <button class="btn btn-primary" id="saveTaskEdit">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

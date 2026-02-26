@@ -32,7 +32,9 @@ let state = {
         startTime: null,
         activeTaskId: null
     },
-    notificationPermission: 'default'
+    notificationPermission: 'default',
+    lastSessionId: null,
+    lastTaskId: null
 };
 
 let timerInterval = null;
@@ -138,13 +140,7 @@ function setupEventListeners() {
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
     document.getElementById('closeSettings').addEventListener('click', closeSettings);
     document.getElementById('saveSettings').addEventListener('click', () => {
-        const toast = document.getElementById('toast');
-        toast.style.display = 'block';
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.style.display = 'none', 200);
-        }, 2000);
+        showToast('Settings saved');
         closeSettings();
     });
     document.getElementById('settingsModal').addEventListener('click', (e) => {
@@ -161,6 +157,28 @@ function setupEventListeners() {
     document.getElementById('importMerge').addEventListener('click', () => performImport('merge'));
     document.getElementById('importModal').addEventListener('click', (e) => {
         if (e.target.id === 'importModal') closeImportModal();
+    });
+
+    document.getElementById('closeSessionEdit').addEventListener('click', closeSessionEditModal);
+    document.getElementById('cancelSessionEdit').addEventListener('click', closeSessionEditModal);
+    document.getElementById('saveSessionEdit').addEventListener('click', saveSessionFromModal);
+    document.getElementById('sessionEditModal').addEventListener('click', (e) => {
+        if (e.target.id === 'sessionEditModal') closeSessionEditModal();
+    });
+    document.getElementById('sessionEditDuration').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveSessionFromModal();
+        if (e.key === 'Escape') closeSessionEditModal();
+    });
+
+    document.getElementById('closeTaskEdit').addEventListener('click', closeTaskEditModal);
+    document.getElementById('cancelTaskEdit').addEventListener('click', closeTaskEditModal);
+    document.getElementById('saveTaskEdit').addEventListener('click', saveTaskFromModal);
+    document.getElementById('taskEditModal').addEventListener('click', (e) => {
+        if (e.target.id === 'taskEditModal') closeTaskEditModal();
+    });
+    document.getElementById('taskEditName').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveTaskFromModal();
+        if (e.key === 'Escape') closeTaskEditModal();
     });
 
     document.getElementById('confirmCancel').addEventListener('click', () => {
@@ -316,6 +334,7 @@ function addTask() {
     };
 
     state.tasks.push(task);
+    state.lastTaskId = task.id;
     input.value = '';
     input.blur();
     saveData();
@@ -341,28 +360,39 @@ function renderTasks() {
         const isActive = state.currentTask === task.id;
         const isRunning = isActive && state.timerState.isRunning;
         const isCompleted = task.completed;
-        const isNew = task.createdAt && (Date.now() - task.createdAt < 500);
+        const isNew = task.id === state.lastTaskId;
         return `
-        <div class="task-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isNew ? 'slide-in' : ''}" 
-             data-id="${task.id}" onclick="selectTask(${task.id})">
-            <div class="task-play-btn" onclick="event.stopPropagation(); toggleTaskTimer(${task.id})" title="${isRunning ? 'Pause timer' : 'Start timer'}">
-                <svg viewBox="0 0 24 24">${isRunning 
-                    ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
-                    : '<path d="M8 5v14l11-7z"/>'}</svg>
-            </div>
-            <div class="task-info">
-                <div class="task-name">${escapeHtml(task.name)}</div>
-                <div class="task-time">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                    <span>Total: ${formatTime(task.totalTime)}</span>
+        <div class="task-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isNew ? 'slide-in highlight' : ''}" 
+             data-id="${task.id}">
+            <div class="task-slide-wrapper" onclick="selectTask(${task.id})">
+                <div class="task-play-btn" onclick="event.stopPropagation(); toggleTaskTimer(${task.id})" title="${isRunning ? 'Pause timer' : 'Start timer'}">
+                    <svg viewBox="0 0 24 24">${isRunning 
+                        ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
+                        : '<path d="M8 5v14l11-7z"/>'}</svg>
                 </div>
-            </div>
-            <div class="task-actions">
-                <button class="task-check ${isCompleted ? 'completed' : ''}" onclick="event.stopPropagation(); toggleTaskComplete(${task.id})" aria-label="${isCompleted ? 'Mark incomplete' : 'Mark complete'}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                <div class="task-info">
+                    <div class="task-name" data-task-id="${task.id}">${escapeHtml(task.name)}</div>
+                    <div class="task-time">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        <span>Total: ${formatTime(task.totalTime)}</span>
+                    </div>
+                </div>
+                <button class="task-more" onclick="event.stopPropagation(); toggleTaskMenu(${task.id})" aria-label="More options">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
-                <button class="task-delete" onclick="event.stopPropagation(); deleteTask(${task.id})" aria-label="Delete task">
+            </div>
+            <div class="task-menu">
+                <button onclick="event.stopPropagation(); editTask(${task.id})" aria-label="Edit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button class="${isCompleted ? 'completed' : ''}" onclick="event.stopPropagation(); toggleTaskComplete(${task.id})" aria-label="${isCompleted ? 'Mark incomplete' : 'Mark complete'}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    <span>${isCompleted ? 'Undo' : 'Done'}</span>
+                </button>
+                <button class="danger" onclick="event.stopPropagation(); deleteTask(${task.id})" aria-label="Delete">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Delete</span>
                 </button>
             </div>
         </div>
@@ -382,6 +412,14 @@ function renderTasks() {
     }
 
     list.innerHTML = html;
+
+    if (state.lastTaskId) {
+        const newItem = list.querySelector('.slide-in');
+        if (newItem) {
+            newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        state.lastTaskId = null;
+    }
 
     const hint = document.getElementById('taskHint');
     hint.style.display = state.currentTask ? 'none' : 'flex';
@@ -585,6 +623,7 @@ function completeSession(forceComplete = false) {
         };
         
         state.sessions.push(session);
+        state.lastSessionId = session.id;
         
         if (task) {
             task.totalTime += elapsedTime;
@@ -726,32 +765,50 @@ function renderHistory(filter = 'all') {
     }
 
     list.innerHTML = sessions.map(session => {
+        const isNew = session.id === state.lastSessionId;
         return `
-        <div class="history-item">
-            <div class="history-icon ${session.type === 'work' ? 'work' : 'break'}">
-                ${session.type === 'work' 
-                    ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
-                    : '<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>'
-                }
-            </div>
-            <div class="history-info">
-                <div class="history-task">${escapeHtml(session.taskName)}</div>
-                <div class="history-meta">
-                    <div class="history-meta-header">
-                        <span></span>
-                        <span>Finish</span>
-                    </div>
-                    <div class="history-meta-values">
-                        <span class="history-duration">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                            ${formatTime(session.duration)}
-                        </span>
-                        <span class="history-time">${formatTimestamp(session.completedAt)}</span>
+        <div class="history-item${isNew ? ' slide-in highlight' : ''}" data-session-id="${session.id}">
+            <div class="history-slide-wrapper">
+                <div class="history-info">
+                    <div class="history-task">${escapeHtml(session.taskName)}</div>
+                    <div class="history-meta">
+                        <div class="history-meta-header">
+                            <span></span>
+                            <span>Finish</span>
+                        </div>
+                        <div class="history-meta-values">
+                            <span class="history-duration">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                                <span class="duration-display">${formatTime(session.duration)}</span>
+                            </span>
+                            <span class="history-time">${formatTimestamp(session.completedAt)}</span>
+                        </div>
                     </div>
                 </div>
+                <button class="history-more" onclick="event.stopPropagation(); toggleSessionMenu(${session.id})" aria-label="More options">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+            </div>
+            <div class="history-menu">
+                <button onclick="event.stopPropagation(); editSession(${session.id})" aria-label="Edit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button class="danger" onclick="event.stopPropagation(); deleteSession(${session.id})" aria-label="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Delete</span>
+                </button>
             </div>
         </div>
     `}).join('');
+    
+    if (state.lastSessionId) {
+        const newItem = list.querySelector('.slide-in');
+        if (newItem) {
+            newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        state.lastSessionId = null;
+    }
 }
 
 function renderChart(chartEl, filter) {
@@ -1172,6 +1229,117 @@ function playNotificationSound() {
     } catch (e) {
         console.error('Error playing sound:', e);
     }
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.style.display = 'block';
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.style.display = 'none', 200);
+    }, 2000);
+}
+
+function toggleTaskMenu(taskId) {
+    const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+    if (!taskItem) return;
+    const wasOpen = taskItem.classList.contains('menu-open');
+    document.querySelectorAll('.task-item.menu-open').forEach(item => {
+        item.classList.remove('menu-open');
+    });
+    if (!wasOpen) {
+        taskItem.classList.add('menu-open');
+    }
+}
+
+let currentEditingTaskId = null;
+function editTask(taskId) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+    if (taskItem) {
+        taskItem.classList.remove('menu-open');
+    }
+    currentEditingTaskId = taskId;
+    document.getElementById('taskEditName').value = task.name;
+    document.getElementById('taskEditModal').classList.add('open');
+    document.getElementById('taskEditName').focus();
+}
+
+function closeTaskEditModal() {
+    document.getElementById('taskEditModal').classList.remove('open');
+    currentEditingTaskId = null;
+}
+
+function saveTaskFromModal() {
+    if (!currentEditingTaskId) return;
+    const task = state.tasks.find(t => t.id === currentEditingTaskId);
+    if (!task) return;
+    const newName = document.getElementById('taskEditName').value.trim();
+    if (!newName) return;
+    task.name = newName;
+    state.sessions.forEach(s => {
+        if (s.taskId === task.id) {
+            s.taskName = newName;
+        }
+    });
+    saveData();
+    closeTaskEditModal();
+    renderTasks();
+    renderHistory(currentFilter);
+}
+
+function toggleSessionMenu(sessionId) {
+    const sessionItem = document.querySelector(`.history-item[data-session-id="${sessionId}"]`);
+    if (!sessionItem) return;
+    const wasOpen = sessionItem.classList.contains('menu-open');
+    document.querySelectorAll('.history-item.menu-open').forEach(item => {
+        item.classList.remove('menu-open');
+    });
+    if (!wasOpen) {
+        sessionItem.classList.add('menu-open');
+    }
+}
+
+let currentEditingSessionId = null;
+function editSession(sessionId) {
+    const session = state.sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    const sessionItem = document.querySelector(`.history-item[data-session-id="${sessionId}"]`);
+    if (sessionItem) {
+        sessionItem.classList.remove('menu-open');
+    }
+    currentEditingSessionId = sessionId;
+    document.getElementById('sessionEditTaskName').textContent = session.taskName;
+    document.getElementById('sessionEditDuration').value = Math.floor(session.duration / 60);
+    document.getElementById('sessionEditModal').classList.add('open');
+    document.getElementById('sessionEditDuration').focus();
+}
+
+function closeSessionEditModal() {
+    document.getElementById('sessionEditModal').classList.remove('open');
+    currentEditingSessionId = null;
+}
+
+function saveSessionFromModal() {
+    if (!currentEditingSessionId) return;
+    const session = state.sessions.find(s => s.id === currentEditingSessionId);
+    if (!session) return;
+    const newMinutes = parseInt(document.getElementById('sessionEditDuration').value, 10);
+    if (isNaN(newMinutes) || newMinutes < 1) return;
+    const oldDuration = session.duration;
+    session.duration = newMinutes * 60;
+    const task = state.tasks.find(t => t.id === session.taskId);
+    if (task) {
+        task.totalTime = task.totalTime - oldDuration + session.duration;
+    }
+    saveData();
+    closeSessionEditModal();
+    renderHistory(currentFilter);
+    updateStats();
 }
 
 function restoreTimerState() {
