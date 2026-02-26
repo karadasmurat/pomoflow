@@ -99,8 +99,22 @@ function setupEventListeners() {
     document.getElementById('taskInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTask();
     });
-    document.getElementById('addTaskBtn').addEventListener('click', addTask);
-    document.getElementById('startPauseBtn').addEventListener('click', toggleTimer);
+    document.getElementById('addTaskBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        addTask();
+    });
+    document.getElementById('addTaskBtn').addEventListener('touchend', (e) => {
+        e.preventDefault();
+        addTask();
+    });
+    document.getElementById('startPauseBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleTimer();
+    });
+    document.getElementById('startPauseBtn').addEventListener('touchend', (e) => {
+        e.preventDefault();
+        toggleTimer();
+    });
     document.getElementById('resetBtn').addEventListener('click', resetTimer);
     document.getElementById('skipBtn').addEventListener('click', skipSession);
     document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
@@ -469,8 +483,16 @@ function toggleTimer() {
 }
 
 function startTimer() {
-    if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
+    try {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    } catch (e) {
+        console.log('AudioContext not available:', e);
     }
 
     if (Notification.permission === 'default') {

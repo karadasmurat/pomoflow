@@ -257,6 +257,8 @@ header {
     flex-shrink: 0;
     transition: all 200ms ease;
     background: var(--surface);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .task-play-btn:hover {
@@ -533,6 +535,8 @@ header {
     display: flex;
     align-items: center;
     gap: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary {
