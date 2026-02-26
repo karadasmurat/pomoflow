@@ -40,12 +40,19 @@ body {
     min-height: 100vh;
     font-size: 14px;
     line-height: 1.5;
+    overflow-x: hidden;
 }
 
 .app {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 16px;
+}
+
+@media (min-width: 768px) {
+    .app {
+        padding: 24px;
+    }
 }
 
 header {
@@ -211,6 +218,7 @@ header {
     gap: 8px;
     max-height: 400px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .task-item {
