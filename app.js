@@ -752,7 +752,7 @@ function renderChart(chartEl, filter) {
         nextDay.setDate(nextDay.getDate() + 1);
 
         const todaySessions = state.sessions.filter(s => {
-            const sDate = new Date(s.timestamp);
+            const sDate = new Date(s.completedAt);
             return s.type === 'work' && sDate >= today && sDate < nextDay;
         });
 
@@ -829,7 +829,7 @@ function renderChart(chartEl, filter) {
         const nextDay = new Date(day);
         nextDay.setDate(nextDay.getDate() + 1);
         const daySessions = state.sessions.filter(s => {
-            const sDate = new Date(s.timestamp);
+            const sDate = new Date(s.completedAt);
             return s.type === 'work' && sDate >= day && sDate < nextDay;
         });
         const totalMinutes = daySessions.reduce((sum, s) => sum + s.duration, 0);
@@ -865,7 +865,7 @@ function updateStats() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const todaySessions = state.sessions.filter(s => 
-        s.type === 'work' && new Date(s.timestamp) >= today
+        s.type === 'work' && new Date(s.completedAt) >= today
     );
 
     const totalSeconds = todaySessions.reduce((sum, s) => sum + s.duration, 0);
@@ -882,7 +882,7 @@ function calculateStreak() {
     const dates = [...new Set(state.sessions
         .filter(s => s.type === 'work')
         .map(s => {
-            const d = new Date(s.timestamp);
+            const d = new Date(s.completedAt);
             return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
         })
     )].sort((a, b) => b - a);
