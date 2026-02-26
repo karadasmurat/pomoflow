@@ -99,22 +99,17 @@ function setupEventListeners() {
     document.getElementById('taskInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTask();
     });
-    document.getElementById('addTaskBtn').addEventListener('click', (e) => {
+    
+    document.getElementById('addTaskBtn').addEventListener('click', function(e) {
         e.preventDefault();
         addTask();
     });
-    document.getElementById('addTaskBtn').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        addTask();
-    });
-    document.getElementById('startPauseBtn').addEventListener('click', (e) => {
+    
+    document.getElementById('startPauseBtn').addEventListener('click', function(e) {
         e.preventDefault();
         toggleTimer();
     });
-    document.getElementById('startPauseBtn').addEventListener('touchend', (e) => {
-        e.preventDefault();
-        toggleTimer();
-    });
+    
     document.getElementById('resetBtn').addEventListener('click', resetTimer);
     document.getElementById('skipBtn').addEventListener('click', skipSession);
     document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
