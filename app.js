@@ -301,6 +301,7 @@ function addTask() {
 
     state.tasks.push(task);
     input.value = '';
+    input.blur();
     saveData();
     renderTasks();
 }
