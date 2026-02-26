@@ -568,6 +568,102 @@ header {
     color: var(--text-primary);
 }
 
+.history-chart {
+    min-height: 60px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 8px 0;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.history-chart:has(.pie-chart-container) {
+    display: block;
+    height: auto;
+}
+
+.chart-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.chart-bar-fill {
+    width: 100%;
+    background: var(--primary);
+    border-radius: 2px 2px 0 0;
+    min-height: 4px;
+    transition: height 300ms ease;
+}
+
+.pie-chart-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.pie-chart {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.pie-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legend-label {
+    flex: 1;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.legend-value {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.legend-value svg {
+    opacity: 0.7;
+}
+
+.chart-bar-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
 .history-list {
     display: flex;
     flex-direction: column;
@@ -627,11 +723,30 @@ header {
     font-size: 12px;
     color: var(--text-secondary);
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.history-meta-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.7;
+}
+
+.history-meta-values {
+    display: flex;
+    justify-content: space-between;
 }
 
 .history-duration {
     font-family: var(--font-mono);
+}
+
+.history-time {
+    color: var(--text-secondary);
 }
 
 .settings-btn {

@@ -6,23 +6,29 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 
 ### Timer
 
-- **Pomodoro Timer** - 25-minute work sessions with short (5 min) and long (15 min) breaks
-- **Customizable Durations** - Adjust work/break times to fit your workflow
-- **Smart Auto-Advance** - Automatically transition between work and break sessions
+- **Pomodoro Timer** - Focus sessions with short (5 min) and long (15 min) breaks
+- **Customizable Durations** - Adjust focus/break times to fit your workflow
+- **Smart Auto-Advance** - Automatically transition between focus and break sessions
 - **Visual Progress Ring** - Animated circular progress indicator
 - **Audio Notifications** - Subtle sound when sessions complete
 
 ### Task Tracking
 
 - **Task Management** - Create, complete, and delete tasks
-- **Time Tracking** - Track focused time spent on each task
-- **Session History** - View completed sessions filtered by All/Today/This Week
+- **Time Tracking** - Track focused time spent on each task with visual totals
+- **Quick Controls** - Play/pause timer directly from task items
+- **Session History** - View completed sessions with charts filtered by Today/This Week/All
 
 ### Focus Analytics
 
-- **Today's Focus Time** - Total time spent in work sessions
-- **Sessions Completed** - Number of work sessions done today
+- **Today's Focus Time** - Total time spent in focus sessions
+- **Sessions Completed** - Number of focus sessions done today
 - **Day Streak** - Consecutive days with completed focus sessions
+- **Visual Charts** - Bar chart for weekly overview, pie chart for today's task breakdown
+
+### Theme
+
+- **Dark/Light Mode** - Toggle between themes with persistent preference
 
 ### Keyboard Shortcuts
 
@@ -31,7 +37,7 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 | `Space` | Start/Pause timer     |
 | `R`     | Reset current session |
 | `N`     | Skip to next session  |
-| `1`     | Switch to Work mode   |
+| `1`     | Switch to Focus mode  |
 | `2`     | Switch to Short Break |
 | `3`     | Switch to Long Break  |
 
@@ -56,6 +62,7 @@ All data is stored locally in your browser using localStorage:
 - Session history
 - User preferences
 - Timer state (survives page refresh)
+- Theme preference
 
 ## License
 

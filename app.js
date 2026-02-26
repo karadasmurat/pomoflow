@@ -41,7 +41,7 @@ function init() {
     loadData();
     setupEventListeners();
     renderTasks();
-    renderHistory();
+    renderHistory('today');
     updateTimerDisplay();
     updateStats();
     updateDateTime();
@@ -555,6 +555,7 @@ function updateTimerDisplay() {
 
 function renderHistory(filter = 'all') {
     const list = document.getElementById('historyList');
+    const chart = document.getElementById('historyChart');
     let sessions = [...state.sessions].reverse();
 
     const now = new Date();
@@ -568,6 +569,8 @@ function renderHistory(filter = 'all') {
         sessions = sessions.filter(s => new Date(s.timestamp) >= weekAgo);
     }
 
+    renderChart(chart, filter);
+
     if (sessions.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
@@ -578,7 +581,9 @@ function renderHistory(filter = 'all') {
         return;
     }
 
-    list.innerHTML = sessions.map(session => `
+    list.innerHTML = sessions.map(session => {
+        const minutes = Math.round(session.duration / 60);
+        return `
         <div class="history-item">
             <div class="history-icon ${session.type === 'work' ? 'work' : 'break'}">
                 ${session.type === 'work' 
@@ -589,12 +594,125 @@ function renderHistory(filter = 'all') {
             <div class="history-info">
                 <div class="history-task">${escapeHtml(session.taskName)}</div>
                 <div class="history-meta">
-                    <span class="history-duration">${formatTime(session.duration)}</span>
-                    <span>${formatTimestamp(session.timestamp)}</span>
+                    <div class="history-meta-header">
+                        <span>Focus</span>
+                        <span>Finish</span>
+                    </div>
+                    <div class="history-meta-values">
+                        <span class="history-duration">${minutes} min</span>
+                        <span class="history-time">${formatTimestamp(session.timestamp)}</span>
+                    </div>
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
+}
+
+function renderChart(chartEl, filter) {
+    if (filter === 'today') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const nextDay = new Date(today);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        const todaySessions = state.sessions.filter(s => {
+            const sDate = new Date(s.timestamp);
+            return s.type === 'work' && sDate >= today && sDate < nextDay;
+        });
+
+        if (todaySessions.length === 0) {
+            chartEl.innerHTML = '';
+            return;
+        }
+
+        const taskTotals = {};
+        todaySessions.forEach(s => {
+            const name = s.taskName || 'Untracked';
+            taskTotals[name] = (taskTotals[name] || 0) + s.duration;
+        });
+
+        const total = Object.values(taskTotals).reduce((a, b) => a + b, 0);
+        const colors = ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7', '#79c0ff', '#56d364'];
+        const entries = Object.entries(taskTotals);
+
+        let cumulative = 0;
+        const segments = entries.map(([name, seconds], i) => {
+            const percent = (seconds / total) * 100;
+            const start = cumulative;
+            cumulative += percent;
+            return { name, percent, start, seconds, color: colors[i % colors.length] };
+        });
+
+        chartEl.innerHTML = `
+            <div class="pie-chart-container">
+                <svg class="pie-chart" viewBox="0 0 32 32">
+                    ${segments.map(s => {
+                        const startAngle = (s.start / 100) * 360 - 90;
+                        const endAngle = ((s.start + s.percent) / 100) * 360 - 90;
+                        const start = 16 + 12 * Math.cos(Math.PI * startAngle / 180);
+                        const end = 16 + 12 * Math.cos(Math.PI * endAngle / 180);
+                        const largeArc = s.percent > 50 ? 1 : 0;
+                        return `<circle cx="16" cy="16" r="12" fill="transparent" stroke="${s.color}" 
+                            stroke-width="6" stroke-dasharray="${s.percent * 0.75} ${75 - s.percent * 0.75}"
+                            stroke-dashoffset="${-s.start * 0.75 + 18.85}" 
+                            transform="rotate(-90 16 16)"/>`;
+                    }).join('')}
+                </svg>
+                <div class="pie-legend">
+                    ${segments.map(s => `
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: ${s.color}"></span>
+                            <span class="legend-label">${escapeHtml(s.name)}</span>
+                            <span class="legend-value">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                                ${formatTime(s.seconds)}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (filter !== 'week' && filter !== 'all') {
+        chartEl.innerHTML = '';
+        return;
+    }
+
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        days.push(d);
+    }
+
+    const dayData = days.map(day => {
+        const nextDay = new Date(day);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const daySessions = state.sessions.filter(s => {
+            const sDate = new Date(s.timestamp);
+            return s.type === 'work' && sDate >= day && sDate < nextDay;
+        });
+        const totalMinutes = daySessions.reduce((sum, s) => sum + s.duration, 0);
+        return { day, minutes: totalMinutes };
+    });
+
+    const maxMinutes = Math.max(...dayData.map(d => d.minutes), 1);
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    chartEl.innerHTML = dayData.map(d => {
+        const height = (d.minutes / maxMinutes) * 100;
+        const label = dayLabels[d.day.getDay()];
+        return `
+            <div class="chart-bar">
+                <div class="chart-bar-fill" style="height: ${Math.max(height, 4)}%"></div>
+                <span class="chart-bar-label">${label}</span>
+            </div>
+        `;
+    }).join('');
 }
 
 function clearHistory() {
