@@ -49,7 +49,7 @@ function init() {
     updateStats();
     updateDateTime();
     setInterval(updateDateTime, 1000);
-    checkNotificationPrompt();
+    try { checkNotificationPrompt(); } catch(e) {}
     restoreTimerState();
     initTheme();
 }
