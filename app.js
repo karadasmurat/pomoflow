@@ -107,11 +107,18 @@ function setupEventListeners() {
     
     document.getElementById('startPauseBtn').addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         toggleTimer();
     });
     
-    document.getElementById('resetBtn').addEventListener('click', resetTimer);
-    document.getElementById('skipBtn').addEventListener('click', skipSession);
+    document.getElementById('resetBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        resetTimer();
+    });
+    document.getElementById('skipBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        skipSession();
+    });
     document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
 
     document.querySelectorAll('.mode-tab').forEach(tab => {
@@ -470,10 +477,15 @@ async function deleteTask(id) {
 }
 
 function toggleTimer() {
-    if (state.timerState.isRunning) {
-        pauseTimer();
-    } else {
-        startTimer();
+    console.log('toggleTimer called', state.timerState.isRunning);
+    try {
+        if (state.timerState.isRunning) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
+    } catch(e) {
+        console.log('toggleTimer error:', e);
     }
 }
 
@@ -483,7 +495,7 @@ function startTimer() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
         
-        if (audioContext.state === 'suspended') {
+        if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume();
         }
     } catch (e) {
@@ -491,7 +503,7 @@ function startTimer() {
     }
 
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-        checkNotificationPrompt();
+        try { checkNotificationPrompt(); } catch(e) {}
     }
 
     state.timerState.isRunning = true;

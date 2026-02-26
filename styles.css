@@ -521,6 +521,8 @@ header {
     display: flex;
     gap: 12px;
     margin-bottom: 32px;
+    position: relative;
+    z-index: 10;
 }
 
 .btn {
@@ -537,6 +539,13 @@ header {
     gap: 8px;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    position: relative;
+}
+
+.btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
 }
 
 .btn-primary {
