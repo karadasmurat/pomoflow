@@ -490,7 +490,7 @@ function startTimer() {
         console.log('AudioContext not available:', e);
     }
 
-    if (Notification.permission === 'default') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
         checkNotificationPrompt();
     }
 
@@ -1100,7 +1100,7 @@ function closeConfirmModal() {
 }
 
 function checkNotificationPrompt() {
-    if (Notification.permission === 'default' && 
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default' && 
         !localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT)) {
         document.getElementById('notificationPrompt').style.display = 'flex';
     }
@@ -1112,6 +1112,7 @@ function dismissNotificationPrompt() {
 }
 
 function requestNotificationPermission() {
+    if (typeof Notification === 'undefined') return;
     Notification.requestPermission().then(permission => {
         state.notificationPermission = permission;
         dismissNotificationPrompt();
@@ -1119,17 +1120,17 @@ function requestNotificationPermission() {
 }
 
 function sendNotification(session) {
-    if (Notification.permission === 'granted') {
-        const titles = {
-            work: 'Focus session complete!',
-            shortBreak: 'Break is over!',
-            longBreak: 'Long break is over!'
-        };
-        new Notification('PomoFlow', {
-            body: titles[session.type],
-            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2358a6ff" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
-        });
-    }
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    
+    const titles = {
+        work: 'Focus session complete!',
+        shortBreak: 'Break is over!',
+        longBreak: 'Long break is over!'
+    };
+    new Notification('PomoFlow', {
+        body: titles[session.type],
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2358a6ff" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
+    });
 }
 
 function playNotificationSound() {
