@@ -11,6 +11,7 @@
     --border: #30363d;
     --font-mono: 'JetBrains Mono', monospace;
     --font-sans: 'DM Sans', sans-serif;
+    --font-time: 'Roboto', sans-serif;
 }
 
 [data-theme="light"] {
@@ -238,8 +239,8 @@ header {
 }
 
 .task-play-btn {
-    width: 24px;
-    height: 24px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -247,16 +248,17 @@ header {
     color: var(--text-secondary);
     flex-shrink: 0;
     transition: all 200ms ease;
+    background: var(--surface);
 }
 
 .task-play-btn:hover {
     color: var(--success);
-    background: rgba(63, 185, 80, 0.1);
+    background: rgba(63, 185, 80, 0.15);
 }
 
 .task-play-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     fill: currentColor;
 }
 
@@ -265,38 +267,18 @@ header {
     color: var(--text-secondary);
 }
 
-.task-checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--border);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 200ms ease;
-    flex-shrink: 0;
-}
-
-.task-item.completed .task-checkbox {
-    background: var(--success);
-    border-color: var(--success);
-}
-
-.task-checkbox svg {
-    width: 12px;
-    height: 12px;
-    fill: var(--bg);
-    opacity: 0;
-}
-
-.task-item.completed .task-checkbox svg {
-    opacity: 1;
-}
-
 .task-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.task-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
 }
 
 .task-name {
@@ -309,10 +291,11 @@ header {
 .task-time {
     font-size: 12px;
     color: var(--text-secondary);
-    font-family: var(--font-mono);
+    font-family: var(--font-time);
     display: flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap;
 }
 
 .task-time svg {
@@ -326,12 +309,41 @@ header {
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    opacity: 0;
+    opacity: 0.5;
     transition: all 200ms ease;
 }
 
+.task-check {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: all 200ms ease;
+}
+
+.task-item.completed .task-check {
+    color: #26a641;
+}
+
+.task-item.completed .task-check svg {
+    stroke: #26a641;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none !important;
+}
+
+.task-item:hover .task-check,
 .task-item:hover .task-delete {
     opacity: 1;
+}
+
+.task-check:hover {
+    color: var(--text-primary);
+    background: rgba(63, 185, 80, 0.15);
 }
 
 .task-delete:hover {
@@ -349,6 +361,16 @@ header {
     padding: 8px;
     background: var(--bg);
     border-radius: 6px;
+}
+
+.task-section-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 8px;
+    padding: 0 4px;
 }
 
 .task-hint svg {
@@ -409,7 +431,7 @@ header {
     position: relative;
     width: 280px;
     height: 280px;
-    margin-bottom: 24px;
+    margin: 0 auto 24px;
 }
 
 .timer-ring {
@@ -448,11 +470,29 @@ header {
     text-align: center;
 }
 
+.timer-task-display {
+    font-size: 16px;
+    color: var(--accent);
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 16px;
+    min-height: 24px;
+}
+
 .timer-time {
-    font-family: var(--font-mono);
-    font-size: 72px;
-    font-weight: 700;
-    letter-spacing: -2px;
+    font-family: var(--font-time);
+    font-size: 64px;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.timer-task {
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 8px;
+    min-height: 20px;
 }
 
 .timer-mode {
@@ -527,7 +567,7 @@ header {
 }
 
 .stat-value {
-    font-family: var(--font-mono);
+    font-family: var(--font-time);
     font-size: 20px;
     font-weight: 700;
     color: var(--primary);
@@ -648,7 +688,7 @@ header {
 
 .legend-value {
     color: var(--text-secondary);
-    font-family: var(--font-mono);
+    font-family: var(--font-time);
     font-size: 11px;
     display: flex;
     align-items: center;
@@ -742,11 +782,19 @@ header {
 }
 
 .history-duration {
-    font-family: var(--font-mono);
+    font-family: var(--font-time);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.history-duration svg {
+    opacity: 0.7;
 }
 
 .history-time {
     color: var(--text-secondary);
+    font-family: var(--font-time);
 }
 
 .settings-btn {
@@ -833,6 +881,44 @@ header {
     gap: 12px;
 }
 
+.confirm-modal {
+    max-width: 320px;
+    text-align: center;
+}
+
+.confirm-icon {
+    color: var(--warning);
+    margin-bottom: 16px;
+}
+
+.confirm-message {
+    font-size: 16px;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: opacity 150ms;
+}
+
+.btn-danger:hover {
+    opacity: 0.9;
+}
+
 .btn-save {
     background: var(--primary);
     color: white;
@@ -847,6 +933,29 @@ header {
 
 .btn-save:hover {
     opacity: 0.9;
+}
+
+.data-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.import-wrapper {
+    position: relative;
+}
+
+.import-info {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.import-info strong {
+    color: var(--text-primary);
 }
 
 .setting-group {
@@ -873,7 +982,7 @@ header {
     border-radius: 6px;
     padding: 8px 12px;
     color: var(--text-primary);
-    font-family: var(--font-mono);
+    font-family: var(--font-time);
     font-size: 14px;
     text-align: center;
 }
@@ -929,6 +1038,49 @@ header {
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.slide-out {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+    border-color: var(--danger) !important;
 }
 
 .timer-running .timer-time {
@@ -1017,6 +1169,6 @@ button {
     background: var(--bg);
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: var(--font-mono);
+    font-family: var(--font-time);
     margin: 0 2px;
 }

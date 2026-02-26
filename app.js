@@ -29,19 +29,22 @@ let state = {
         remainingTime: 25 * 60,
         totalTime: 25 * 60,
         sessionCount: 0,
-        startTime: null
+        startTime: null,
+        activeTaskId: null
     },
     notificationPermission: 'default'
 };
 
 let timerInterval = null;
 let audioContext = null;
+let currentFilter = 'today';
 
 function init() {
     loadData();
     setupEventListeners();
     renderTasks();
     renderHistory('today');
+    document.querySelector('.filter-btn[data-filter="today"]').classList.add('active');
     updateTimerDisplay();
     updateStats();
     updateDateTime();
@@ -110,6 +113,7 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
             renderHistory(btn.dataset.filter);
         });
     });
@@ -129,6 +133,32 @@ function setupEventListeners() {
     });
     document.getElementById('settingsModal').addEventListener('click', (e) => {
         if (e.target.id === 'settingsModal') closeSettings();
+    });
+
+    document.getElementById('exportData').addEventListener('click', exportData);
+    document.getElementById('importFile').addEventListener('change', handleImportFile);
+    document.getElementById('importData').addEventListener('click', () => {
+        document.getElementById('importFile').click();
+    });
+    document.getElementById('closeImport').addEventListener('click', closeImportModal);
+    document.getElementById('importReplace').addEventListener('click', () => performImport('replace'));
+    document.getElementById('importMerge').addEventListener('click', () => performImport('merge'));
+    document.getElementById('importModal').addEventListener('click', (e) => {
+        if (e.target.id === 'importModal') closeImportModal();
+    });
+
+    document.getElementById('confirmCancel').addEventListener('click', () => {
+        closeConfirmModal();
+    });
+    document.getElementById('confirmOk').addEventListener('click', () => {
+        document.getElementById('confirmModal').classList.remove('open');
+        if (confirmResolve) {
+            confirmResolve(true);
+            confirmResolve = null;
+        }
+    });
+    document.getElementById('confirmModal').addEventListener('click', (e) => {
+        if (e.target.id === 'confirmModal') closeConfirmModal();
     });
 
     setupSettingsListeners();
@@ -254,13 +284,19 @@ function handleKeyboardShortcuts(e) {
 function addTask() {
     const input = document.getElementById('taskInput');
     const name = input.value.trim();
-    if (!name) return;
+    if (!name) {
+        input.classList.add('shake');
+        input.focus();
+        setTimeout(() => input.classList.remove('shake'), 400);
+        return;
+    }
 
     const task = {
         id: Date.now(),
         name: name,
         completed: false,
-        totalTime: 0
+        totalTime: 0,
+        createdAt: Date.now()
     };
 
     state.tasks.push(task);
@@ -271,6 +307,8 @@ function addTask() {
 
 function renderTasks() {
     const list = document.getElementById('taskList');
+    const activeTasks = state.tasks.filter(t => !t.completed);
+    const completedTasks = state.tasks.filter(t => t.completed);
     
     if (state.tasks.length === 0) {
         list.innerHTML = `
@@ -282,15 +320,14 @@ function renderTasks() {
         return;
     }
 
-    list.innerHTML = state.tasks.map(task => {
+    const renderTaskItem = (task) => {
         const isActive = state.currentTask === task.id;
         const isRunning = isActive && state.timerState.isRunning;
+        const isCompleted = task.completed;
+        const isNew = task.createdAt && (Date.now() - task.createdAt < 500);
         return `
-        <div class="task-item ${task.completed ? 'completed' : ''} ${isActive ? 'active' : ''}" 
+        <div class="task-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isNew ? 'slide-in' : ''}" 
              data-id="${task.id}" onclick="selectTask(${task.id})">
-            <div class="task-checkbox" onclick="event.stopPropagation(); toggleTaskComplete(${task.id})">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            </div>
             <div class="task-play-btn" onclick="event.stopPropagation(); toggleTaskTimer(${task.id})" title="${isRunning ? 'Pause timer' : 'Start timer'}">
                 <svg viewBox="0 0 24 24">${isRunning 
                     ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
@@ -303,11 +340,31 @@ function renderTasks() {
                     <span>Total: ${formatTime(task.totalTime)}</span>
                 </div>
             </div>
-            <button class="task-delete" onclick="event.stopPropagation(); deleteTask(${task.id})" aria-label="Delete task">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-            </button>
+            <div class="task-actions">
+                <button class="task-check ${isCompleted ? 'completed' : ''}" onclick="event.stopPropagation(); toggleTaskComplete(${task.id})" aria-label="${isCompleted ? 'Mark incomplete' : 'Mark complete'}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </button>
+                <button class="task-delete" onclick="event.stopPropagation(); deleteTask(${task.id})" aria-label="Delete task">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
+            </div>
         </div>
-    `}).join('');
+    `};
+
+    let html = '';
+    
+    if (activeTasks.length > 0) {
+        html += [...activeTasks].reverse().map(renderTaskItem).join('');
+    }
+    
+    if (completedTasks.length > 0) {
+        html += `
+            <div class="task-section-header">Completed</div>
+        `;
+        html += [...completedTasks].reverse().map(renderTaskItem).join('');
+    }
+
+    list.innerHTML = html;
 
     const hint = document.getElementById('taskHint');
     hint.style.display = state.currentTask ? 'none' : 'flex';
@@ -321,6 +378,7 @@ function selectTask(id, shouldStartTimer = false) {
     }
     saveData();
     renderTasks();
+    updateTimerDisplay();
     
     if (shouldStartTimer && !state.timerState.isRunning) {
         if (state.timerState.mode !== 'work') {
@@ -331,13 +389,26 @@ function selectTask(id, shouldStartTimer = false) {
 }
 
 function toggleTaskTimer(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    if (task.completed) {
+        task.completed = false;
+    }
+    
     const isActive = state.currentTask === id;
     const isRunning = isActive && state.timerState.isRunning;
     
     if (isRunning) {
         pauseTimer();
     } else {
+        if (state.timerState.isRunning && id !== state.currentTask) {
+            completeSession(true);
+        }
+        
         state.currentTask = id;
+        state.timerState.activeTaskId = id;
+        
         if (state.timerState.mode !== 'work') {
             switchMode('work');
         }
@@ -347,6 +418,7 @@ function toggleTaskTimer(id) {
     }
     saveData();
     renderTasks();
+    updateTimerDisplay();
 }
 
 function toggleTaskComplete(id) {
@@ -358,19 +430,33 @@ function toggleTaskComplete(id) {
         }
         saveData();
         renderTasks();
+        updateTimerDisplay();
     }
 }
 
-function deleteTask(id) {
-    state.tasks = state.tasks.filter(t => t.id !== id);
-    if (state.currentTask === id) {
-        state.currentTask = null;
-        if (state.timerState.isRunning) {
-            resetTimer();
+async function deleteTask(id) {
+    const taskEl = document.querySelector(`.task-item[data-id="${id}"]`);
+    if (!taskEl) return;
+    
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    if (!await confirm(`Delete task "${task.name}"?`)) return;
+    
+    taskEl.classList.add('slide-out');
+    
+    setTimeout(() => {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        if (state.currentTask === id) {
+            state.currentTask = null;
+            if (state.timerState.isRunning) {
+                resetTimer();
+            }
         }
-    }
-    saveData();
-    renderTasks();
+        saveData();
+        renderTasks();
+        updateTimerDisplay();
+    }, 300);
 }
 
 function toggleTimer() {
@@ -382,23 +468,21 @@ function toggleTimer() {
 }
 
 function startTimer() {
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
     if (Notification.permission === 'default') {
         checkNotificationPrompt();
     }
 
     state.timerState.isRunning = true;
     state.timerState.startTime = Date.now();
+    state.timerState.activeTaskId = state.currentTask;
 
     timerInterval = setInterval(() => {
         state.timerState.remainingTime--;
         
-        if (state.timerState.isRunning && state.currentTask && state.timerState.mode === 'work') {
-            const task = state.tasks.find(t => t.id === state.currentTask);
-            if (task) {
-                task.totalTime++;
-            }
-        }
-
         updateTimerDisplay();
         saveData();
 
@@ -437,6 +521,7 @@ function resetTimer() {
     };
     state.timerState.remainingTime = durations[mode] * 60;
     state.timerState.totalTime = durations[mode] * 60;
+    state.timerState.activeTaskId = null;
     updateTimerDisplay();
     saveData();
 }
@@ -446,40 +531,56 @@ function skipSession() {
     advanceToNextSession();
 }
 
-function completeSession() {
+function completeSession(forceComplete = false) {
+    if (!forceComplete && state.timerState.remainingTime > 0) return;
+    
     pauseTimer();
-    playNotificationSound();
-
-    const mode = state.timerState.mode;
-    const task = state.tasks.find(t => t.id === state.currentTask);
-
-    const session = {
-        id: Date.now(),
-        taskId: state.currentTask,
-        taskName: task ? task.name : 'Untracked',
-        type: mode,
-        duration: state.timerState.totalTime,
-        timestamp: new Date().toISOString()
-    };
-
-    state.sessions.push(session);
-
-    if (mode === 'work') {
-        state.timerState.sessionCount++;
+    
+    if (!forceComplete) {
+        playNotificationSound();
     }
+    
+    const elapsedTime = state.timerState.totalTime - state.timerState.remainingTime;
+    
+    if (elapsedTime > 0 && state.timerState.mode === 'work') {
+        const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+        
+        const session = {
+            id: Date.now(),
+            taskId: state.timerState.activeTaskId,
+            taskName: task ? task.name : 'Untracked',
+            type: state.timerState.mode,
+            duration: elapsedTime,
+            completedAt: new Date().toISOString()
+        };
+        
+        state.sessions.push(session);
+        
+        if (task) {
+            task.totalTime += elapsedTime;
+        }
+        
+        sendNotification(session);
+        
+        state.timerState.sessionCount++;
+        
+        saveData();
+        renderTasks();
+        renderHistory(currentFilter);
+        updateStats();
+    }
+    
+    if (forceComplete) {
+        state.timerState.remainingTime = state.timerState.totalTime;
+        updateTimerDisplay();
+        saveData();
+    } else {
+        advanceToNextSession();
 
-    saveData();
-    renderTasks();
-    renderHistory();
-    updateStats();
-
-    sendNotification(session);
-
-    advanceToNextSession();
-
-    if ((mode === 'work' && state.settings.autoStartBreaks) ||
-        (mode !== 'work' && state.settings.autoStartWork)) {
-        setTimeout(() => startTimer(), 1000);
+        if ((state.timerState.mode === 'work' && state.settings.autoStartBreaks) ||
+            (state.timerState.mode !== 'work' && state.settings.autoStartWork)) {
+            setTimeout(() => startTimer(), 1000);
+        }
     }
 }
 
@@ -526,6 +627,16 @@ function updateTimerDisplay() {
     document.getElementById('timerTime').textContent = timeStr;
     document.getElementById('timerAnnouncer').textContent = timeStr;
 
+    const currentTaskEl = document.getElementById('timerTask');
+    if (state.currentTask) {
+        const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
+        currentTaskEl.textContent = task ? `Current Focus: ${task.name}` : '';
+    } else if (state.timerState.isRunning && state.timerState.mode === 'work') {
+        currentTaskEl.textContent = 'Focus mode - select a task';
+    } else {
+        currentTaskEl.textContent = '';
+    }
+
     const modeLabels = {
         work: 'Focus',
         shortBreak: 'Short Break',
@@ -564,10 +675,13 @@ function renderHistory(filter = 'all') {
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     if (filter === 'today') {
-        sessions = sessions.filter(s => new Date(s.timestamp) >= today);
+        sessions = sessions.filter(s => new Date(s.completedAt) >= today);
     } else if (filter === 'week') {
-        sessions = sessions.filter(s => new Date(s.timestamp) >= weekAgo);
+        sessions = sessions.filter(s => new Date(s.completedAt) >= weekAgo);
     }
+
+    const currentTaskIds = new Set(state.tasks.map(t => t.id));
+    sessions = sessions.filter(s => !s.taskId || currentTaskIds.has(s.taskId));
 
     renderChart(chart, filter);
 
@@ -582,7 +696,6 @@ function renderHistory(filter = 'all') {
     }
 
     list.innerHTML = sessions.map(session => {
-        const minutes = Math.round(session.duration / 60);
         return `
         <div class="history-item">
             <div class="history-icon ${session.type === 'work' ? 'work' : 'break'}">
@@ -595,12 +708,15 @@ function renderHistory(filter = 'all') {
                 <div class="history-task">${escapeHtml(session.taskName)}</div>
                 <div class="history-meta">
                     <div class="history-meta-header">
-                        <span>Focus</span>
+                        <span></span>
                         <span>Finish</span>
                     </div>
                     <div class="history-meta-values">
-                        <span class="history-duration">${minutes} min</span>
-                        <span class="history-time">${formatTimestamp(session.timestamp)}</span>
+                        <span class="history-duration">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                            ${formatTime(session.duration)}
+                        </span>
+                        <span class="history-time">${formatTimestamp(session.completedAt)}</span>
                     </div>
                 </div>
             </div>
@@ -609,6 +725,8 @@ function renderHistory(filter = 'all') {
 }
 
 function renderChart(chartEl, filter) {
+    if (!chartEl) return;
+    
     if (filter === 'today') {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -715,13 +833,13 @@ function renderChart(chartEl, filter) {
     }).join('');
 }
 
-function clearHistory() {
-    if (confirm('Are you sure you want to clear all session history?')) {
-        state.sessions = [];
-        saveData();
-        renderHistory();
-        updateStats();
-    }
+async function clearHistory() {
+    if (!await confirm('Are you sure you want to clear all session history?')) return;
+    
+    state.sessions = [];
+    saveData();
+    renderHistory();
+    updateStats();
 }
 
 function updateStats() {
@@ -793,16 +911,36 @@ function formatTime(seconds) {
     if (h > 0) {
         return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 function formatTimestamp(isoString) {
     const date = new Date(isoString);
-    return date.toLocaleTimeString('en-US', { 
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const sessionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    let prefix = '';
+    if (sessionDate.getTime() === today.getTime()) {
+        prefix = 'Today ';
+    } else if (sessionDate.getTime() === yesterday.getTime()) {
+        prefix = 'Yesterday ';
+    } else {
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric'
+        });
+    }
+    
+    const time = date.toLocaleTimeString('en-US', { 
         hour: 'numeric', 
         minute: '2-digit',
         hour12: state.settings.use12Hour 
     });
+    
+    return prefix + time;
 }
 
 function escapeHtml(text) {
@@ -817,6 +955,130 @@ function openSettings() {
 
 function closeSettings() {
     document.getElementById('settingsModal').classList.remove('open');
+}
+
+let importDataCache = null;
+
+function exportData() {
+    const data = {
+        exportedAt: new Date().toISOString(),
+        version: CURRENT_VERSION,
+        tasks: state.tasks,
+        sessions: state.sessions,
+        settings: state.settings
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `pomoflow-backup-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('Data exported successfully');
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (!data.tasks || !data.sessions || !data.settings) {
+                showToast('Invalid backup file');
+                return;
+            }
+            
+            importDataCache = data;
+            
+            const taskCount = data.tasks.length;
+            const sessionCount = data.sessions.length;
+            
+            document.getElementById('importInfo').innerHTML = `
+                Found <strong>${taskCount} tasks</strong> and <strong>${sessionCount} sessions</strong> in the backup file.
+            `;
+            
+            document.getElementById('importModal').classList.add('open');
+        } catch (err) {
+            showToast('Error reading backup file');
+            console.error(err);
+        }
+    };
+    reader.readAsText(file);
+    
+    event.target.value = '';
+}
+
+function performImport(mode) {
+    if (!importDataCache) return;
+    
+    const data = importDataCache;
+    
+    if (mode === 'replace') {
+        state.tasks = data.tasks || [];
+        state.sessions = data.sessions || [];
+        state.settings = { ...state.settings, ...data.settings };
+    } else if (mode === 'merge') {
+        const existingTaskIds = new Set(state.tasks.map(t => t.id));
+        const newTasks = (data.tasks || []).filter(t => !existingTaskIds.has(t.id));
+        state.tasks = [...state.tasks, ...newTasks];
+        
+        const existingSessionKeys = new Set(state.sessions.map(s => `${s.completedAt}-${s.taskName}`));
+        const newSessions = (data.sessions || []).filter(s => !existingSessionKeys.has(`${s.completedAt}-${s.taskName}`));
+        state.sessions = [...state.sessions, ...newSessions];
+        
+        state.settings = { ...state.settings, ...data.settings };
+    }
+    
+    state.currentTask = null;
+    state.timerState = {
+        mode: 'work',
+        isRunning: false,
+        remainingTime: state.settings.workDuration * 60,
+        totalTime: state.settings.workDuration * 60,
+        sessionCount: 0,
+        startTime: null,
+        activeTaskId: null
+    };
+    
+    saveData();
+    importDataCache = null;
+    
+    document.getElementById('importModal').classList.remove('open');
+    closeSettings();
+    
+    init();
+    showToast('Data imported successfully');
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').classList.remove('open');
+    importDataCache = null;
+}
+
+let confirmResolve = null;
+
+function confirm(message) {
+    return new Promise((resolve) => {
+        confirmResolve = resolve;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmModal').classList.add('open');
+    });
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('open');
+    if (confirmResolve) {
+        confirmResolve(false);
+        confirmResolve = null;
+    }
 }
 
 function checkNotificationPrompt() {
@@ -856,6 +1118,10 @@ function playNotificationSound() {
     try {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
         }
         
         const oscillator = audioContext.createOscillator();
