@@ -33,19 +33,24 @@
                 <div class="panel-header">
                     Tasks
                 </div>
-                <div class="task-input-wrapper">
-                    <input type="text" class="task-input" id="taskInput" placeholder="Add a new task...">
-                    <button type="button" class="btn-add" id="addTaskBtn" aria-label="Add task">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    </button>
-                </div>
-                <div class="color-picker" id="taskColorPicker">
-                    <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Blue"></button>
-                    <button type="button" class="color-dot" data-color="#3fb950" style="background: #3fb950" aria-label="Green"></button>
-                    <button type="button" class="color-dot" data-color="#d29922" style="background: #d29922" aria-label="Orange"></button>
-                    <button type="button" class="color-dot" data-color="#f85149" style="background: #f85149" aria-label="Red"></button>
-                    <button type="button" class="color-dot" data-color="#a371f7" style="background: #a371f7" aria-label="Purple"></button>
-                    <button type="button" class="color-dot" data-color="#db61a2" style="background: #db61a2" aria-label="Pink"></button>
+                <div class="task-input-container">
+                    <div class="task-input-wrapper">
+                        <div class="inline-color-wrapper">
+                            <button type="button" class="selected-color-btn" id="inlineColorBtn" style="background: #58a6ff" aria-label="Choose color"></button>
+                            <div class="color-dropdown" id="inlineColorDropdown">
+                                <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff"></button>
+                                <button type="button" class="color-dot" data-color="#3fb950" style="background: #3fb950"></button>
+                                <button type="button" class="color-dot" data-color="#d29922" style="background: #d29922"></button>
+                                <button type="button" class="color-dot" data-color="#f85149" style="background: #f85149"></button>
+                                <button type="button" class="color-dot" data-color="#a371f7" style="background: #a371f7"></button>
+                                <button type="button" class="color-dot" data-color="#db61a2" style="background: #db61a2"></button>
+                            </div>
+                        </div>
+                        <input type="text" class="task-input" id="taskInput" placeholder="Add a new task...">
+                        <button type="button" class="btn-add" id="addTaskBtn" aria-label="Add task">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="task-list" id="taskList"></div>
                 <div class="task-hint" id="taskHint" style="display: none;">

@@ -129,19 +129,38 @@ function setupEventListeners() {
         addTask();
     });
 
-    // Color picker logic for new tasks
-    const mainColorPicker = document.getElementById('taskColorPicker');
-    if (mainColorPicker) {
-        mainColorPicker.querySelectorAll('.color-dot').forEach(dot => {
-            dot.addEventListener('click', () => {
-                mainColorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    // NEW INLINE COLOR PICKER LOGIC
+    const inlineColorBtn = document.getElementById('inlineColorBtn');
+    const inlineColorDropdown = document.getElementById('inlineColorDropdown');
+    
+    if (inlineColorBtn && inlineColorDropdown) {
+        inlineColorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            inlineColorDropdown.classList.toggle('open');
+        });
+
+        inlineColorDropdown.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const color = dot.dataset.color;
+                state.selectedTaskColor = color;
+                inlineColorBtn.style.background = color;
+                
+                // Update active state in dropdown
+                inlineColorDropdown.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
                 dot.classList.add('active');
-                state.selectedTaskColor = dot.dataset.color;
+                
+                inlineColorDropdown.classList.remove('open');
             });
+        });
+
+        // Close dropdown when clicking anywhere else
+        document.addEventListener('click', () => {
+            inlineColorDropdown.classList.remove('open');
         });
     }
 
-    // Color picker logic for editing tasks
+    // Color picker logic for editing tasks (still in modal)
     const editColorPicker = document.getElementById('taskEditColorPicker');
     if (editColorPicker) {
         editColorPicker.querySelectorAll('.color-dot').forEach(dot => {
@@ -217,7 +236,7 @@ function setupEventListeners() {
     document.getElementById('cancelSessionEdit').addEventListener('click', closeSessionEditModal);
     document.getElementById('saveSessionEdit').addEventListener('click', saveSessionFromModal);
     document.getElementById('sessionEditModal').addEventListener('click', (e) => {
-        if (e.target.id === 'sessionEditModal') closeSessionEditModal();
+        if (e.target.id === 'sessionEditModal') closeSessionEditModal);
     });
     document.getElementById('sessionEditDuration').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') saveSessionFromModal();
@@ -249,1289 +268,1118 @@ function setupEventListeners() {
         if (e.target.id === 'confirmModal') closeConfirmModal();
     });
 
-    setupSettingsListeners();
+    document.getElementById('enableNotifications').addEventListener('click', () => {
+        requestNotificationPermission();
+    });
+    document.getElementById('denyNotifications').addEventListener('click', () => {
+        state.notificationPermission = 'denied';
+        localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'denied');
+        document.getElementById('notificationPrompt').style.display = 'none';
+    });
 
-    document.getElementById('enableNotifications').addEventListener('click', requestNotificationPermission);
-    document.getElementById('denyNotifications').addEventListener('click', dismissNotificationPrompt);
-
-    document.addEventListener('keydown', handleKeyboardShortcuts);
-}
-
-function setupSettingsListeners() {
-    const sliders = {
-        workDuration: { el: document.getElementById('workDuration'), display: document.getElementById('workDurationValue'), suffix: ' min' },
-        shortBreakDuration: { el: document.getElementById('shortBreakDuration'), display: document.getElementById('shortBreakDurationValue'), suffix: ' min' },
-        longBreakDuration: { el: document.getElementById('longBreakDuration'), display: document.getElementById('longBreakDurationValue'), suffix: ' min' },
-        soundVolume: { el: document.getElementById('soundVolume'), display: document.getElementById('soundVolumeValue'), suffix: '%' }
-    };
-
-    if (sliders.workDuration.el) {
-        sliders.workDuration.el.value = state.settings.workDuration;
-        sliders.workDuration.display.textContent = state.settings.workDuration + sliders.workDuration.suffix;
-        sliders.workDuration.el.addEventListener('input', (e) => {
-            state.settings.workDuration = parseInt(e.target.value);
-            sliders.workDuration.display.textContent = e.target.value + sliders.workDuration.suffix;
-            if (state.timerState.mode === 'work' && !state.timerState.isRunning) {
-                state.timerState.remainingTime = state.settings.workDuration * 60;
-                state.timerState.totalTime = state.settings.workDuration * 60;
-                updateTimerDisplay();
-            }
-            saveData();
-        });
-    }
-
-    if (sliders.shortBreakDuration.el) {
-        sliders.shortBreakDuration.el.value = state.settings.shortBreakDuration;
-        sliders.shortBreakDuration.display.textContent = state.settings.shortBreakDuration + sliders.shortBreakDuration.suffix;
-        sliders.shortBreakDuration.el.addEventListener('input', (e) => {
-            state.settings.shortBreakDuration = parseInt(e.target.value);
-            sliders.shortBreakDuration.display.textContent = e.target.value + sliders.shortBreakDuration.suffix;
-            if (state.timerState.mode === 'shortBreak' && !state.timerState.isRunning) {
-                state.timerState.remainingTime = state.settings.shortBreakDuration * 60;
-                state.timerState.totalTime = state.settings.shortBreakDuration * 60;
-                updateTimerDisplay();
-            }
-            saveData();
-        });
-    }
-
-    if (sliders.longBreakDuration.el) {
-        sliders.longBreakDuration.el.value = state.settings.longBreakDuration;
-        sliders.longBreakDuration.display.textContent = state.settings.longBreakDuration + sliders.longBreakDuration.suffix;
-        sliders.longBreakDuration.el.addEventListener('input', (e) => {
-            state.settings.longBreakDuration = parseInt(e.target.value);
-            sliders.longBreakDuration.display.textContent = e.target.value + sliders.longBreakDuration.suffix;
-            if (state.timerState.mode === 'longBreak' && !state.timerState.isRunning) {
-                state.timerState.remainingTime = state.settings.longBreakDuration * 60;
-                state.timerState.totalTime = state.settings.longBreakDuration * 60;
-                updateTimerDisplay();
-            }
-            saveData();
-        });
-    }
-
-    if (sliders.soundVolume.el) {
-        sliders.soundVolume.el.value = state.settings.soundVolume;
-        sliders.soundVolume.display.textContent = state.settings.soundVolume + sliders.soundVolume.suffix;
-        sliders.soundVolume.el.addEventListener('input', (e) => {
-            state.settings.soundVolume = parseInt(e.target.value);
-            sliders.soundVolume.display.textContent = e.target.value + sliders.soundVolume.suffix;
-            saveData();
-        });
-    }
-
-    const sessionsBeforeLongBreak = document.getElementById('sessionsBeforeLongBreak');
-    if (sessionsBeforeLongBreak) {
-        sessionsBeforeLongBreak.value = state.settings.sessionsBeforeLongBreak;
-        sessionsBeforeLongBreak.addEventListener('change', (e) => {
-            state.settings.sessionsBeforeLongBreak = Math.min(10, Math.max(1, parseInt(e.target.value) || 4));
-            e.target.value = state.settings.sessionsBeforeLongBreak;
-            saveData();
-            updateTimerDisplay();
-        });
-    }
-
-    const toggles = {
-        autoStartBreaks: document.getElementById('autoStartBreaks'),
-        autoStartWork: document.getElementById('autoStartWork'),
-        timeFormat: document.getElementById('timeFormat')
-    };
-
-    if (toggles.autoStartBreaks && state.settings.autoStartBreaks) toggles.autoStartBreaks.classList.add('active');
-    if (toggles.autoStartWork && state.settings.autoStartWork) toggles.autoStartWork.classList.add('active');
-    if (toggles.timeFormat && state.settings.use12Hour) toggles.timeFormat.classList.add('active');
-
-    Object.keys(toggles).forEach(key => {
-        if (toggles[key]) {
-            toggles[key].addEventListener('click', () => {
-                toggles[key].classList.toggle('active');
-                const isActive = toggles[key].classList.contains('active');
-                toggles[key].setAttribute('aria-checked', isActive);
-                if (key === 'timeFormat') {
-                    state.settings.use12Hour = isActive;
-                } else {
-                    state.settings[key] = isActive;
-                }
-                saveData();
-                updateDateTime();
-            });
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        
+        if (e.code === 'Space') {
+            e.preventDefault();
+            toggleTimer();
+        } else if (e.key.toLowerCase() === 'r') {
+            resetTimer();
+        } else if (e.key.toLowerCase() === 'n') {
+            skipSession();
+        } else if (e.key === '1') {
+            switchMode('work');
+        } else if (e.key === '2') {
+            switchMode('shortBreak');
+        } else if (e.key === '3') {
+            switchMode('longBreak');
         }
     });
 }
 
-function handleKeyboardShortcuts(e) {
-    if (e.target.tagName === 'INPUT') return;
+function switchMode(mode) {
+    if (state.timerState.mode === mode) return;
+    
+    if (state.timerState.isRunning) {
+        confirmAction('Switching modes will reset the current timer. Continue?').then(confirmed => {
+            if (confirmed) {
+                applyMode(mode);
+            }
+        });
+    } else {
+        applyMode(mode);
+    }
+}
 
-    switch(e.key.toLowerCase()) {
-        case ' ':
-            e.preventDefault();
-            toggleTimer();
-            break;
-        case 'r':
-            resetTimer();
-            break;
-        case 'n':
-            skipSession();
-            break;
-        case '1':
-            switchMode('work');
-            break;
-        case '2':
-            switchMode('shortBreak');
-            break;
-        case '3':
-            switchMode('longBreak');
-            break;
+function applyMode(mode) {
+    state.timerState.mode = mode;
+    state.timerState.isRunning = false;
+    
+    if (mode === 'work') {
+        state.timerState.totalTime = state.settings.workDuration * 60;
+    } else if (mode === 'shortBreak') {
+        state.timerState.totalTime = state.settings.shortBreakDuration * 60;
+    } else if (mode === 'longBreak') {
+        state.timerState.totalTime = state.settings.longBreakDuration * 60;
+    }
+    
+    state.timerState.remainingTime = state.timerState.totalTime;
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    updateTimerDisplay();
+    saveData();
+}
+
+function toggleTimer() {
+    if (state.timerState.isRunning) {
+        pauseTimer();
+    } else {
+        startTimer();
+    }
+}
+
+function startTimer() {
+    if (state.timerState.isRunning) return;
+    
+    // Resume AudioContext on user gesture
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } else if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    state.timerState.isRunning = true;
+    state.timerState.startTime = Date.now();
+    
+    updateTimerDisplay();
+    
+    timerInterval = setInterval(() => {
+        state.timerState.remainingTime--;
+        
+        if (state.timerState.remainingTime <= 0) {
+            handleSessionComplete();
+        } else {
+            updateTimerDisplay();
+            // Save state occasionally
+            if (state.timerState.remainingTime % 10 === 0) saveData();
+        }
+    }, 1000);
+}
+
+function pauseTimer() {
+    state.timerState.isRunning = false;
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    updateTimerDisplay();
+    saveData();
+}
+
+function resetTimer() {
+    pauseTimer();
+    applyMode(state.timerState.mode);
+}
+
+function skipSession() {
+    handleSessionComplete(true);
+}
+
+function handleSessionComplete(skipped = false) {
+    pauseTimer();
+    
+    const wasWork = state.timerState.mode === 'work';
+    
+    if (wasWork && !skipped) {
+        state.timerState.sessionCount++;
+        saveSession();
+        updateStats();
+        
+        // Play work completion sound (low-high)
+        playTone(440, 0.1, 0);
+        setTimeout(() => playTone(880, 0.2, 0.1), 100);
+        
+        showNotification('Focus session complete!', 'Time for a break.');
+    } else if (!wasWork && !skipped) {
+        // Play break completion sound (high-low)
+        playTone(880, 0.1, 0);
+        setTimeout(() => playTone(440, 0.2, 0.1), 100);
+        
+        showNotification('Break is over!', 'Ready to get back to work?');
+    }
+
+    let nextMode;
+    if (wasWork) {
+        if (state.timerState.sessionCount % state.settings.sessionsBeforeLongBreak === 0) {
+            nextMode = 'longBreak';
+        } else {
+            nextMode = 'shortBreak';
+        }
+    } else {
+        nextMode = 'work';
+    }
+    
+    applyMode(nextMode);
+    
+    const autoStart = (nextMode === 'work' && state.settings.autoStartWork) || 
+                      (nextMode !== 'work' && state.settings.autoStartBreaks);
+                      
+    if (autoStart) {
+        setTimeout(startTimer, 1000);
+    }
+}
+
+function updateTimerDisplay() {
+    const timeDisplay = document.getElementById('timerTime');
+    const modeDisplay = document.getElementById('timerMode');
+    const sessionDisplay = document.getElementById('timerSession');
+    const startPauseText = document.getElementById('startPauseText');
+    const playIcon = document.getElementById('playIcon');
+    const timerProgress = document.getElementById('timerProgress');
+    const timerTaskDisplay = document.getElementById('timerTask');
+    
+    const minutes = Math.floor(state.timerState.remainingTime / 60);
+    const seconds = state.timerState.remainingTime % 60;
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    timeDisplay.textContent = formattedTime;
+    document.title = `${formattedTime} - PomoFlow`;
+    
+    const modeLabels = {
+        work: 'Focus',
+        shortBreak: 'Short Break',
+        longBreak: 'Long Break'
+    };
+    
+    modeDisplay.textContent = modeLabels[state.timerState.mode];
+    
+    const currentSession = (state.timerState.sessionCount % state.settings.sessionsBeforeLongBreak) + 1;
+    sessionDisplay.textContent = `Session ${currentSession} of ${state.settings.sessionsBeforeLongBreak}`;
+    
+    // Update Start/Pause button
+    if (state.timerState.isRunning) {
+        startPauseText.textContent = 'Pause';
+        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        document.body.classList.add('timer-running');
+    } else {
+        startPauseText.textContent = 'Start';
+        playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        document.body.classList.remove('timer-running');
+    }
+    
+    // Update active task display
+    if (state.timerState.activeTaskId) {
+        const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+        if (task) {
+            timerTaskDisplay.textContent = task.name;
+            timerTaskDisplay.style.color = task.color;
+            
+            // Sync timer ring color with task color if working
+            if (state.timerState.mode === 'work') {
+                timerProgress.style.stroke = task.color;
+            } else {
+                timerProgress.style.stroke = ''; // fallback to CSS
+            }
+        }
+    } else {
+        timerTaskDisplay.textContent = '';
+        timerProgress.style.stroke = '';
+    }
+    
+    // Update Progress Ring
+    const percent = (state.timerState.remainingTime / state.timerState.totalTime);
+    const offset = 282.7 * (1 - percent);
+    timerProgress.style.strokeDashoffset = offset;
+    
+    // Update Progress Bar Class
+    timerProgress.className = 'timer-ring-progress';
+    if (state.timerState.mode === 'shortBreak') timerProgress.classList.add('break');
+    if (state.timerState.mode === 'longBreak') timerProgress.classList.add('long-break');
+    
+    // Update accessibility announcer
+    const announcer = document.getElementById('timerAnnouncer');
+    if (state.timerState.remainingTime % 60 === 0) {
+        announcer.textContent = `${minutes} minutes remaining`;
     }
 }
 
 function addTask() {
     const input = document.getElementById('taskInput');
     const name = input.value.trim();
-    if (!name) {
-        input.classList.add('shake');
-        input.focus();
-        setTimeout(() => input.classList.remove('shake'), 400);
-        return;
+    
+    if (name) {
+        const task = {
+            id: Date.now().toString(),
+            name: name,
+            color: state.selectedTaskColor,
+            completed: false,
+            createdAt: new Date().toISOString(),
+            totalTime: 0
+        };
+        
+        state.tasks.push(task);
+        input.value = '';
+        saveData();
+        renderTasks();
+        
+        // Brief success feedback on the add button
+        const btn = document.getElementById('addTaskBtn');
+        btn.style.background = 'var(--success)';
+        setTimeout(() => btn.style.background = '', 500);
+    } else {
+        const wrapper = document.querySelector('.task-input-wrapper');
+        wrapper.classList.add('shake');
+        setTimeout(() => wrapper.classList.remove('shake'), 400);
     }
-
-    const task = {
-        id: Date.now(),
-        name: name,
-        completed: false,
-        totalTime: 0,
-        createdAt: Date.now(),
-        color: state.selectedTaskColor || '#58a6ff'
-    };
-
-    state.tasks.push(task);
-    state.lastTaskId = task.id;
-    input.value = '';
-    input.blur();
-    saveData();
-    renderTasks();
 }
 
 function renderTasks() {
     const list = document.getElementById('taskList');
-    if (!list) return;
-
-    const activeTasks = state.tasks.filter(t => !t.completed);
-    const completedTasks = state.tasks.filter(t => t.completed);
+    const hint = document.getElementById('taskHint');
+    list.innerHTML = '';
     
     if (state.tasks.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2z"/></svg>
-                <p>No tasks yet. Add one above to get started!</p>
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                <p>No tasks yet. Add one above to start focusing.</p>
             </div>
         `;
+        hint.style.display = 'none';
         return;
     }
-
-    const renderTaskItem = (task) => {
-        const isActive = state.currentTask === task.id;
-        const isRunning = isActive && state.timerState.isRunning;
-        const isCompleted = task.completed;
-        const isNew = task.id === state.lastTaskId;
-        const taskColor = task.color || '#58a6ff';
-        return `
-        <div class="task-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isNew ? 'slide-in highlight' : ''}" 
-             data-id="${task.id}">
-            <div class="task-slide-wrapper" onclick="selectTask(${task.id})">
-                <div class="task-play-btn" style="color: ${taskColor}" onclick="event.stopPropagation(); toggleTaskTimer(${task.id})" title="${isRunning ? 'Pause timer' : 'Start timer'}">
-                    <svg viewBox="0 0 24 24">${isRunning 
-                        ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
-                        : '<path d="M8 5v14l11-7z"/>'}</svg>
-                </div>
+    
+    hint.style.display = 'flex';
+    
+    // Sort: Incomplete first, then by date
+    const sortedTasks = [...state.tasks].sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    
+    sortedTasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = `task-item slide-in ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
+        
+        const minutes = Math.floor(task.totalTime / 60);
+        
+        item.innerHTML = `
+            <div class="task-menu">
+                <button class="edit-btn" aria-label="Edit task">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button class="completed-btn ${task.completed ? 'undo' : ''}" aria-label="${task.completed ? 'Undo' : 'Complete'} task">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+                    <span>${task.completed ? 'Undo' : 'Done'}</span>
+                </button>
+                <button class="danger delete-btn" aria-label="Delete task">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Del</span>
+                </button>
+            </div>
+            <div class="task-slide-wrapper">
+                <button class="task-play-btn" aria-label="Start tracking ${task.name}" style="color: ${task.color}">
+                    <svg viewBox="0 0 24 24"><path d="${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'}"/></svg>
+                </button>
                 <div class="task-info">
-                    <div class="task-name" data-task-id="${task.id}">${escapeHtml(task.name)}</div>
+                    <div class="task-name">${task.name}</div>
                     <div class="task-time">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                        <span>Total: ${formatTime(task.totalTime)}</span>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        ${minutes}m focused
                     </div>
                 </div>
-                <button class="task-more" onclick="event.stopPropagation(); toggleTaskMenu(${task.id})" aria-label="More options">
+                <button class="task-more" aria-label="Task actions">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
             </div>
-            <div class="task-menu">
-                <button onclick="event.stopPropagation(); editTask(${task.id})" aria-label="Edit">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                    <span>Edit</span>
-                </button>
-                <button class="${isCompleted ? 'completed' : ''}" onclick="event.stopPropagation(); toggleTaskComplete(${task.id})" aria-label="${isCompleted ? 'Mark incomplete' : 'Mark complete'}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                    <span>${isCompleted ? 'Undo' : 'Done'}</span>
-                </button>
-                <button class="danger" onclick="event.stopPropagation(); deleteTask(${task.id})" aria-label="Delete">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Delete</span>
-                </button>
-            </div>
-        </div>
-    `};
-
-    let html = '';
-    
-    if (activeTasks.length > 0) {
-        html += [...activeTasks].reverse().map(renderTaskItem).join('');
-    }
-    
-    if (completedTasks.length > 0) {
-        html += `
-            <div class="task-section-header">Completed</div>
         `;
-        html += [...completedTasks].reverse().map(renderTaskItem).join('');
-    }
-
-    list.innerHTML = html;
-
-    if (state.lastTaskId) {
-        const newItem = list.querySelector('.slide-in');
-        if (newItem) {
-            newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        state.lastTaskId = null;
-    }
-
-    const hint = document.getElementById('taskHint');
-    if (hint) hint.style.display = state.currentTask ? 'none' : 'flex';
-}
-
-function selectTask(id, shouldStartTimer = false) {
-    if (state.currentTask === id && !shouldStartTimer) {
-        state.currentTask = null;
-    } else {
-        state.currentTask = id;
-    }
-    saveData();
-    renderTasks();
-    updateTimerDisplay();
-    
-    if (shouldStartTimer && !state.timerState.isRunning) {
-        if (state.timerState.mode !== 'work') {
-            switchMode('work');
-        }
-        setTimeout(() => startTimer(), 50);
-    }
-}
-
-function toggleTaskTimer(id) {
-    const task = state.tasks.find(t => t.id === id);
-    if (!task) return;
-    
-    if (task.completed) {
-        task.completed = false;
-    }
-    
-    const isActive = state.currentTask === id;
-    const isRunning = isActive && state.timerState.isRunning;
-    
-    if (isRunning) {
-        pauseTimer();
-    } else {
-        if (state.timerState.isRunning && id !== state.currentTask) {
-            completeSession(true);
-        }
         
-        state.currentTask = id;
-        state.timerState.activeTaskId = id;
+        // Touch/Slide interactions
+        let startX = 0;
+        let currentTranslate = 0;
+        let isSliding = false;
+        const wrapper = item.querySelector('.task-slide-wrapper');
         
-        if (state.timerState.mode !== 'work') {
-            switchMode('work');
-        }
-        if (!state.timerState.isRunning) {
-            startTimer();
-        }
-    }
-    saveData();
-    renderTasks();
-    updateTimerDisplay();
+        wrapper.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSliding = true;
+            wrapper.style.transition = 'none';
+        }, {passive: true});
+        
+        wrapper.addEventListener('touchmove', (e) => {
+            if (!isSliding) return;
+            const x = e.touches[0].clientX;
+            const diff = x - startX;
+            if (diff < 0) { // Sliding left
+                currentTranslate = Math.max(diff, -160);
+                wrapper.style.transform = `translateX(${currentTranslate}px)`;
+            }
+        }, {passive: true});
+        
+        wrapper.addEventListener('touchend', () => {
+            isSliding = false;
+            wrapper.style.transition = 'transform 0.2s ease';
+            if (currentTranslate < -80) {
+                item.classList.add('menu-open');
+                wrapper.style.transform = 'translateX(-160px)';
+            } else {
+                item.classList.remove('menu-open');
+                wrapper.style.transform = 'translateX(0)';
+            }
+            currentTranslate = 0;
+        });
+
+        // Toggle menu on more button
+        item.querySelector('.task-more').addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.classList.toggle('menu-open');
+        });
+
+        // Handle Play/Pause
+        item.querySelector('.task-play-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (state.timerState.activeTaskId === task.id) {
+                toggleTimer();
+            } else {
+                state.timerState.activeTaskId = task.id;
+                applyMode('work');
+                startTimer();
+            }
+            renderTasks();
+        });
+
+        // Handle Menu Actions
+        item.querySelector('.edit-btn').addEventListener('click', () => {
+            openTaskEditModal(task);
+            item.classList.remove('menu-open');
+        });
+
+        item.querySelector('.completed-btn').addEventListener('click', () => {
+            toggleTaskComplete(task.id);
+            item.classList.remove('menu-open');
+        });
+
+        item.querySelector('.delete-btn').addEventListener('click', () => {
+            deleteTask(task.id);
+        });
+
+        list.appendChild(item);
+    });
 }
 
 function toggleTaskComplete(id) {
     const task = state.tasks.find(t => t.id === id);
     if (task) {
         task.completed = !task.completed;
-        if (task.completed && state.currentTask === id) {
-            state.currentTask = null;
+        if (task.completed && state.timerState.activeTaskId === id) {
+            state.timerState.activeTaskId = null;
+            if (state.timerState.isRunning) pauseTimer();
         }
         saveData();
         renderTasks();
-        updateTimerDisplay();
     }
 }
 
-async function deleteTask(id) {
-    const taskEl = document.querySelector(`.task-item[data-id="${id}"]`);
-    if (!taskEl) return;
-    
-    const task = state.tasks.find(t => t.id === id);
-    if (!task) return;
-    
-    if (!await confirm(`Delete task "${task.name}"?`)) return;
-    
-    taskEl.classList.add('slide-out');
-    
-    setTimeout(() => {
-        state.tasks = state.tasks.filter(t => t.id !== id);
-        if (state.currentTask === id) {
-            state.currentTask = null;
-            if (state.timerState.isRunning) {
-                resetTimer();
+function deleteTask(id) {
+    confirmAction('Are you sure you want to delete this task?').then(confirmed => {
+        if (confirmed) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            if (state.timerState.activeTaskId === id) {
+                state.timerState.activeTaskId = null;
+                if (state.timerState.isRunning) pauseTimer();
             }
+            saveData();
+            renderTasks();
         }
-        saveData();
-        renderTasks();
-        updateTimerDisplay();
-    }, 300);
+    });
 }
 
-function toggleTimer() {
-    try {
-        if (state.timerState.isRunning) {
-            pauseTimer();
-        } else {
-            startTimer();
+function saveSession() {
+    const session = {
+        id: Date.now().toString(),
+        taskId: state.timerState.activeTaskId,
+        taskName: 'Unknown Task',
+        taskColor: '#58a6ff',
+        duration: state.settings.workDuration * 60,
+        timestamp: new Date().toISOString()
+    };
+    
+    if (state.timerState.activeTaskId) {
+        const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+        if (task) {
+            task.totalTime += session.duration;
+            session.taskName = task.name;
+            session.taskColor = task.color;
         }
-    } catch(e) {
-        console.error('toggleTimer error:', e);
     }
-}
-
-function startTimer() {
-    try {
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        
-        if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-    } catch (e) {
-        console.log('AudioContext not available:', e);
-    }
-
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-        try { checkNotificationPrompt(); } catch(e) {}
-    }
-
-    state.timerState.isRunning = true;
-    state.timerState.startTime = Date.now();
-    state.timerState.activeTaskId = state.currentTask;
-
-    timerInterval = setInterval(() => {
-        state.timerState.remainingTime--;
-        
-        updateTimerDisplay();
-        saveData();
-
-        if (state.timerState.remainingTime <= 0) {
-            completeSession();
-        }
-    }, 1000);
-
-    const startPauseText = document.getElementById('startPauseText');
-    if (startPauseText) startPauseText.textContent = 'Pause';
     
-    const startPauseBtn = document.getElementById('startPauseBtn');
-    if (startPauseBtn) startPauseBtn.classList.add('running');
-    
-    const playIcon = document.getElementById('playIcon');
-    if (playIcon) playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-    
-    const timerPanel = document.querySelector('.timer-panel');
-    if (timerPanel) timerPanel.classList.add('timer-running');
-    
-    saveData();
-}
-
-function pauseTimer() {
-    state.timerState.isRunning = false;
-    clearInterval(timerInterval);
-    timerInterval = null;
-
-    const startPauseText = document.getElementById('startPauseText');
-    if (startPauseText) startPauseText.textContent = 'Start';
-    
-    const startPauseBtn = document.getElementById('startPauseBtn');
-    if (startPauseBtn) startPauseBtn.classList.remove('running');
-    
-    const playIcon = document.getElementById('playIcon');
-    if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-    
-    const timerPanel = document.querySelector('.timer-panel');
-    if (timerPanel) timerPanel.classList.remove('timer-running');
-    
+    state.sessions.push(session);
     saveData();
     renderTasks();
+    renderHistory(currentFilter);
 }
 
-function resetTimer() {
-    pauseTimer();
-    const mode = state.timerState.mode;
-    const durations = {
-        work: state.settings.workDuration,
-        shortBreak: state.settings.shortBreakDuration,
-        longBreak: state.settings.longBreakDuration
-    };
-    state.timerState.remainingTime = durations[mode] * 60;
-    state.timerState.totalTime = durations[mode] * 60;
-    state.timerState.activeTaskId = null;
-    updateTimerDisplay();
-    saveData();
-}
-
-function skipSession() {
-    pauseTimer();
-    advanceToNextSession();
-}
-
-function completeSession(forceComplete = false) {
-    if (!forceComplete && state.timerState.remainingTime > 0) return;
+function renderHistory(filter = 'today') {
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
     
-    pauseTimer();
+    let filteredSessions = filterSessions(state.sessions, filter);
     
-    if (!forceComplete) {
-        playNotificationSound();
+    if (filteredSessions.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p>No sessions found for this period.</p></div>';
+        renderChart([]);
+        return;
     }
     
-    const elapsedTime = state.timerState.totalTime - state.timerState.remainingTime;
+    // Sort by newest first
+    filteredSessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
-    if (elapsedTime > 0 && state.timerState.mode === 'work') {
-        const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+    renderChart(filteredSessions);
+    
+    const displaySessions = showAllHistory ? filteredSessions : filteredSessions.slice(0, 10);
+    
+    // Add Header Labels for History Grid (only if not empty)
+    if (displaySessions.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'history-header-grid';
+        header.innerHTML = `
+            <div class="history-header-indicator"></div>
+            <div class="history-header-info">
+                <div>TASK</div>
+                <div>DURATION</div>
+                <div>COMPLETED</div>
+            </div>
+            <div class="history-header-more"></div>
+        `;
+        list.appendChild(header);
+    }
+
+    displaySessions.forEach(session => {
+        const item = document.createElement('div');
+        item.className = 'history-item slide-in';
         
-        const session = {
-            id: Date.now(),
-            taskId: state.timerState.activeTaskId,
-            taskName: task ? task.name : 'Untracked',
-            taskColor: task ? task.color : '#58a6ff',
-            type: state.timerState.mode,
-            duration: elapsedTime,
-            completedAt: new Date().toISOString()
-        };
+        const date = new Date(session.timestamp);
+        const timeStr = formatTimestamp(date);
+        const durationMin = Math.round(session.duration / 60);
         
-        state.sessions.push(session);
-        state.lastSessionId = session.id;
+        item.innerHTML = `
+            <div class="history-menu">
+                <button class="edit-btn" aria-label="Edit session">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button class="danger delete-btn" aria-label="Delete session">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Del</span>
+                </button>
+            </div>
+            <div class="history-slide-wrapper">
+                <div class="history-type-indicator" style="background: ${session.taskColor}"></div>
+                <div class="history-info">
+                    <div class="history-task">${session.taskName}</div>
+                    <div class="history-duration">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        ${durationMin} min
+                    </div>
+                    <div class="history-time">${timeStr}</div>
+                </div>
+                <button class="history-more" aria-label="Session actions">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+            </div>
+        `;
+
+        // Sliding logic for history items
+        let startX = 0;
+        let currentTranslate = 0;
+        let isSliding = false;
+        const wrapper = item.querySelector('.history-slide-wrapper');
         
-        if (task) {
-            task.totalTime += elapsedTime;
+        wrapper.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSliding = true;
+            wrapper.style.transition = 'none';
+        }, {passive: true});
+        
+        wrapper.addEventListener('touchmove', (e) => {
+            if (!isSliding) return;
+            const x = e.touches[0].clientX;
+            const diff = x - startX;
+            if (diff < 0) { // Sliding left
+                currentTranslate = Math.max(diff, -120);
+                wrapper.style.transform = `translateX(${currentTranslate}px)`;
+            }
+        }, {passive: true});
+        
+        wrapper.addEventListener('touchend', () => {
+            isSliding = false;
+            wrapper.style.transition = 'transform 0.2s ease';
+            if (currentTranslate < -60) {
+                item.classList.add('menu-open');
+                wrapper.style.transform = 'translateX(-120px)';
+            } else {
+                item.classList.remove('menu-open');
+                wrapper.style.transform = 'translateX(0)';
+            }
+            currentTranslate = 0;
+        });
+
+        item.querySelector('.history-more').addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.classList.toggle('menu-open');
+        });
+
+        item.querySelector('.edit-btn').addEventListener('click', () => {
+            openSessionEditModal(session);
+            item.classList.remove('menu-open');
+        });
+
+        item.querySelector('.delete-btn').addEventListener('click', () => {
+            deleteSession(session.id);
+        });
+
+        list.appendChild(item);
+    });
+
+    const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
+    if (showAllBtn) {
+        showAllBtn.textContent = showAllHistory ? 'Show Less' : 'Show All';
+        showAllBtn.style.display = filteredSessions.length > 10 ? 'block' : 'none';
+    }
+}
+
+function filterSessions(sessions, filter) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    
+    if (filter === 'today') {
+        return sessions.filter(s => new Date(s.timestamp).getTime() >= today);
+    } else if (filter === 'week') {
+        const weekAgo = today - (7 * 24 * 60 * 60 * 1000);
+        return sessions.filter(s => new Date(s.timestamp).getTime() >= weekAgo);
+    }
+    return sessions;
+}
+
+function deleteSession(id) {
+    confirmAction('Delete this session record?').then(confirmed => {
+        if (confirmed) {
+            const session = state.sessions.find(s => s.id === id);
+            if (session && session.taskId) {
+                const task = state.tasks.find(t => t.id === session.taskId);
+                if (task) task.totalTime = Math.max(0, task.totalTime - session.duration);
+            }
+            state.sessions = state.sessions.filter(s => s.id !== id);
+            saveData();
+            renderTasks();
+            renderHistory(currentFilter);
+            updateStats();
+        }
+    });
+}
+
+function updateStats() {
+    const today = new Date().toDateString();
+    const todaySessions = state.sessions.filter(s => new Date(s.timestamp).toDateString() === today);
+    
+    const totalSeconds = todaySessions.reduce((acc, s) => acc + s.duration, 0);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    document.getElementById('todayFocusTime').textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    document.getElementById('todaySessions').textContent = todaySessions.length;
+    
+    // Calculate Streak
+    const streak = calculateStreak(state.sessions);
+    document.getElementById('currentStreak').textContent = streak > 0 ? `${streak} days` : '--';
+}
+
+function calculateStreak(sessions) {
+    if (sessions.length === 0) return 0;
+    
+    const dates = [...new Set(sessions.map(s => new Date(s.timestamp).toDateString()))]
+        .map(d => new Date(d))
+        .sort((a, b) => b - a);
+        
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    // Check if user has sessions today or yesterday to continue streak
+    const latestSessionDate = dates[0];
+    const diffDays = Math.floor((currentDate - latestSessionDate) / (86400000));
+    
+    if (diffDays > 1) return 0;
+    
+    for (let i = 0; i < dates.length; i++) {
+        const sessionDate = dates[i];
+        if (i === 0) {
+            streak = 1;
+            continue;
         }
         
-        sendNotification(session);
+        const prevDate = dates[i-1];
+        const dayDiff = Math.floor((prevDate - sessionDate) / (86400000));
         
-        state.timerState.sessionCount++;
+        if (dayDiff === 1) {
+            streak++;
+        } else {
+            break;
+        }
+    }
+    
+    return streak;
+}
+
+function renderChart(sessions) {
+    const container = document.getElementById('historyChart');
+    container.innerHTML = '';
+    
+    if (sessions.length === 0) return;
+    
+    // Group time by task name
+    const taskData = {};
+    sessions.forEach(s => {
+        if (!taskData[s.taskName]) {
+            taskData[s.taskName] = {
+                time: 0,
+                color: s.taskColor || '#58a6ff'
+            };
+        }
+        taskData[s.taskName].time += s.duration;
+    });
+    
+    const sortedTasks = Object.entries(taskData)
+        .sort((a, b) => b[1].time - a[1].time);
+        
+    const topTasks = sortedTasks.slice(0, 5);
+    if (sortedTasks.length > 5) {
+        const otherTime = sortedTasks.slice(5).reduce((acc, t) => acc + t[1].time, 0);
+        topTasks.push(['Others', { time: otherTime, color: '#8b949e' }]);
+    }
+    
+    const totalTime = sessions.reduce((acc, s) => acc + s.duration, 0);
+    
+    // Create SVG Pie Chart
+    const chartSize = 140;
+    const center = chartSize / 2;
+    const radius = 60;
+    let currentAngle = 0;
+    
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${chartSize} ${chartSize}`);
+    svg.classList.add('pie-chart');
+    
+    topTasks.forEach(([name, data]) => {
+        const sliceAngle = (data.time / totalTime) * 360;
+        
+        // Handle 100% case
+        if (sliceAngle === 360) {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', center);
+            circle.setAttribute('cy', center);
+            circle.setAttribute('r', radius);
+            circle.setAttribute('fill', data.color);
+            svg.appendChild(circle);
+            return;
+        }
+        
+        const x1 = center + radius * Math.cos(Math.PI * (currentAngle - 90) / 180);
+        const y1 = center + radius * Math.sin(Math.PI * (currentAngle - 90) / 180);
+        
+        currentAngle += sliceAngle;
+        
+        const x2 = center + radius * Math.cos(Math.PI * (currentAngle - 90) / 180);
+        const y2 = center + radius * Math.sin(Math.PI * (currentAngle - 90) / 180);
+        
+        const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+        
+        const pathData = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('fill', data.color);
+        svg.appendChild(path);
+    });
+    
+    const chartWrapper = document.createElement('div');
+    chartWrapper.className = 'pie-chart-container';
+    chartWrapper.appendChild(svg);
+    
+    const legend = document.createElement('div');
+    legend.className = 'pie-legend';
+    
+    topTasks.forEach(([name, data]) => {
+        const mins = Math.round(data.time / 60);
+        const percent = Math.round((data.time / totalTime) * 100);
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+            <div class="legend-color" style="background: ${data.color}"></div>
+            <div class="legend-label">${name}</div>
+            <div class="legend-value">${mins}m (${percent}%)</div>
+        `;
+        legend.appendChild(item);
+    });
+    
+    chartWrapper.appendChild(legend);
+    container.appendChild(chartWrapper);
+}
+
+function updateDateTime() {
+    const el = document.getElementById('datetime');
+    const now = new Date();
+    
+    const options = { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: state.settings.use12Hour
+    };
+    
+    el.textContent = now.toLocaleDateString('en-US', options).replace(',', '');
+}
+
+function formatTimestamp(date) {
+    return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: state.settings.use12Hour
+    });
+}
+
+// Modal Functions
+function openSettings() {
+    const modal = document.getElementById('settingsModal');
+    modal.classList.add('open');
+    
+    // Load current values
+    document.getElementById('workDuration').value = state.settings.workDuration;
+    document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
+    
+    document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
+    document.getElementById('shortBreakDurationValue').textContent = `${state.settings.shortBreakDuration} min`;
+    
+    document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
+    document.getElementById('longBreakDurationValue').textContent = `${state.settings.longBreakDuration} min`;
+    
+    document.getElementById('sessionsBeforeLongBreak').value = state.settings.sessionsBeforeLongBreak;
+    document.getElementById('autoStartBreaks').className = `setting-toggle ${state.settings.autoStartBreaks ? 'active' : ''}`;
+    document.getElementById('autoStartWork').className = `setting-toggle ${state.settings.autoStartWork ? 'active' : ''}`;
+    document.getElementById('timeFormat').className = `setting-toggle ${state.settings.use12Hour ? 'active' : ''}`;
+    
+    document.getElementById('soundVolume').value = state.settings.soundVolume;
+    document.getElementById('soundVolumeValue').textContent = `${state.settings.soundVolume}%`;
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('open');
+    
+    // Save values
+    state.settings.workDuration = parseInt(document.getElementById('workDuration').value);
+    state.settings.shortBreakDuration = parseInt(document.getElementById('shortBreakDuration').value);
+    state.settings.longBreakDuration = parseInt(document.getElementById('longBreakDuration').value);
+    state.settings.sessionsBeforeLongBreak = parseInt(document.getElementById('sessionsBeforeLongBreak').value);
+    state.settings.autoStartBreaks = document.getElementById('autoStartBreaks').classList.contains('active');
+    state.settings.autoStartWork = document.getElementById('autoStartWork').classList.contains('active');
+    state.settings.use12Hour = document.getElementById('timeFormat').classList.contains('active');
+    state.settings.soundVolume = parseInt(document.getElementById('soundVolume').value);
+    
+    saveData();
+    if (!state.timerState.isRunning) applyMode(state.timerState.mode);
+    updateDateTime();
+}
+
+// Simple confirmation modal
+let confirmResolve = null;
+function confirmAction(message) {
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmModal').classList.add('open');
+    return new Promise(resolve => {
+        confirmResolve = resolve;
+    });
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('open');
+    if (confirmResolve) confirmResolve(false);
+    confirmResolve = null;
+}
+
+let editingSessionId = null;
+function openSessionEditModal(session) {
+    editingSessionId = session.id;
+    document.getElementById('sessionEditTaskName').textContent = session.taskName;
+    document.getElementById('sessionEditDuration').value = Math.round(session.duration / 60);
+    document.getElementById('sessionEditModal').classList.add('open');
+}
+
+function closeSessionEditModal() {
+    document.getElementById('sessionEditModal').classList.remove('open');
+    editingSessionId = null;
+}
+
+function saveSessionFromModal() {
+    const duration = parseInt(document.getElementById('sessionEditDuration').value);
+    if (isNaN(duration) || duration < 1) return;
+    
+    const session = state.sessions.find(s => s.id === editingSessionId);
+    if (session) {
+        const oldDuration = session.duration;
+        const newDuration = duration * 60;
+        session.duration = newDuration;
+        
+        // Update task's total time
+        if (session.taskId) {
+            const task = state.tasks.find(t => t.id === session.taskId);
+            if (task) {
+                task.totalTime = Math.max(0, task.totalTime - oldDuration + newDuration);
+            }
+        }
         
         saveData();
         renderTasks();
         renderHistory(currentFilter);
         updateStats();
+        closeSessionEditModal();
     }
+}
+
+let editingTaskId = null;
+function openTaskEditModal(task) {
+    editingTaskId = task.id;
+    state.editTaskColor = task.color;
+    document.getElementById('taskEditName').value = task.name;
     
-    if (forceComplete) {
-        state.timerState.remainingTime = state.timerState.totalTime;
-        updateTimerDisplay();
+    const colorPicker = document.getElementById('taskEditColorPicker');
+    colorPicker.querySelectorAll('.color-dot').forEach(dot => {
+        dot.classList.toggle('active', dot.dataset.color === task.color);
+    });
+    
+    document.getElementById('taskEditModal').classList.add('open');
+}
+
+function closeTaskEditModal() {
+    document.getElementById('taskEditModal').classList.remove('open');
+    editingTaskId = null;
+}
+
+function saveTaskFromModal() {
+    const name = document.getElementById('taskEditName').value.trim();
+    if (!name) return;
+    
+    const task = state.tasks.find(t => t.id === editingTaskId);
+    if (task) {
+        task.name = name;
+        task.color = state.editTaskColor;
+        
+        // Also update future sessions' colors if they refer to this task
+        // We could also update past ones, let's keep them synced for consistency
+        state.sessions.forEach(s => {
+            if (s.taskId === task.id) {
+                s.taskName = task.name;
+                s.taskColor = task.color;
+            }
+        });
+        
         saveData();
-    } else {
-        advanceToNextSession();
-
-        if ((state.timerState.mode === 'work' && state.settings.autoStartBreaks) ||
-            (state.timerState.mode !== 'work' && state.settings.autoStartWork)) {
-            setTimeout(() => startTimer(), 1000);
-        }
+        renderTasks();
+        renderHistory(currentFilter);
+        updateTimerDisplay(); // in case this is the active task
+        closeTaskEditModal();
     }
 }
 
-function advanceToNextSession() {
-    if (state.timerState.mode === 'work') {
-        if (state.timerState.sessionCount >= state.settings.sessionsBeforeLongBreak) {
-            switchMode('longBreak');
-            state.timerState.sessionCount = 0;
-        } else {
-            switchMode('shortBreak');
-        }
-    } else {
-        switchMode('work');
+// Notification System
+function checkNotificationPrompt() {
+    const promptStatus = localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT);
+    if (Notification.permission === 'default' && promptStatus !== 'denied') {
+        document.getElementById('notificationPrompt').style.display = 'flex';
     }
-    saveData();
 }
 
-function switchMode(mode) {
-    pauseTimer();
-    state.timerState.mode = mode;
-    
-    const durations = {
-        work: state.settings.workDuration,
-        shortBreak: state.settings.shortBreakDuration,
-        longBreak: state.settings.longBreakDuration
-    };
-
-    state.timerState.remainingTime = durations[mode] * 60;
-    state.timerState.totalTime = durations[mode] * 60;
-
-    document.querySelectorAll('.mode-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.mode === mode);
+function requestNotificationPermission() {
+    Notification.requestPermission().then(permission => {
+        state.notificationPermission = permission;
+        document.getElementById('notificationPrompt').style.display = 'none';
+        if (permission === 'granted') {
+            showNotification('Notifications enabled', 'You will be alerted when your sessions end.');
+        }
     });
-
-    updateTimerDisplay();
-    saveData();
 }
 
-function updateTimerDisplay() {
-    const minutes = Math.floor(state.timerState.remainingTime / 60);
-    const seconds = state.timerState.remainingTime % 60;
-    const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
-    const timerTime = document.getElementById('timerTime');
-    if (timerTime) timerTime.textContent = timeStr;
-    
-    const timerAnnouncer = document.getElementById('timerAnnouncer');
-    if (timerAnnouncer) timerAnnouncer.textContent = timeStr;
-
-    const currentTaskEl = document.getElementById('timerTask');
-    if (currentTaskEl) {
-        if (state.currentTask) {
-            const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
-            currentTaskEl.textContent = task ? `Current Focus: ${task.name}` : '';
-            if (task) {
-                currentTaskEl.style.color = task.color || 'var(--primary)';
-            }
-        } else if (state.timerState.isRunning && state.timerState.mode === 'work') {
-            currentTaskEl.textContent = 'Focus mode - select a task';
-            currentTaskEl.style.color = '';
-        } else {
-            currentTaskEl.textContent = '';
-            currentTaskEl.style.color = '';
-        }
-    }
-
-    const modeLabels = {
-        work: 'Focus',
-        shortBreak: 'Short Break',
-        longBreak: 'Long Break'
-    };
-    const timerMode = document.getElementById('timerMode');
-    if (timerMode) timerMode.textContent = modeLabels[state.timerState.mode];
-
-    const sessionInfo = state.timerState.mode === 'work' 
-        ? `Session ${state.timerState.sessionCount + 1} of ${state.settings.sessionsBeforeLongBreak}`
-        : '';
-    const timerSession = document.getElementById('timerSession');
-    if (timerSession) timerSession.textContent = sessionInfo;
-
-    const progress = state.timerState.remainingTime / state.timerState.totalTime;
-    const circumference = 2 * Math.PI * 45;
-    const offset = circumference * (1 - progress);
-    
-    const progressRing = document.getElementById('timerProgress');
-    if (progressRing) {
-        progressRing.style.strokeDashoffset = offset;
-        
-        progressRing.classList.remove('break', 'long-break');
-        if (state.timerState.mode === 'shortBreak') {
-            progressRing.classList.add('break');
-        } else if (state.timerState.mode === 'longBreak') {
-            progressRing.classList.add('long-break');
-        } else if (state.timerState.mode === 'work' && state.currentTask) {
-            const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
-            if (task) {
-                progressRing.style.stroke = task.color;
-            } else {
-                progressRing.style.stroke = '';
-            }
-        } else {
-            progressRing.style.stroke = '';
-        }
+function showNotification(title, body) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/favicon.ico' });
     }
 }
 
-function renderHistory(filter = 'all') {
-    const list = document.getElementById('historyList');
-    const chart = document.getElementById('historyChart');
-    if (!list || !chart) return;
-
-    let sessions = [...state.sessions].reverse();
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    if (filter === 'today') {
-        const todayStr = today.toDateString();
-        sessions = sessions.filter(s => new Date(s.completedAt).toDateString() === todayStr);
-    } else if (filter === 'week') {
-        sessions = sessions.filter(s => new Date(s.completedAt) >= weekAgo);
-    }
-
-    renderChart(chart, filter);
-
-    const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
-    if (showAllBtn) {
-        showAllBtn.parentElement.style.display = sessions.length > 3 ? 'flex' : 'none';
-        showAllBtn.classList.toggle('active', showAllHistory);
-        showAllBtn.innerHTML = showAllHistory 
-            ? '<span>Show Less</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>' 
-            : '<span>Show All</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
-    }
-
-    if (sessions.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                <p>No sessions recorded for this period.</p>
-            </div>
-        `;
-        return;
-    }
-
-    if (!showAllHistory) {
-        sessions = sessions.slice(0, 3);
-    }
-
-    const headerHtml = `
-        <div class="history-header-grid">
-            <div class="history-header-indicator"></div>
-            <div class="history-header-info">
-                <div>Task</div>
-                <div>Duration</div>
-                <div>Completed</div>
-            </div>
-            <div class="history-header-more"></div>
-        </div>
-    `;
-
-    list.innerHTML = headerHtml + sessions.map(session => {
-        const isNew = session.id === state.lastSessionId;
-        const taskColor = session.taskColor || '#58a6ff';
-        return `
-        <div class="history-item${isNew ? ' slide-in highlight' : ''}" data-session-id="${session.id}">
-            <div class="history-slide-wrapper">
-                <div class="history-type-indicator" style="background: ${taskColor}"></div>
-                <div class="history-info">
-                    <div class="history-task">${escapeHtml(session.taskName)}</div>
-                    <div class="history-duration">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                        <span>${formatTime(session.duration)}</span>
-                    </div>
-                    <div class="history-time">${formatTimestamp(session.completedAt)}</div>
-                </div>
-                <button class="history-more" onclick="event.stopPropagation(); toggleSessionMenu(${session.id})" aria-label="More options">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                </button>
-            </div>
-            <div class="history-menu">
-                <button onclick="event.stopPropagation(); editSession(${session.id})" aria-label="Edit">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                    <span>Edit</span>
-                </button>
-                <button class="danger" onclick="event.stopPropagation(); deleteSession(${session.id})" aria-label="Delete">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Delete</span>
-                </button>
-            </div>
-        </div>
-    `}).join('');
-}
-
-function renderChart(chartEl, filter) {
-    if (!chartEl) return;
+// Audio System
+function playTone(freq, duration, delay) {
+    if (!audioContext) return;
     
-    let filteredSessions = [];
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    if (filter === 'today') {
-        filteredSessions = state.sessions.filter(s => {
-            const sDate = new Date(s.completedAt);
-            return s.type === 'work' && sDate.toDateString() === today.toDateString();
-        });
-    } else if (filter === 'week') {
-        filteredSessions = state.sessions.filter(s => {
-            const sDate = new Date(s.completedAt);
-            return s.type === 'work' && sDate >= weekAgo;
-        });
-    } else {
-        filteredSessions = state.sessions.filter(s => s.type === 'work');
-    }
-
-    if (filteredSessions.length === 0) {
-        chartEl.innerHTML = `
-            <div class="empty-state small">
-                <p>No focus data for this period</p>
-            </div>
-        `;
-        return;
-    }
-
-    const taskData = {}; // key: name, value: { duration, color }
-    filteredSessions.forEach(s => {
-        const name = s.taskName || 'Untracked';
-        if (!taskData[name]) {
-            taskData[name] = { duration: 0, color: s.taskColor || '#58a6ff' };
-        }
-        taskData[name].duration += s.duration;
-    });
-
-    const total = Object.values(taskData).reduce((a, b) => a + b.duration, 0);
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
     
-    const sortedEntries = Object.entries(taskData).sort((a, b) => b[1].duration - a[1].duration);
-    const displayEntries = sortedEntries.slice(0, 4);
+    const vol = state.settings.soundVolume / 100;
     
-    if (sortedEntries.length > 4) {
-        const othersDuration = sortedEntries.slice(4).reduce((sum, entry) => sum + entry[1].duration, 0);
-        displayEntries.push(['Others', { duration: othersDuration, color: '#8b949e' }]);
-    }
-
-    let cumulative = 0;
-    const segments = displayEntries.map(([name, data], i) => {
-        const percent = (data.duration / total) * 100;
-        const start = cumulative;
-        cumulative += percent;
-        return { name, percent, start, seconds: data.duration, color: data.color };
-    });
-
-    const circumference = 75.4;
-
-    chartEl.innerHTML = `
-        <div class="pie-chart-container">
-            <svg class="pie-chart" viewBox="0 0 32 32">
-                ${segments.map(s => {
-                    const dashLen = (s.percent / 100) * circumference;
-                    const dashOffset = (-s.start / 100) * circumference;
-                    return `<circle cx="16" cy="16" r="12" fill="transparent" stroke="${s.color}" 
-                        stroke-width="6" stroke-dasharray="${dashLen} ${circumference - dashLen}"
-                        stroke-dashoffset="${dashOffset}" 
-                        transform="rotate(-90 16 16)"/>`;
-                }).join('')}
-            </svg>
-            <div class="pie-legend">
-                ${segments.map(s => `
-                    <div class="legend-item">
-                        <span class="legend-color" style="background: ${s.color}"></span>
-                        <span class="legend-label">${escapeHtml(s.name)}</span>
-                        <span class="legend-value">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                            ${formatTime(s.seconds)}
-                        </span>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-async function clearHistory() {
-    if (!await confirm('Are you sure you want to clear all session history?')) return;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, audioContext.currentTime + delay);
     
-    state.sessions = [];
-    saveData();
-    renderHistory();
-    updateStats();
-}
-
-function updateStats() {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const todaySessions = state.sessions.filter(s => 
-        s.type === 'work' && new Date(s.completedAt) >= today
-    );
-
-    const totalSeconds = todaySessions.reduce((sum, s) => sum + s.duration, 0);
-    const focusTimeEl = document.getElementById('todayFocusTime');
-    if (focusTimeEl) focusTimeEl.textContent = formatTime(totalSeconds);
+    gain.gain.setValueAtTime(0, audioContext.currentTime + delay);
+    gain.gain.linearRampToValueAtTime(vol * 0.1, audioContext.currentTime + delay + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
     
-    const todaySessionsEl = document.getElementById('todaySessions');
-    if (todaySessionsEl) todaySessionsEl.textContent = todaySessions.length;
-
-    const streak = calculateStreak();
-    const streakEl = document.getElementById('currentStreak');
-    if (streakEl) streakEl.textContent = streak === 0 ? '--' : streak;
-}
-
-function calculateStreak() {
-    if (state.sessions.filter(s => s.type === 'work').length === 0) return 0;
-
-    const dates = [...new Set(state.sessions
-        .filter(s => s.type === 'work')
-        .map(s => {
-            const d = new Date(s.completedAt);
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-        })
-    )].sort((a, b) => b - a);
-
-    let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
-
-    if (dates[0] === todayMs || dates[0] === todayMs - 86400000) {
-        let checkDate = dates[0] === todayMs ? today : new Date(dates[0]);
-        
-        for (const dateMs of dates) {
-            if (dateMs === checkDate.getTime()) {
-                streak++;
-                checkDate.setDate(checkDate.getDate() - 1);
-            } else {
-                break;
-            }
-        }
-    }
-
-    return streak;
-}
-
-function updateDateTime() {
-    const now = new Date();
-    const options = { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric',
-        hour: state.settings.use12Hour ? 'numeric' : '2-digit',
-        minute: '2-digit',
-        hour12: state.settings.use12Hour
-    };
-    const datetimeEl = document.getElementById('datetime');
-    if (datetimeEl) datetimeEl.textContent = now.toLocaleDateString('en-US', options);
-}
-
-function formatTime(seconds) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
     
-    if (h > 0) {
-        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    osc.start(audioContext.currentTime + delay);
+    osc.stop(audioContext.currentTime + delay + duration);
 }
 
-function formatTimestamp(isoString) {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return 'Unknown date';
-    
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const sessionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    
-    let prefix = '';
-    if (sessionDate.getTime() === today.getTime()) {
-        prefix = 'Today ';
-    } else if (sessionDate.getTime() === yesterday.getTime()) {
-        prefix = 'Yesterday ';
-    } else {
-        return date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric'
-        });
-    }
-    
-    const time = date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: state.settings.use12Hour 
-    });
-    
-    return prefix + time;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function openSettings() {
-    const settingsModal = document.getElementById('settingsModal');
-    if (settingsModal) settingsModal.classList.add('open');
-}
-
-function closeSettings() {
-    const settingsModal = document.getElementById('settingsModal');
-    if (settingsModal) settingsModal.classList.remove('open');
-}
-
-let importDataCache = null;
-
+// Data Import/Export
 function exportData() {
     const data = {
-        exportedAt: new Date().toISOString(),
-        version: CURRENT_VERSION,
         tasks: state.tasks,
         sessions: state.sessions,
-        settings: state.settings
+        settings: state.settings,
+        exportDate: new Date().toISOString(),
+        version: CURRENT_VERSION
     };
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const date = new Date().toISOString().split('T')[0];
     a.href = url;
-    a.download = `pomoflow-backup-${date}.json`;
+    a.download = `pomoflow-data-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    showToast('Data exported successfully');
 }
 
-function handleImportFile(event) {
-    const file = event.target.files[0];
+let pendingImportData = null;
+function handleImportFile(e) {
+    const file = e.target.files[0];
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = (event) => {
         try {
-            const data = JSON.parse(e.target.result);
+            const data = JSON.parse(event.target.result);
+            if (!data.tasks || !data.sessions) throw new Error('Invalid data format');
             
-            if (!data.tasks || !data.sessions || !data.settings) {
-                showToast('Invalid backup file');
-                return;
-            }
-            
-            importDataCache = data;
-            
-            const taskCount = data.tasks.length;
-            const sessionCount = data.sessions.length;
-            
-            const importInfo = document.getElementById('importInfo');
-            if (importInfo) {
-                importInfo.innerHTML = `
-                    Found <strong>${taskCount} tasks</strong> and <strong>${sessionCount} sessions</strong> in the backup file.
-                `;
-            }
-            
-            const importModal = document.getElementById('importModal');
-            if (importModal) importModal.classList.add('open');
+            pendingImportData = data;
+            const info = document.getElementById('importInfo');
+            info.innerHTML = `
+                <p>Found <strong>${data.tasks.length}</strong> tasks and <strong>${data.sessions.length}</strong> sessions.</p>
+                <p>How would you like to proceed?</p>
+            `;
+            document.getElementById('importModal').classList.add('open');
         } catch (err) {
-            showToast('Error reading backup file');
-            console.error(err);
+            alert('Error parsing file: ' + err.message);
         }
     };
     reader.readAsText(file);
-    
-    event.target.value = '';
-}
-
-function performImport(mode) {
-    if (!importDataCache) return;
-    
-    const data = importDataCache;
-    
-    if (mode === 'replace') {
-        state.tasks = data.tasks || [];
-        state.sessions = data.sessions || [];
-        state.settings = { ...state.settings, ...data.settings };
-    } else if (mode === 'merge') {
-        const existingTaskIds = new Set(state.tasks.map(t => t.id));
-        const newTasks = (data.tasks || []).filter(t => !existingTaskIds.has(t.id));
-        state.tasks = [...state.tasks, ...newTasks];
-        
-        const existingSessionKeys = new Set(state.sessions.map(s => `${s.completedAt}-${s.taskName}`));
-        const newSessions = (data.sessions || []).filter(s => !existingSessionKeys.has(`${s.completedAt}-${s.taskName}`));
-        state.sessions = [...state.sessions, ...newSessions];
-        
-        state.settings = { ...state.settings, ...data.settings };
-    }
-    
-    state.currentTask = null;
-    state.timerState = {
-        mode: 'work',
-        isRunning: false,
-        remainingTime: state.settings.workDuration * 60,
-        totalTime: state.settings.workDuration * 60,
-        sessionCount: 0,
-        startTime: null,
-        activeTaskId: null
-    };
-    
-    saveData();
-    importDataCache = null;
-    
-    const importModal = document.getElementById('importModal');
-    if (importModal) importModal.classList.remove('open');
-    closeSettings();
-    
-    init();
-    showToast('Data imported successfully');
 }
 
 function closeImportModal() {
-    const importModal = document.getElementById('importModal');
-    if (importModal) importModal.classList.remove('open');
-    importDataCache = null;
+    document.getElementById('importModal').classList.remove('open');
+    pendingImportData = null;
+    document.getElementById('importFile').value = '';
 }
 
-let confirmResolve = null;
-
-function confirm(message) {
-    return new Promise((resolve) => {
-        confirmResolve = resolve;
-        const confirmMessage = document.getElementById('confirmMessage');
-        if (confirmMessage) confirmMessage.textContent = message;
-        const confirmModal = document.getElementById('confirmModal');
-        if (confirmModal) confirmModal.classList.add('open');
-    });
-}
-
-function closeConfirmModal() {
-    const confirmModal = document.getElementById('confirmModal');
-    if (confirmModal) confirmModal.classList.remove('open');
-    if (confirmResolve) {
-        confirmResolve(false);
-        confirmResolve = null;
-    }
-}
-
-function checkNotificationPrompt() {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default' && 
-        !localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT)) {
-        const prompt = document.getElementById('notificationPrompt');
-        if (prompt) prompt.style.display = 'flex';
-    }
-}
-
-function dismissNotificationPrompt() {
-    const prompt = document.getElementById('notificationPrompt');
-    if (prompt) prompt.style.display = 'none';
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'dismissed');
-}
-
-function requestNotificationPermission() {
-    if (typeof Notification === 'undefined') return;
-    Notification.requestPermission().then(permission => {
-        state.notificationPermission = permission;
-        dismissNotificationPrompt();
-    });
-}
-
-function sendNotification(session) {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+function performImport(mode) {
+    if (!pendingImportData) return;
     
-    const titles = {
-        work: 'Focus session complete!',
-        shortBreak: 'Break is over!',
-        longBreak: 'Long break is over!'
-    };
-    new Notification('PomoFlow', {
-        body: titles[session.type],
-        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2358a6ff" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
-    });
+    if (mode === 'replace') {
+        state.tasks = pendingImportData.tasks;
+        state.sessions = pendingImportData.sessions;
+        if (pendingImportData.settings) state.settings = { ...state.settings, ...pendingImportData.settings };
+    } else {
+        // Merge - avoid duplicates by ID
+        const existingTaskIds = new Set(state.tasks.map(t => t.id));
+        pendingImportData.tasks.forEach(t => {
+            if (!existingTaskIds.has(t.id)) state.tasks.push(t);
+        });
+        
+        const existingSessionIds = new Set(state.sessions.map(s => s.id));
+        pendingImportData.sessions.forEach(s => {
+            if (!existingSessionIds.has(s.id)) state.sessions.push(s);
+        });
+    }
+    
+    saveData();
+    renderTasks();
+    renderHistory(currentFilter);
+    updateStats();
+    closeImportModal();
+    showToast('Data imported successfully');
 }
 
-function playNotificationSound() {
-    try {
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        
-        if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-        
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.type = 'sine';
-        
-        gainNode.gain.setValueAtTime(state.settings.soundVolume / 100 * 0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (e) {
-        console.error('Error playing sound:', e);
-    }
+function initTheme() {
+    const savedTheme = localStorage.getItem('flowtracker_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const btn = document.getElementById('themeToggle');
+    btn.classList.toggle('dark', savedTheme === 'dark');
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('flowtracker_theme', next);
+    document.getElementById('themeToggle').classList.toggle('dark', next === 'dark');
 }
 
 function showToast(message) {
     const toast = document.getElementById('toast');
-    if (!toast) return;
     toast.textContent = message;
     toast.style.display = 'block';
     toast.classList.add('show');
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.style.display = 'none', 200);
-    }, 2000);
-}
-
-function toggleTaskMenu(taskId) {
-    const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
-    if (!taskItem) return;
-    const wasOpen = taskItem.classList.contains('menu-open');
-    document.querySelectorAll('.task-item.menu-open').forEach(item => {
-        item.classList.remove('menu-open');
-    });
-    if (!wasOpen) {
-        taskItem.classList.add('menu-open');
-    }
-}
-
-let currentEditingTaskId = null;
-function editTask(taskId) {
-    const task = state.tasks.find(t => t.id === taskId);
-    if (!task) return;
-    const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
-    if (taskItem) {
-        taskItem.classList.remove('menu-open');
-    }
-    currentEditingTaskId = taskId;
-    const taskEditName = document.getElementById('taskEditName');
-    if (taskEditName) {
-        taskEditName.value = task.name;
-        
-        // Setup color picker in modal
-        const editColorPicker = document.getElementById('taskEditColorPicker');
-        if (editColorPicker) {
-            state.editTaskColor = task.color || '#58a6ff';
-            editColorPicker.querySelectorAll('.color-dot').forEach(dot => {
-                dot.classList.toggle('active', dot.dataset.color === state.editTaskColor);
-            });
-        }
-
-        const taskEditModal = document.getElementById('taskEditModal');
-        if (taskEditModal) {
-            taskEditModal.classList.add('open');
-            taskEditName.focus();
-        }
-    }
-}
-
-function closeTaskEditModal() {
-    const taskEditModal = document.getElementById('taskEditModal');
-    if (taskEditModal) taskEditModal.classList.remove('open');
-    currentEditingTaskId = null;
-}
-
-function saveTaskFromModal() {
-    if (!currentEditingTaskId) return;
-    const task = state.tasks.find(t => t.id === currentEditingTaskId);
-    if (!task) return;
-    const taskEditName = document.getElementById('taskEditName');
-    if (!taskEditName) return;
-    const newName = taskEditName.value.trim();
-    if (!newName) return;
-    
-    task.name = newName;
-    task.color = state.editTaskColor;
-
-    // Update history colors for this task as well
-    state.sessions.forEach(s => {
-        if (s.taskId === task.id) {
-            s.taskName = newName;
-            s.taskColor = state.editTaskColor;
-        }
-    });
-    
-    saveData();
-    closeTaskEditModal();
-    renderTasks();
-    renderHistory(currentFilter);
-    updateTimerDisplay(); // update ring color if active
-}
-
-function toggleSessionMenu(sessionId) {
-    const sessionItem = document.querySelector(`.history-item[data-session-id="${sessionId}"]`);
-    if (!sessionItem) return;
-    const wasOpen = sessionItem.classList.contains('menu-open');
-    document.querySelectorAll('.history-item.menu-open').forEach(item => {
-        item.classList.remove('menu-open');
-    });
-    if (!wasOpen) {
-        sessionItem.classList.add('menu-open');
-    }
-}
-
-let currentEditingSessionId = null;
-function editSession(sessionId) {
-    const session = state.sessions.find(s => s.id === sessionId);
-    if (!session) return;
-    const sessionItem = document.querySelector(`.history-item[data-session-id="${sessionId}"]`);
-    if (sessionItem) {
-        sessionItem.classList.remove('menu-open');
-    }
-    currentEditingSessionId = sessionId;
-    const sessionEditTaskName = document.getElementById('sessionEditTaskName');
-    if (sessionEditTaskName) sessionEditTaskName.textContent = session.taskName;
-    
-    const sessionEditDuration = document.getElementById('sessionEditDuration');
-    if (sessionEditDuration) {
-        sessionEditDuration.value = Math.floor(session.duration / 60);
-        const sessionEditModal = document.getElementById('sessionEditModal');
-        if (sessionEditModal) {
-            sessionEditModal.classList.add('open');
-            sessionEditDuration.focus();
-        }
-    }
-}
-
-function closeSessionEditModal() {
-    const sessionEditModal = document.getElementById('sessionEditModal');
-    if (sessionEditModal) sessionEditModal.classList.remove('open');
-    currentEditingSessionId = null;
-}
-
-function saveSessionFromModal() {
-    if (!currentEditingSessionId) return;
-    const session = state.sessions.find(s => s.id === currentEditingSessionId);
-    if (!session) return;
-    const sessionEditDuration = document.getElementById('sessionEditDuration');
-    if (!sessionEditDuration) return;
-    const newMinutes = parseInt(sessionEditDuration.value, 10);
-    if (isNaN(newMinutes) || newMinutes < 1) return;
-    const oldDuration = session.duration;
-    session.duration = newMinutes * 60;
-    const task = state.tasks.find(t => t.id === session.taskId);
-    if (task) {
-        task.totalTime = task.totalTime - oldDuration + session.duration;
-    }
-    saveData();
-    closeSessionEditModal();
-    renderHistory(currentFilter);
-    updateStats();
+    }, 3000);
 }
 
 function restoreTimerState() {
-    if (state.timerState.startTime && state.timerState.isRunning) {
-        const elapsed = Math.floor((Date.now() - state.timerState.startTime) / 1000);
+    if (state.timerState.isRunning && state.timerState.startTime) {
+        const now = Date.now();
+        const elapsed = Math.floor((now - state.timerState.startTime) / 1000);
         state.timerState.remainingTime = Math.max(0, state.timerState.remainingTime - elapsed);
         
         if (state.timerState.remainingTime > 0) {
             startTimer();
         } else {
-            completeSession();
+            handleSessionComplete();
         }
+    } else {
+        updateTimerDisplay();
     }
 }
 
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle && savedTheme === 'light') {
-        themeToggle.classList.add('dark');
-    }
-}
+// Helper for range sliders
+document.querySelectorAll('.setting-slider').forEach(slider => {
+    slider.addEventListener('input', () => {
+        const valEl = document.getElementById(`${slider.id}Value`);
+        if (valEl) valEl.textContent = slider.id === 'soundVolume' ? `${slider.value}%` : `${slider.value} min`;
+    });
+});
 
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) themeToggle.classList.toggle('dark');
-}
+// Helper for toggles
+document.querySelectorAll('.setting-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+        toggle.classList.toggle('active');
+    });
+});
 
 init();
