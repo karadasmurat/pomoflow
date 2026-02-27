@@ -554,7 +554,10 @@ function renderTasks() {
         const isNew = task.id === state.lastTaskId;
         item.className = `task-item ${isNew ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
         
-        const minutes = Math.floor(task.totalTime / 60);
+        const totalSeconds = task.totalTime;
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const timeDisplay = `Total: ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
         
         item.innerHTML = `
             <div class="task-menu">
@@ -584,7 +587,7 @@ function renderTasks() {
                     <div class="task-name">${escapeHtml(task.name)}</div>
                     <div class="task-time">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                        ${minutes}m focused
+                        ${timeDisplay}
                     </div>
                 </div>
                 <button class="task-more">
@@ -665,7 +668,7 @@ function renderTasks() {
     if (completedTasks.length > 0) {
         const completedHeader = document.createElement('div');
         completedHeader.className = 'task-section-header';
-        completedHeader.textContent = 'Completed';
+        completedHeader.textContent = 'Check off time';
         list.appendChild(completedHeader);
         completedTasks.forEach(task => list.appendChild(renderTaskItem(task)));
     }
@@ -750,7 +753,7 @@ function renderHistory(filter = 'today') {
         <div class="history-header-info">
             <div>TASK</div>
             <div>DURATION</div>
-            <div>COMPLETED</div>
+            <div>CHECKED OFF AT</div>
         </div>
         <div class="history-header-more"></div>
     `;
