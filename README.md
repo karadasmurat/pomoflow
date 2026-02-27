@@ -28,8 +28,11 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 - **Day Streak** - Consecutive days with completed focus sessions
 - **Visual Charts** - Bar chart for weekly overview, pie chart for today's task breakdown
 
-### Theme
+### Design & Experience
 
+- **Modern UI** - Clean, consistent design following modern CSS principles
+- **Visual Consistency** - Harmonized input heights (42px) and rounded corners (10px) for a polished feel
+- **Tactile Feedback** - Interactive scale and lift effects on buttons
 - **Dark/Light Mode** - Toggle between themes with persistent preference
 
 ### Keyboard Shortcuts

@@ -40,13 +40,21 @@ let state = {
 let timerInterval = null;
 let audioContext = null;
 let currentFilter = 'today';
+let showAllHistory = false;
 
 function init() {
     loadData();
     setupEventListeners();
     renderTasks();
     renderHistory('today');
-    document.querySelector('.filter-btn[data-filter="today"]').classList.add('active');
+    
+    // Explicitly activate Today filter btn on init
+    const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');
+    if (todayBtn) {
+        document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
+        todayBtn.classList.add('active');
+    }
+
     updateTimerDisplay();
     updateStats();
     updateDateTime();
@@ -127,14 +135,22 @@ function setupEventListeners() {
         tab.addEventListener('click', () => switchMode(tab.dataset.mode));
     });
 
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    document.querySelectorAll('.history-filters .filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentFilter = btn.dataset.filter;
-            renderHistory(btn.dataset.filter);
+            renderHistory(currentFilter);
         });
     });
+
+    const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', () => {
+            showAllHistory = !showAllHistory;
+            renderHistory(currentFilter);
+        });
+    }
 
     document.getElementById('settingsBtn').addEventListener('click', openSettings);
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
@@ -211,61 +227,71 @@ function setupSettingsListeners() {
         soundVolume: { el: document.getElementById('soundVolume'), display: document.getElementById('soundVolumeValue'), suffix: '%' }
     };
 
-    sliders.workDuration.el.value = state.settings.workDuration;
-    sliders.workDuration.display.textContent = state.settings.workDuration + sliders.workDuration.suffix;
-    sliders.shortBreakDuration.el.value = state.settings.shortBreakDuration;
-    sliders.shortBreakDuration.display.textContent = state.settings.shortBreakDuration + sliders.shortBreakDuration.suffix;
-    sliders.longBreakDuration.el.value = state.settings.longBreakDuration;
-    sliders.longBreakDuration.display.textContent = state.settings.longBreakDuration + sliders.longBreakDuration.suffix;
-    sliders.soundVolume.el.value = state.settings.soundVolume;
-    sliders.soundVolume.display.textContent = state.settings.soundVolume + sliders.soundVolume.suffix;
+    if (sliders.workDuration.el) {
+        sliders.workDuration.el.value = state.settings.workDuration;
+        sliders.workDuration.display.textContent = state.settings.workDuration + sliders.workDuration.suffix;
+        sliders.workDuration.el.addEventListener('input', (e) => {
+            state.settings.workDuration = parseInt(e.target.value);
+            sliders.workDuration.display.textContent = e.target.value + sliders.workDuration.suffix;
+            if (state.timerState.mode === 'work' && !state.timerState.isRunning) {
+                state.timerState.remainingTime = state.settings.workDuration * 60;
+                state.timerState.totalTime = state.settings.workDuration * 60;
+                updateTimerDisplay();
+            }
+            saveData();
+        });
+    }
 
-    sliders.workDuration.el.addEventListener('input', (e) => {
-        state.settings.workDuration = parseInt(e.target.value);
-        sliders.workDuration.display.textContent = e.target.value + sliders.workDuration.suffix;
-        if (state.timerState.mode === 'work' && !state.timerState.isRunning) {
-            state.timerState.remainingTime = state.settings.workDuration * 60;
-            state.timerState.totalTime = state.settings.workDuration * 60;
+    if (sliders.shortBreakDuration.el) {
+        sliders.shortBreakDuration.el.value = state.settings.shortBreakDuration;
+        sliders.shortBreakDuration.display.textContent = state.settings.shortBreakDuration + sliders.shortBreakDuration.suffix;
+        sliders.shortBreakDuration.el.addEventListener('input', (e) => {
+            state.settings.shortBreakDuration = parseInt(e.target.value);
+            sliders.shortBreakDuration.display.textContent = e.target.value + sliders.shortBreakDuration.suffix;
+            if (state.timerState.mode === 'shortBreak' && !state.timerState.isRunning) {
+                state.timerState.remainingTime = state.settings.shortBreakDuration * 60;
+                state.timerState.totalTime = state.settings.shortBreakDuration * 60;
+                updateTimerDisplay();
+            }
+            saveData();
+        });
+    }
+
+    if (sliders.longBreakDuration.el) {
+        sliders.longBreakDuration.el.value = state.settings.longBreakDuration;
+        sliders.longBreakDuration.display.textContent = state.settings.longBreakDuration + sliders.longBreakDuration.suffix;
+        sliders.longBreakDuration.el.addEventListener('input', (e) => {
+            state.settings.longBreakDuration = parseInt(e.target.value);
+            sliders.longBreakDuration.display.textContent = e.target.value + sliders.longBreakDuration.suffix;
+            if (state.timerState.mode === 'longBreak' && !state.timerState.isRunning) {
+                state.timerState.remainingTime = state.settings.longBreakDuration * 60;
+                state.timerState.totalTime = state.settings.longBreakDuration * 60;
+                updateTimerDisplay();
+            }
+            saveData();
+        });
+    }
+
+    if (sliders.soundVolume.el) {
+        sliders.soundVolume.el.value = state.settings.soundVolume;
+        sliders.soundVolume.display.textContent = state.settings.soundVolume + sliders.soundVolume.suffix;
+        sliders.soundVolume.el.addEventListener('input', (e) => {
+            state.settings.soundVolume = parseInt(e.target.value);
+            sliders.soundVolume.display.textContent = e.target.value + sliders.soundVolume.suffix;
+            saveData();
+        });
+    }
+
+    const sessionsBeforeLongBreak = document.getElementById('sessionsBeforeLongBreak');
+    if (sessionsBeforeLongBreak) {
+        sessionsBeforeLongBreak.value = state.settings.sessionsBeforeLongBreak;
+        sessionsBeforeLongBreak.addEventListener('change', (e) => {
+            state.settings.sessionsBeforeLongBreak = Math.min(10, Math.max(1, parseInt(e.target.value) || 4));
+            e.target.value = state.settings.sessionsBeforeLongBreak;
+            saveData();
             updateTimerDisplay();
-        }
-        saveData();
-    });
-
-    sliders.shortBreakDuration.el.addEventListener('input', (e) => {
-        state.settings.shortBreakDuration = parseInt(e.target.value);
-        sliders.shortBreakDuration.display.textContent = e.target.value + sliders.shortBreakDuration.suffix;
-        if (state.timerState.mode === 'shortBreak' && !state.timerState.isRunning) {
-            state.timerState.remainingTime = state.settings.shortBreakDuration * 60;
-            state.timerState.totalTime = state.settings.shortBreakDuration * 60;
-            updateTimerDisplay();
-        }
-        saveData();
-    });
-
-    sliders.longBreakDuration.el.addEventListener('input', (e) => {
-        state.settings.longBreakDuration = parseInt(e.target.value);
-        sliders.longBreakDuration.display.textContent = e.target.value + sliders.longBreakDuration.suffix;
-        if (state.timerState.mode === 'longBreak' && !state.timerState.isRunning) {
-            state.timerState.remainingTime = state.settings.longBreakDuration * 60;
-            state.timerState.totalTime = state.settings.longBreakDuration * 60;
-            updateTimerDisplay();
-        }
-        saveData();
-    });
-
-    sliders.soundVolume.el.addEventListener('input', (e) => {
-        state.settings.soundVolume = parseInt(e.target.value);
-        sliders.soundVolume.display.textContent = e.target.value + sliders.soundVolume.suffix;
-        saveData();
-    });
-
-    document.getElementById('sessionsBeforeLongBreak').value = state.settings.sessionsBeforeLongBreak;
-    document.getElementById('sessionsBeforeLongBreak').addEventListener('change', (e) => {
-        state.settings.sessionsBeforeLongBreak = Math.min(10, Math.max(1, parseInt(e.target.value) || 4));
-        e.target.value = state.settings.sessionsBeforeLongBreak;
-        saveData();
-        updateTimerDisplay();
-    });
+        });
+    }
 
     const toggles = {
         autoStartBreaks: document.getElementById('autoStartBreaks'),
@@ -273,19 +299,25 @@ function setupSettingsListeners() {
         timeFormat: document.getElementById('timeFormat')
     };
 
-    if (state.settings.autoStartBreaks) toggles.autoStartBreaks.classList.add('active');
-    if (state.settings.autoStartWork) toggles.autoStartWork.classList.add('active');
-    if (state.settings.use12Hour) toggles.timeFormat.classList.add('active');
+    if (toggles.autoStartBreaks && state.settings.autoStartBreaks) toggles.autoStartBreaks.classList.add('active');
+    if (toggles.autoStartWork && state.settings.autoStartWork) toggles.autoStartWork.classList.add('active');
+    if (toggles.timeFormat && state.settings.use12Hour) toggles.timeFormat.classList.add('active');
 
     Object.keys(toggles).forEach(key => {
-        toggles[key].addEventListener('click', () => {
-            toggles[key].classList.toggle('active');
-            const isActive = toggles[key].classList.contains('active');
-            toggles[key].setAttribute('aria-checked', isActive);
-            state.settings[key] = isActive;
-            saveData();
-            updateDateTime();
-        });
+        if (toggles[key]) {
+            toggles[key].addEventListener('click', () => {
+                toggles[key].classList.toggle('active');
+                const isActive = toggles[key].classList.contains('active');
+                toggles[key].setAttribute('aria-checked', isActive);
+                if (key === 'timeFormat') {
+                    state.settings.use12Hour = isActive;
+                } else {
+                    state.settings[key] = isActive;
+                }
+                saveData();
+                updateDateTime();
+            });
+        }
     });
 }
 
@@ -343,6 +375,8 @@ function addTask() {
 
 function renderTasks() {
     const list = document.getElementById('taskList');
+    if (!list) return;
+
     const activeTasks = state.tasks.filter(t => !t.completed);
     const completedTasks = state.tasks.filter(t => t.completed);
     
@@ -422,7 +456,7 @@ function renderTasks() {
     }
 
     const hint = document.getElementById('taskHint');
-    hint.style.display = state.currentTask ? 'none' : 'flex';
+    if (hint) hint.style.display = state.currentTask ? 'none' : 'flex';
 }
 
 function selectTask(id, shouldStartTimer = false) {
@@ -515,7 +549,6 @@ async function deleteTask(id) {
 }
 
 function toggleTimer() {
-    console.log('toggleTimer called', state.timerState.isRunning);
     try {
         if (state.timerState.isRunning) {
             pauseTimer();
@@ -523,7 +556,7 @@ function toggleTimer() {
             startTimer();
         }
     } catch(e) {
-        console.log('toggleTimer error:', e);
+        console.error('toggleTimer error:', e);
     }
 }
 
@@ -559,10 +592,18 @@ function startTimer() {
         }
     }, 1000);
 
-    document.getElementById('startPauseText').textContent = 'Pause';
-    document.getElementById('startPauseBtn').classList.add('running');
-    document.getElementById('playIcon').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-    document.querySelector('.timer-panel').classList.add('timer-running');
+    const startPauseText = document.getElementById('startPauseText');
+    if (startPauseText) startPauseText.textContent = 'Pause';
+    
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    if (startPauseBtn) startPauseBtn.classList.add('running');
+    
+    const playIcon = document.getElementById('playIcon');
+    if (playIcon) playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    
+    const timerPanel = document.querySelector('.timer-panel');
+    if (timerPanel) timerPanel.classList.add('timer-running');
+    
     saveData();
 }
 
@@ -571,10 +612,18 @@ function pauseTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
 
-    document.getElementById('startPauseText').textContent = 'Start';
-    document.getElementById('startPauseBtn').classList.remove('running');
-    document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
-    document.querySelector('.timer-panel').classList.remove('timer-running');
+    const startPauseText = document.getElementById('startPauseText');
+    if (startPauseText) startPauseText.textContent = 'Start';
+    
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    if (startPauseBtn) startPauseBtn.classList.remove('running');
+    
+    const playIcon = document.getElementById('playIcon');
+    if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    
+    const timerPanel = document.querySelector('.timer-panel');
+    if (timerPanel) timerPanel.classList.remove('timer-running');
+    
     saveData();
     renderTasks();
 }
@@ -693,17 +742,22 @@ function updateTimerDisplay() {
     const seconds = state.timerState.remainingTime % 60;
     const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    document.getElementById('timerTime').textContent = timeStr;
-    document.getElementById('timerAnnouncer').textContent = timeStr;
+    const timerTime = document.getElementById('timerTime');
+    if (timerTime) timerTime.textContent = timeStr;
+    
+    const timerAnnouncer = document.getElementById('timerAnnouncer');
+    if (timerAnnouncer) timerAnnouncer.textContent = timeStr;
 
     const currentTaskEl = document.getElementById('timerTask');
-    if (state.currentTask) {
-        const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
-        currentTaskEl.textContent = task ? `Current Focus: ${task.name}` : '';
-    } else if (state.timerState.isRunning && state.timerState.mode === 'work') {
-        currentTaskEl.textContent = 'Focus mode - select a task';
-    } else {
-        currentTaskEl.textContent = '';
+    if (currentTaskEl) {
+        if (state.currentTask) {
+            const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
+            currentTaskEl.textContent = task ? `Current Focus: ${task.name}` : '';
+        } else if (state.timerState.isRunning && state.timerState.mode === 'work') {
+            currentTaskEl.textContent = 'Focus mode - select a task';
+        } else {
+            currentTaskEl.textContent = '';
+        }
     }
 
     const modeLabels = {
@@ -711,31 +765,37 @@ function updateTimerDisplay() {
         shortBreak: 'Short Break',
         longBreak: 'Long Break'
     };
-    document.getElementById('timerMode').textContent = modeLabels[state.timerState.mode];
+    const timerMode = document.getElementById('timerMode');
+    if (timerMode) timerMode.textContent = modeLabels[state.timerState.mode];
 
     const sessionInfo = state.timerState.mode === 'work' 
         ? `Session ${state.timerState.sessionCount + 1} of ${state.settings.sessionsBeforeLongBreak}`
         : '';
-    document.getElementById('timerSession').textContent = sessionInfo;
+    const timerSession = document.getElementById('timerSession');
+    if (timerSession) timerSession.textContent = sessionInfo;
 
     const progress = state.timerState.remainingTime / state.timerState.totalTime;
     const circumference = 2 * Math.PI * 45;
     const offset = circumference * (1 - progress);
     
     const progressRing = document.getElementById('timerProgress');
-    progressRing.style.strokeDashoffset = offset;
-    
-    progressRing.classList.remove('break', 'long-break');
-    if (state.timerState.mode === 'shortBreak') {
-        progressRing.classList.add('break');
-    } else if (state.timerState.mode === 'longBreak') {
-        progressRing.classList.add('long-break');
+    if (progressRing) {
+        progressRing.style.strokeDashoffset = offset;
+        
+        progressRing.classList.remove('break', 'long-break');
+        if (state.timerState.mode === 'shortBreak') {
+            progressRing.classList.add('break');
+        } else if (state.timerState.mode === 'longBreak') {
+            progressRing.classList.add('long-break');
+        }
     }
 }
 
 function renderHistory(filter = 'all') {
     const list = document.getElementById('historyList');
     const chart = document.getElementById('historyChart');
+    if (!list || !chart) return;
+
     let sessions = [...state.sessions].reverse();
 
     const now = new Date();
@@ -744,46 +804,62 @@ function renderHistory(filter = 'all') {
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     if (filter === 'today') {
-        sessions = sessions.filter(s => new Date(s.completedAt) >= today);
+        const todayStr = today.toDateString();
+        sessions = sessions.filter(s => new Date(s.completedAt).toDateString() === todayStr);
     } else if (filter === 'week') {
         sessions = sessions.filter(s => new Date(s.completedAt) >= weekAgo);
     }
 
-    const currentTaskIds = new Set(state.tasks.map(t => t.id));
-    sessions = sessions.filter(s => !s.taskId || currentTaskIds.has(s.taskId));
-
     renderChart(chart, filter);
+
+    const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
+    if (showAllBtn) {
+        showAllBtn.parentElement.style.display = sessions.length > 3 ? 'flex' : 'none';
+        showAllBtn.classList.toggle('active', showAllHistory);
+        showAllBtn.innerHTML = showAllHistory 
+            ? '<span>Show Less</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>' 
+            : '<span>Show All</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    }
 
     if (sessions.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
                 <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                <p>No sessions recorded. Complete a focus session to see your history.</p>
+                <p>No sessions recorded for this period.</p>
             </div>
         `;
         return;
     }
 
-    list.innerHTML = sessions.map(session => {
+    if (!showAllHistory) {
+        sessions = sessions.slice(0, 3);
+    }
+
+    const headerHtml = `
+        <div class="history-header-grid">
+            <div class="history-header-indicator"></div>
+            <div class="history-header-info">
+                <div>Task</div>
+                <div>Duration</div>
+                <div>Completed</div>
+            </div>
+            <div class="history-header-more"></div>
+        </div>
+    `;
+
+    list.innerHTML = headerHtml + sessions.map(session => {
         const isNew = session.id === state.lastSessionId;
         return `
         <div class="history-item${isNew ? ' slide-in highlight' : ''}" data-session-id="${session.id}">
             <div class="history-slide-wrapper">
+                <div class="history-type-indicator"></div>
                 <div class="history-info">
                     <div class="history-task">${escapeHtml(session.taskName)}</div>
-                    <div class="history-meta">
-                        <div class="history-meta-header">
-                            <span></span>
-                            <span>Finish</span>
-                        </div>
-                        <div class="history-meta-values">
-                            <span class="history-duration">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                                <span class="duration-display">${formatTime(session.duration)}</span>
-                            </span>
-                            <span class="history-time">${formatTimestamp(session.completedAt)}</span>
-                        </div>
+                    <div class="history-duration">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        <span>${formatTime(session.duration)}</span>
                     </div>
+                    <div class="history-time">${formatTimestamp(session.completedAt)}</div>
                 </div>
                 <button class="history-more" onclick="event.stopPropagation(); toggleSessionMenu(${session.id})" aria-label="More options">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
@@ -801,123 +877,93 @@ function renderHistory(filter = 'all') {
             </div>
         </div>
     `}).join('');
-    
-    if (state.lastSessionId) {
-        const newItem = list.querySelector('.slide-in');
-        if (newItem) {
-            newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        state.lastSessionId = null;
-    }
 }
 
 function renderChart(chartEl, filter) {
     if (!chartEl) return;
     
+    let filteredSessions = [];
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
     if (filter === 'today') {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const nextDay = new Date(today);
-        nextDay.setDate(nextDay.getDate() + 1);
-
-        const todaySessions = state.sessions.filter(s => {
+        filteredSessions = state.sessions.filter(s => {
             const sDate = new Date(s.completedAt);
-            return s.type === 'work' && sDate >= today && sDate < nextDay;
+            return s.type === 'work' && sDate.toDateString() === today.toDateString();
         });
-
-        if (todaySessions.length === 0) {
-            chartEl.innerHTML = '';
-            return;
-        }
-
-        const taskTotals = {};
-        todaySessions.forEach(s => {
-            const name = s.taskName || 'Untracked';
-            taskTotals[name] = (taskTotals[name] || 0) + s.duration;
+    } else if (filter === 'week') {
+        filteredSessions = state.sessions.filter(s => {
+            const sDate = new Date(s.completedAt);
+            return s.type === 'work' && sDate >= weekAgo;
         });
+    } else {
+        filteredSessions = state.sessions.filter(s => s.type === 'work');
+    }
 
-        const total = Object.values(taskTotals).reduce((a, b) => a + b, 0);
-        const colors = ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7', '#79c0ff', '#56d364'];
-        const entries = Object.entries(taskTotals);
-
-        let cumulative = 0;
-        const segments = entries.map(([name, seconds], i) => {
-            const percent = (seconds / total) * 100;
-            const start = cumulative;
-            cumulative += percent;
-            return { name, percent, start, seconds, color: colors[i % colors.length] };
-        });
-
+    if (filteredSessions.length === 0) {
         chartEl.innerHTML = `
-            <div class="pie-chart-container">
-                <svg class="pie-chart" viewBox="0 0 32 32">
-                    ${segments.map(s => {
-                        const startAngle = (s.start / 100) * 360 - 90;
-                        const endAngle = ((s.start + s.percent) / 100) * 360 - 90;
-                        const start = 16 + 12 * Math.cos(Math.PI * startAngle / 180);
-                        const end = 16 + 12 * Math.cos(Math.PI * endAngle / 180);
-                        const largeArc = s.percent > 50 ? 1 : 0;
-                        return `<circle cx="16" cy="16" r="12" fill="transparent" stroke="${s.color}" 
-                            stroke-width="6" stroke-dasharray="${s.percent * 0.75} ${75 - s.percent * 0.75}"
-                            stroke-dashoffset="${-s.start * 0.75 + 18.85}" 
-                            transform="rotate(-90 16 16)"/>`;
-                    }).join('')}
-                </svg>
-                <div class="pie-legend">
-                    ${segments.map(s => `
-                        <div class="legend-item">
-                            <span class="legend-color" style="background: ${s.color}"></span>
-                            <span class="legend-label">${escapeHtml(s.name)}</span>
-                            <span class="legend-value">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                                ${formatTime(s.seconds)}
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
+            <div class="empty-state small">
+                <p>No focus data for this period</p>
             </div>
         `;
         return;
     }
 
-    if (filter !== 'week' && filter !== 'all') {
-        chartEl.innerHTML = '';
-        return;
-    }
-
-    const days = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        d.setHours(0, 0, 0, 0);
-        days.push(d);
-    }
-
-    const dayData = days.map(day => {
-        const nextDay = new Date(day);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const daySessions = state.sessions.filter(s => {
-            const sDate = new Date(s.completedAt);
-            return s.type === 'work' && sDate >= day && sDate < nextDay;
-        });
-        const totalMinutes = daySessions.reduce((sum, s) => sum + s.duration, 0);
-        return { day, minutes: totalMinutes };
+    const taskTotals = {};
+    filteredSessions.forEach(s => {
+        const name = s.taskName || 'Untracked';
+        taskTotals[name] = (taskTotals[name] || 0) + s.duration;
     });
 
-    const maxMinutes = Math.max(...dayData.map(d => d.minutes), 1);
-    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const total = Object.values(taskTotals).reduce((a, b) => a + b, 0);
+    const colors = ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7', '#79c0ff', '#56d364'];
+    
+    const sortedEntries = Object.entries(taskTotals).sort((a, b) => b[1] - a[1]);
+    const displayEntries = sortedEntries.slice(0, 4);
+    
+    if (sortedEntries.length > 4) {
+        const othersDuration = sortedEntries.slice(4).reduce((sum, entry) => sum + entry[1], 0);
+        displayEntries.push(['Others', othersDuration]);
+    }
 
-    chartEl.innerHTML = dayData.map(d => {
-        const height = (d.minutes / maxMinutes) * 100;
-        const label = dayLabels[d.day.getDay()];
-        return `
-            <div class="chart-bar">
-                <div class="chart-bar-fill" style="height: ${Math.max(height, 4)}%"></div>
-                <span class="chart-bar-label">${label}</span>
+    let cumulative = 0;
+    const segments = displayEntries.map(([name, seconds], i) => {
+        const percent = (seconds / total) * 100;
+        const start = cumulative;
+        cumulative += percent;
+        return { name, percent, start, seconds, color: colors[i % colors.length] };
+    });
+
+    const circumference = 75.4;
+
+    chartEl.innerHTML = `
+        <div class="pie-chart-container">
+            <svg class="pie-chart" viewBox="0 0 32 32">
+                ${segments.map(s => {
+                    const dashLen = (s.percent / 100) * circumference;
+                    const dashOffset = (-s.start / 100) * circumference;
+                    return `<circle cx="16" cy="16" r="12" fill="transparent" stroke="${s.color}" 
+                        stroke-width="6" stroke-dasharray="${dashLen} ${circumference - dashLen}"
+                        stroke-dashoffset="${dashOffset}" 
+                        transform="rotate(-90 16 16)"/>`;
+                }).join('')}
+            </svg>
+            <div class="pie-legend">
+                ${segments.map(s => `
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: ${s.color}"></span>
+                        <span class="legend-label">${escapeHtml(s.name)}</span>
+                        <span class="legend-value">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                            ${formatTime(s.seconds)}
+                        </span>
+                    </div>
+                `).join('')}
             </div>
-        `;
-    }).join('');
+        </div>
+    `;
 }
 
 async function clearHistory() {
@@ -938,11 +984,15 @@ function updateStats() {
     );
 
     const totalSeconds = todaySessions.reduce((sum, s) => sum + s.duration, 0);
-    document.getElementById('todayFocusTime').textContent = formatTime(totalSeconds);
-    document.getElementById('todaySessions').textContent = todaySessions.length;
+    const focusTimeEl = document.getElementById('todayFocusTime');
+    if (focusTimeEl) focusTimeEl.textContent = formatTime(totalSeconds);
+    
+    const todaySessionsEl = document.getElementById('todaySessions');
+    if (todaySessionsEl) todaySessionsEl.textContent = todaySessions.length;
 
     const streak = calculateStreak();
-    document.getElementById('currentStreak').textContent = streak === 0 ? '--' : streak;
+    const streakEl = document.getElementById('currentStreak');
+    if (streakEl) streakEl.textContent = streak === 0 ? '--' : streak;
 }
 
 function calculateStreak() {
@@ -987,7 +1037,8 @@ function updateDateTime() {
         minute: '2-digit',
         hour12: state.settings.use12Hour
     };
-    document.getElementById('datetime').textContent = now.toLocaleDateString('en-US', options);
+    const datetimeEl = document.getElementById('datetime');
+    if (datetimeEl) datetimeEl.textContent = now.toLocaleDateString('en-US', options);
 }
 
 function formatTime(seconds) {
@@ -1003,6 +1054,8 @@ function formatTime(seconds) {
 
 function formatTimestamp(isoString) {
     const date = new Date(isoString);
+    if (isNaN(date.getTime())) return 'Unknown date';
+    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
@@ -1037,11 +1090,13 @@ function escapeHtml(text) {
 }
 
 function openSettings() {
-    document.getElementById('settingsModal').classList.add('open');
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal) settingsModal.classList.add('open');
 }
 
 function closeSettings() {
-    document.getElementById('settingsModal').classList.remove('open');
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal) settingsModal.classList.remove('open');
 }
 
 let importDataCache = null;
@@ -1088,11 +1143,15 @@ function handleImportFile(event) {
             const taskCount = data.tasks.length;
             const sessionCount = data.sessions.length;
             
-            document.getElementById('importInfo').innerHTML = `
-                Found <strong>${taskCount} tasks</strong> and <strong>${sessionCount} sessions</strong> in the backup file.
-            `;
+            const importInfo = document.getElementById('importInfo');
+            if (importInfo) {
+                importInfo.innerHTML = `
+                    Found <strong>${taskCount} tasks</strong> and <strong>${sessionCount} sessions</strong> in the backup file.
+                `;
+            }
             
-            document.getElementById('importModal').classList.add('open');
+            const importModal = document.getElementById('importModal');
+            if (importModal) importModal.classList.add('open');
         } catch (err) {
             showToast('Error reading backup file');
             console.error(err);
@@ -1138,7 +1197,8 @@ function performImport(mode) {
     saveData();
     importDataCache = null;
     
-    document.getElementById('importModal').classList.remove('open');
+    const importModal = document.getElementById('importModal');
+    if (importModal) importModal.classList.remove('open');
     closeSettings();
     
     init();
@@ -1146,7 +1206,8 @@ function performImport(mode) {
 }
 
 function closeImportModal() {
-    document.getElementById('importModal').classList.remove('open');
+    const importModal = document.getElementById('importModal');
+    if (importModal) importModal.classList.remove('open');
     importDataCache = null;
 }
 
@@ -1155,13 +1216,16 @@ let confirmResolve = null;
 function confirm(message) {
     return new Promise((resolve) => {
         confirmResolve = resolve;
-        document.getElementById('confirmMessage').textContent = message;
-        document.getElementById('confirmModal').classList.add('open');
+        const confirmMessage = document.getElementById('confirmMessage');
+        if (confirmMessage) confirmMessage.textContent = message;
+        const confirmModal = document.getElementById('confirmModal');
+        if (confirmModal) confirmModal.classList.add('open');
     });
 }
 
 function closeConfirmModal() {
-    document.getElementById('confirmModal').classList.remove('open');
+    const confirmModal = document.getElementById('confirmModal');
+    if (confirmModal) confirmModal.classList.remove('open');
     if (confirmResolve) {
         confirmResolve(false);
         confirmResolve = null;
@@ -1171,12 +1235,14 @@ function closeConfirmModal() {
 function checkNotificationPrompt() {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default' && 
         !localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT)) {
-        document.getElementById('notificationPrompt').style.display = 'flex';
+        const prompt = document.getElementById('notificationPrompt');
+        if (prompt) prompt.style.display = 'flex';
     }
 }
 
 function dismissNotificationPrompt() {
-    document.getElementById('notificationPrompt').style.display = 'none';
+    const prompt = document.getElementById('notificationPrompt');
+    if (prompt) prompt.style.display = 'none';
     localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'dismissed');
 }
 
@@ -1264,13 +1330,20 @@ function editTask(taskId) {
         taskItem.classList.remove('menu-open');
     }
     currentEditingTaskId = taskId;
-    document.getElementById('taskEditName').value = task.name;
-    document.getElementById('taskEditModal').classList.add('open');
-    document.getElementById('taskEditName').focus();
+    const taskEditName = document.getElementById('taskEditName');
+    if (taskEditName) {
+        taskEditName.value = task.name;
+        const taskEditModal = document.getElementById('taskEditModal');
+        if (taskEditModal) {
+            taskEditModal.classList.add('open');
+            taskEditName.focus();
+        }
+    }
 }
 
 function closeTaskEditModal() {
-    document.getElementById('taskEditModal').classList.remove('open');
+    const taskEditModal = document.getElementById('taskEditModal');
+    if (taskEditModal) taskEditModal.classList.remove('open');
     currentEditingTaskId = null;
 }
 
@@ -1278,7 +1351,9 @@ function saveTaskFromModal() {
     if (!currentEditingTaskId) return;
     const task = state.tasks.find(t => t.id === currentEditingTaskId);
     if (!task) return;
-    const newName = document.getElementById('taskEditName').value.trim();
+    const taskEditName = document.getElementById('taskEditName');
+    if (!taskEditName) return;
+    const newName = taskEditName.value.trim();
     if (!newName) return;
     task.name = newName;
     state.sessions.forEach(s => {
@@ -1313,14 +1388,23 @@ function editSession(sessionId) {
         sessionItem.classList.remove('menu-open');
     }
     currentEditingSessionId = sessionId;
-    document.getElementById('sessionEditTaskName').textContent = session.taskName;
-    document.getElementById('sessionEditDuration').value = Math.floor(session.duration / 60);
-    document.getElementById('sessionEditModal').classList.add('open');
-    document.getElementById('sessionEditDuration').focus();
+    const sessionEditTaskName = document.getElementById('sessionEditTaskName');
+    if (sessionEditTaskName) sessionEditTaskName.textContent = session.taskName;
+    
+    const sessionEditDuration = document.getElementById('sessionEditDuration');
+    if (sessionEditDuration) {
+        sessionEditDuration.value = Math.floor(session.duration / 60);
+        const sessionEditModal = document.getElementById('sessionEditModal');
+        if (sessionEditModal) {
+            sessionEditModal.classList.add('open');
+            sessionEditDuration.focus();
+        }
+    }
 }
 
 function closeSessionEditModal() {
-    document.getElementById('sessionEditModal').classList.remove('open');
+    const sessionEditModal = document.getElementById('sessionEditModal');
+    if (sessionEditModal) sessionEditModal.classList.remove('open');
     currentEditingSessionId = null;
 }
 
@@ -1328,7 +1412,9 @@ function saveSessionFromModal() {
     if (!currentEditingSessionId) return;
     const session = state.sessions.find(s => s.id === currentEditingSessionId);
     if (!session) return;
-    const newMinutes = parseInt(document.getElementById('sessionEditDuration').value, 10);
+    const sessionEditDuration = document.getElementById('sessionEditDuration');
+    if (!sessionEditDuration) return;
+    const newMinutes = parseInt(sessionEditDuration.value, 10);
     if (isNaN(newMinutes) || newMinutes < 1) return;
     const oldDuration = session.duration;
     session.duration = newMinutes * 60;
@@ -1345,7 +1431,6 @@ function saveSessionFromModal() {
 function restoreTimerState() {
     if (state.timerState.startTime && state.timerState.isRunning) {
         const elapsed = Math.floor((Date.now() - state.timerState.startTime) / 1000);
-        const wasRunning = state.timerState.remainingTime;
         state.timerState.remainingTime = Math.max(0, state.timerState.remainingTime - elapsed);
         
         if (state.timerState.remainingTime > 0) {
@@ -1359,8 +1444,9 @@ function restoreTimerState() {
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    if (savedTheme === 'light') {
-        document.getElementById('themeToggle').classList.add('dark');
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle && savedTheme === 'light') {
+        themeToggle.classList.add('dark');
     }
 }
 
@@ -1369,7 +1455,8 @@ function toggleTheme() {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    document.getElementById('themeToggle').classList.toggle('dark');
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) themeToggle.classList.toggle('dark');
 }
 
 init();

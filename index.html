@@ -112,18 +112,34 @@
 
             <aside class="panel history-panel">
                 <div class="panel-header">
-                    Session History
+                    <div class="panel-header-left">
+                        Session History
+                        <div class="history-filters">
+                            <button class="filter-btn active" data-filter="today">Today</button>
+                            <button class="filter-btn" data-filter="week">Week</button>
+                            <button class="filter-btn" data-filter="all">All</button>
+                        </div>
+                    </div>
                     <button id="clearHistoryBtn" aria-label="Clear history">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     </button>
                 </div>
-                <div class="history-filters">
-                    <button class="filter-btn active" data-filter="today">Today</button>
-                    <button class="filter-btn" data-filter="week">This Week</button>
-                    <button class="filter-btn" data-filter="all">All</button>
+                
+                <div class="history-content-grid">
+                    <div class="history-analytics-col">
+                        <div class="history-chart" id="historyChart"></div>
+                    </div>
+
+                    <div class="history-list-col">
+                        <div class="history-list-header">
+                            <span class="history-list-title">Recent Sessions</span>
+                            <div class="history-show-all-container">
+                                <button class="filter-btn" data-filter="showAll">Show All</button>
+                            </div>
+                        </div>
+                        <div class="history-list" id="historyList"></div>
+                    </div>
                 </div>
-                <div class="history-chart" id="historyChart"></div>
-                <div class="history-list" id="historyList"></div>
             </aside>
         </main>
     </div>
