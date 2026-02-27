@@ -236,7 +236,7 @@ function setupEventListeners() {
     document.getElementById('cancelSessionEdit').addEventListener('click', closeSessionEditModal);
     document.getElementById('saveSessionEdit').addEventListener('click', saveSessionFromModal);
     document.getElementById('sessionEditModal').addEventListener('click', (e) => {
-        if (e.target.id === 'sessionEditModal') closeSessionEditModal);
+        if (e.target.id === 'sessionEditModal') closeSessionEditModal();
     });
     document.getElementById('sessionEditDuration').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') saveSessionFromModal();
