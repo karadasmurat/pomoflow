@@ -273,9 +273,9 @@ header {
 }
 
 .color-dot {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
     border: 3px solid transparent;
     cursor: pointer;
     transition: transform 200ms ease, border-color 200ms ease;
@@ -285,6 +285,9 @@ header {
     position: relative;
     -webkit-appearance: none;
     appearance: none;
+    display: inline-block;
+    vertical-align: middle;
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
 /* Larger hit area for mobile */
@@ -1551,9 +1554,9 @@ button {
     }
 
     .color-dot {
-        width: 32px;
-        height: 32px;
-        min-width: 32px;
-        min-height: 32px;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
     }
 }
