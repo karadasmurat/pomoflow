@@ -280,9 +280,11 @@ header {
     cursor: pointer;
     transition: transform 200ms ease, border-color 200ms ease;
     padding: 0;
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 28px !important;
+    min-height: 28px !important;
     position: relative;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 /* Larger hit area for mobile */
