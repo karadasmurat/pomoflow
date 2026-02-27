@@ -7,6 +7,7 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 ### Timer
 
 - **Pomodoro Timer** - Focus sessions with short (5 min) and long (15 min) breaks
+- **Twin Progress Rings** - Real-time synchronization between the main timer and the active task's play button
 - **Customizable Durations** - Adjust focus/break times to fit your workflow
 - **Smart Auto-Advance** - Automatically transition between focus and break sessions
 - **Visual Progress Ring** - Animated circular progress indicator
@@ -31,8 +32,8 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 ### Design & Experience
 
 - **Modern UI** - Clean, consistent design following modern CSS principles
-- **Visual Consistency** - Harmonized input heights (42px) and rounded corners (10px) for a polished feel
-- **Tactile Feedback** - Interactive scale and lift effects on buttons
+- **Unified Design Standards** - Harmonized input heights (42px) and rounded corners (10px) across all interactive elements
+- **Tactile Feedback** - Interactive scale (1.12x) and active states (0.92x) using precision cubic-bezier timing
 - **Dark/Light Mode** - Toggle between themes with persistent preference
 
 ### Keyboard Shortcuts

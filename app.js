@@ -50,7 +50,6 @@ function init() {
     renderTasks();
     renderHistory('today');
     
-    // Explicitly activate Today filter btn on init
     const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');
     if (todayBtn) {
         document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
@@ -76,7 +75,6 @@ function loadData() {
         const tasks = localStorage.getItem(STORAGE_KEYS.TASKS);
         if (tasks) {
             state.tasks = JSON.parse(tasks);
-            // Migrate existing tasks to have a default color
             state.tasks.forEach(t => {
                 if (!t.color) t.color = '#58a6ff';
             });
@@ -85,7 +83,6 @@ function loadData() {
         const sessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
         if (sessions) {
             state.sessions = JSON.parse(sessions);
-            // Migrate existing sessions to have a task color
             state.sessions.forEach(s => {
                 if (!s.taskColor) s.taskColor = '#58a6ff';
             });
@@ -129,8 +126,8 @@ function setupEventListeners() {
         addTask();
     });
 
-    // NEW INLINE COLOR PICKER LOGIC
     const inlineColorBtn = document.getElementById('inlineColorBtn');
+    const selectedColorCircle = document.getElementById('selectedColorCircle');
     const inlineColorDropdown = document.getElementById('inlineColorDropdown');
     
     if (inlineColorBtn && inlineColorDropdown) {
@@ -144,23 +141,18 @@ function setupEventListeners() {
                 e.stopPropagation();
                 const color = dot.dataset.color;
                 state.selectedTaskColor = color;
-                inlineColorBtn.style.background = color;
-                
-                // Update active state in dropdown
+                if (selectedColorCircle) selectedColorCircle.style.background = color;
                 inlineColorDropdown.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
                 dot.classList.add('active');
-                
                 inlineColorDropdown.classList.remove('open');
             });
         });
 
-        // Close dropdown when clicking anywhere else
         document.addEventListener('click', () => {
             inlineColorDropdown.classList.remove('open');
         });
     }
 
-    // Color picker logic for editing tasks (still in modal)
     const editColorPicker = document.getElementById('taskEditColorPicker');
     if (editColorPicker) {
         editColorPicker.querySelectorAll('.color-dot').forEach(dot => {
@@ -277,7 +269,6 @@ function setupEventListeners() {
         document.getElementById('notificationPrompt').style.display = 'none';
     });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT') return;
         
@@ -346,7 +337,6 @@ function toggleTimer() {
 function startTimer() {
     if (state.timerState.isRunning) return;
     
-    // Resume AudioContext on user gesture
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     } else if (audioContext.state === 'suspended') {
@@ -365,7 +355,6 @@ function startTimer() {
             handleSessionComplete();
         } else {
             updateTimerDisplay();
-            // Save state occasionally
             if (state.timerState.remainingTime % 10 === 0) saveData();
         }
     }, 1000);
@@ -399,17 +388,12 @@ function handleSessionComplete(skipped = false) {
         state.timerState.sessionCount++;
         saveSession();
         updateStats();
-        
-        // Play work completion sound (low-high)
         playTone(440, 0.1, 0);
         setTimeout(() => playTone(880, 0.2, 0.1), 100);
-        
         showNotification('Focus session complete!', 'Time for a break.');
     } else if (!wasWork && !skipped) {
-        // Play break completion sound (high-low)
         playTone(880, 0.1, 0);
         setTimeout(() => playTone(440, 0.2, 0.1), 100);
-        
         showNotification('Break is over!', 'Ready to get back to work?');
     }
 
@@ -447,7 +431,7 @@ function updateTimerDisplay() {
     const seconds = state.timerState.remainingTime % 60;
     const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     
-    timeDisplay.textContent = formattedTime;
+    if (timeDisplay) timeDisplay.textContent = formattedTime;
     document.title = `${formattedTime} - PomoFlow`;
     
     const modeLabels = {
@@ -456,55 +440,56 @@ function updateTimerDisplay() {
         longBreak: 'Long Break'
     };
     
-    modeDisplay.textContent = modeLabels[state.timerState.mode];
+    if (modeDisplay) modeDisplay.textContent = modeLabels[state.timerState.mode];
     
     const currentSession = (state.timerState.sessionCount % state.settings.sessionsBeforeLongBreak) + 1;
-    sessionDisplay.textContent = `Session ${currentSession} of ${state.settings.sessionsBeforeLongBreak}`;
+    if (sessionDisplay) sessionDisplay.textContent = `Session ${currentSession} of ${state.settings.sessionsBeforeLongBreak}`;
     
-    // Update Start/Pause button
     if (state.timerState.isRunning) {
-        startPauseText.textContent = 'Pause';
-        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        if (startPauseText) startPauseText.textContent = 'Pause';
+        if (playIcon) playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
         document.body.classList.add('timer-running');
     } else {
-        startPauseText.textContent = 'Start';
-        playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        if (startPauseText) startPauseText.textContent = 'Start';
+        if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
         document.body.classList.remove('timer-running');
     }
     
-    // Update active task display
     if (state.timerState.activeTaskId) {
         const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
         if (task) {
-            timerTaskDisplay.textContent = task.name;
-            timerTaskDisplay.style.color = task.color;
-            
-            // Sync timer ring color with task color if working
-            if (state.timerState.mode === 'work') {
+            if (timerTaskDisplay) {
+                timerTaskDisplay.textContent = task.name;
+                timerTaskDisplay.style.color = task.color;
+            }
+            if (state.timerState.mode === 'work' && timerProgress) {
                 timerProgress.style.stroke = task.color;
-            } else {
-                timerProgress.style.stroke = ''; // fallback to CSS
+            } else if (timerProgress) {
+                timerProgress.style.stroke = '';
             }
         }
     } else {
-        timerTaskDisplay.textContent = '';
-        timerProgress.style.stroke = '';
+        if (timerTaskDisplay) timerTaskDisplay.textContent = '';
+        if (timerProgress) timerProgress.style.stroke = '';
     }
     
-    // Update Progress Ring
     const percent = (state.timerState.remainingTime / state.timerState.totalTime);
     const offset = 282.7 * (1 - percent);
-    timerProgress.style.strokeDashoffset = offset;
-    
-    // Update Progress Bar Class
-    timerProgress.className = 'timer-ring-progress';
-    if (state.timerState.mode === 'shortBreak') timerProgress.classList.add('break');
-    if (state.timerState.mode === 'longBreak') timerProgress.classList.add('long-break');
-    
-    // Update accessibility announcer
-    const announcer = document.getElementById('timerAnnouncer');
-    if (state.timerState.remainingTime % 60 === 0) {
-        announcer.textContent = `${minutes} minutes remaining`;
+    if (timerProgress) {
+        timerProgress.style.strokeDashoffset = offset;
+        timerProgress.className = 'timer-ring-progress';
+        if (state.timerState.mode === 'shortBreak') timerProgress.classList.add('break');
+        if (state.timerState.mode === 'longBreak') timerProgress.classList.add('long-break');
+    }
+
+    if (state.timerState.activeTaskId) {
+        const taskRing = document.getElementById(`taskRing-${state.timerState.activeTaskId}`);
+        if (taskRing) {
+            taskRing.style.strokeDashoffset = offset;
+            taskRing.className = 'task-ring-progress';
+            if (state.timerState.mode === 'shortBreak') taskRing.classList.add('break');
+            if (state.timerState.mode === 'longBreak') taskRing.classList.add('long-break');
+        }
     }
 }
 
@@ -523,24 +508,29 @@ function addTask() {
         };
         
         state.tasks.push(task);
+        state.lastTaskId = task.id;
         input.value = '';
         saveData();
         renderTasks();
         
-        // Brief success feedback on the add button
         const btn = document.getElementById('addTaskBtn');
-        btn.style.background = 'var(--success)';
-        setTimeout(() => btn.style.background = '', 500);
+        if (btn) {
+            btn.style.background = 'var(--success)';
+            setTimeout(() => btn.style.background = '', 500);
+        }
     } else {
         const wrapper = document.querySelector('.task-input-wrapper');
-        wrapper.classList.add('shake');
-        setTimeout(() => wrapper.classList.remove('shake'), 400);
+        if (wrapper) {
+            wrapper.classList.add('shake');
+            setTimeout(() => wrapper.classList.remove('shake'), 400);
+        }
     }
 }
 
 function renderTasks() {
     const list = document.getElementById('taskList');
     const hint = document.getElementById('taskHint');
+    if (!list) return;
     list.innerHTML = '';
     
     if (state.tasks.length === 0) {
@@ -550,57 +540,59 @@ function renderTasks() {
                 <p>No tasks yet. Add one above to start focusing.</p>
             </div>
         `;
-        hint.style.display = 'none';
+        if (hint) hint.style.display = 'none';
         return;
     }
     
-    hint.style.display = 'flex';
+    if (hint) hint.style.display = 'flex';
     
-    // Sort: Incomplete first, then by date
-    const sortedTasks = [...state.tasks].sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    const activeTasks = state.tasks.filter(t => !t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const completedTasks = state.tasks.filter(t => t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-    sortedTasks.forEach(task => {
+    const renderTaskItem = (task) => {
         const item = document.createElement('div');
-        item.className = `task-item slide-in ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
+        const isNew = task.id === state.lastTaskId;
+        item.className = `task-item ${isNew ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
         
         const minutes = Math.floor(task.totalTime / 60);
         
         item.innerHTML = `
             <div class="task-menu">
-                <button class="edit-btn" aria-label="Edit task">
+                <button class="edit-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
                     <span>Edit</span>
                 </button>
-                <button class="completed-btn ${task.completed ? 'undo' : ''}" aria-label="${task.completed ? 'Undo' : 'Complete'} task">
+                <button class="completed-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
                     <span>${task.completed ? 'Undo' : 'Done'}</span>
                 </button>
-                <button class="danger delete-btn" aria-label="Delete task">
+                <button class="danger delete-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     <span>Del</span>
                 </button>
             </div>
             <div class="task-slide-wrapper">
-                <button class="task-play-btn" aria-label="Start tracking ${task.name}" style="color: ${task.color}">
-                    <svg viewBox="0 0 24 24"><path d="${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'}"/></svg>
+                <button class="task-play-btn" style="color: ${task.color}">
+                    <svg class="task-ring" viewBox="0 0 100 100">
+                        <circle class="task-ring-bg" cx="50" cy="50" r="45"/>
+                        <circle class="task-ring-progress" id="taskRing-${task.id}" cx="50" cy="50" r="45" 
+                                stroke-dasharray="282.7" stroke-dashoffset="${state.timerState.activeTaskId === task.id ? 282.7 * (1 - (state.timerState.remainingTime / state.timerState.totalTime)) : 0}"/>
+                    </svg>
+                    <svg class="task-icon" viewBox="0 0 24 24"><path d="${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'}"/></svg>
                 </button>
                 <div class="task-info">
-                    <div class="task-name">${task.name}</div>
+                    <div class="task-name">${escapeHtml(task.name)}</div>
                     <div class="task-time">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                         ${minutes}m focused
                     </div>
                 </div>
-                <button class="task-more" aria-label="Task actions">
+                <button class="task-more">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
             </div>
         `;
         
-        // Touch/Slide interactions
         let startX = 0;
         let currentTranslate = 0;
         let isSliding = false;
@@ -614,9 +606,8 @@ function renderTasks() {
         
         wrapper.addEventListener('touchmove', (e) => {
             if (!isSliding) return;
-            const x = e.touches[0].clientX;
-            const diff = x - startX;
-            if (diff < 0) { // Sliding left
+            const diff = e.touches[0].clientX - startX;
+            if (diff < 0) {
                 currentTranslate = Math.max(diff, -160);
                 wrapper.style.transform = `translateX(${currentTranslate}px)`;
             }
@@ -635,13 +626,11 @@ function renderTasks() {
             currentTranslate = 0;
         });
 
-        // Toggle menu on more button
         item.querySelector('.task-more').addEventListener('click', (e) => {
             e.stopPropagation();
             item.classList.toggle('menu-open');
         });
 
-        // Handle Play/Pause
         item.querySelector('.task-play-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             if (state.timerState.activeTaskId === task.id) {
@@ -654,7 +643,6 @@ function renderTasks() {
             renderTasks();
         });
 
-        // Handle Menu Actions
         item.querySelector('.edit-btn').addEventListener('click', () => {
             openTaskEditModal(task);
             item.classList.remove('menu-open');
@@ -669,8 +657,20 @@ function renderTasks() {
             deleteTask(task.id);
         });
 
-        list.appendChild(item);
-    });
+        return item;
+    };
+
+    activeTasks.forEach(task => list.appendChild(renderTaskItem(task)));
+    
+    if (completedTasks.length > 0) {
+        const completedHeader = document.createElement('div');
+        completedHeader.className = 'task-section-header';
+        completedHeader.textContent = 'Completed';
+        list.appendChild(completedHeader);
+        completedTasks.forEach(task => list.appendChild(renderTaskItem(task)));
+    }
+    
+    state.lastTaskId = null;
 }
 
 function toggleTaskComplete(id) {
@@ -727,75 +727,69 @@ function saveSession() {
 
 function renderHistory(filter = 'today') {
     const list = document.getElementById('historyList');
+    if (!list) return;
     list.innerHTML = '';
     
-    let filteredSessions = filterSessions(state.sessions, filter);
+    let sessions = filterSessions(state.sessions, filter);
     
-    if (filteredSessions.length === 0) {
+    if (sessions.length === 0) {
         list.innerHTML = '<div class="empty-state"><p>No sessions found for this period.</p></div>';
         renderChart([]);
         return;
     }
     
-    // Sort by newest first
-    filteredSessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    renderChart(sessions);
     
-    renderChart(filteredSessions);
+    const displaySessions = showAllHistory ? sessions : sessions.slice(0, 10);
     
-    const displaySessions = showAllHistory ? filteredSessions : filteredSessions.slice(0, 10);
-    
-    // Add Header Labels for History Grid (only if not empty)
-    if (displaySessions.length > 0) {
-        const header = document.createElement('div');
-        header.className = 'history-header-grid';
-        header.innerHTML = `
-            <div class="history-header-indicator"></div>
-            <div class="history-header-info">
-                <div>TASK</div>
-                <div>DURATION</div>
-                <div>COMPLETED</div>
-            </div>
-            <div class="history-header-more"></div>
-        `;
-        list.appendChild(header);
-    }
+    const header = document.createElement('div');
+    header.className = 'history-header-grid';
+    header.innerHTML = `
+        <div class="history-header-indicator"></div>
+        <div class="history-header-info">
+            <div>TASK</div>
+            <div>DURATION</div>
+            <div>COMPLETED</div>
+        </div>
+        <div class="history-header-more"></div>
+    `;
+    list.appendChild(header);
 
     displaySessions.forEach(session => {
         const item = document.createElement('div');
         item.className = 'history-item slide-in';
         
-        const date = new Date(session.timestamp);
-        const timeStr = formatTimestamp(date);
+        const timeStr = formatTimestamp(new Date(session.timestamp));
         const durationMin = Math.round(session.duration / 60);
         
         item.innerHTML = `
             <div class="history-menu">
-                <button class="edit-btn" aria-label="Edit session">
+                <button class="edit-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
                     <span>Edit</span>
                 </button>
-                <button class="danger delete-btn" aria-label="Delete session">
+                <button class="danger delete-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     <span>Del</span>
                 </button>
             </div>
             <div class="history-slide-wrapper">
-                <div class="history-type-indicator" style="background: ${session.taskColor}"></div>
+                <div class="history-type-indicator" style="background: ${session.taskColor || '#58a6ff'}"></div>
                 <div class="history-info">
-                    <div class="history-task">${session.taskName}</div>
+                    <div class="history-task">${escapeHtml(session.taskName)}</div>
                     <div class="history-duration">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                         ${durationMin} min
                     </div>
                     <div class="history-time">${timeStr}</div>
                 </div>
-                <button class="history-more" aria-label="Session actions">
+                <button class="history-more">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
             </div>
         `;
 
-        // Sliding logic for history items
         let startX = 0;
         let currentTranslate = 0;
         let isSliding = false;
@@ -809,9 +803,8 @@ function renderHistory(filter = 'today') {
         
         wrapper.addEventListener('touchmove', (e) => {
             if (!isSliding) return;
-            const x = e.touches[0].clientX;
-            const diff = x - startX;
-            if (diff < 0) { // Sliding left
+            const diff = e.touches[0].clientX - startX;
+            if (diff < 0) {
                 currentTranslate = Math.max(diff, -120);
                 wrapper.style.transform = `translateX(${currentTranslate}px)`;
             }
@@ -850,18 +843,18 @@ function renderHistory(filter = 'today') {
     const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
     if (showAllBtn) {
         showAllBtn.textContent = showAllHistory ? 'Show Less' : 'Show All';
-        showAllBtn.style.display = filteredSessions.length > 10 ? 'block' : 'none';
+        showAllBtn.style.display = sessions.length > 10 ? 'block' : 'none';
     }
 }
 
 function filterSessions(sessions, filter) {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     
     if (filter === 'today') {
-        return sessions.filter(s => new Date(s.timestamp).getTime() >= today);
+        return sessions.filter(s => new Date(s.timestamp).getTime() >= todayStart);
     } else if (filter === 'week') {
-        const weekAgo = today - (7 * 24 * 60 * 60 * 1000);
+        const weekAgo = todayStart - (7 * 24 * 60 * 60 * 1000);
         return sessions.filter(s => new Date(s.timestamp).getTime() >= weekAgo);
     }
     return sessions;
@@ -887,7 +880,6 @@ function deleteSession(id) {
 function updateStats() {
     const today = new Date().toDateString();
     const todaySessions = state.sessions.filter(s => new Date(s.timestamp).toDateString() === today);
-    
     const totalSeconds = todaySessions.reduce((acc, s) => acc + s.duration, 0);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -895,78 +887,41 @@ function updateStats() {
     document.getElementById('todayFocusTime').textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
     document.getElementById('todaySessions').textContent = todaySessions.length;
     
-    // Calculate Streak
     const streak = calculateStreak(state.sessions);
     document.getElementById('currentStreak').textContent = streak > 0 ? `${streak} days` : '--';
 }
 
 function calculateStreak(sessions) {
     if (sessions.length === 0) return 0;
-    
     const dates = [...new Set(sessions.map(s => new Date(s.timestamp).toDateString()))]
         .map(d => new Date(d))
         .sort((a, b) => b - a);
-        
     let streak = 0;
     let currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-    
-    // Check if user has sessions today or yesterday to continue streak
-    const latestSessionDate = dates[0];
-    const diffDays = Math.floor((currentDate - latestSessionDate) / (86400000));
-    
-    if (diffDays > 1) return 0;
-    
+    if (Math.floor((currentDate - dates[0]) / 86400000) > 1) return 0;
     for (let i = 0; i < dates.length; i++) {
-        const sessionDate = dates[i];
-        if (i === 0) {
-            streak = 1;
-            continue;
-        }
-        
-        const prevDate = dates[i-1];
-        const dayDiff = Math.floor((prevDate - sessionDate) / (86400000));
-        
-        if (dayDiff === 1) {
-            streak++;
-        } else {
-            break;
-        }
+        if (i === 0) { streak = 1; continue; }
+        if (Math.floor((dates[i-1] - dates[i]) / 86400000) === 1) streak++;
+        else break;
     }
-    
     return streak;
 }
 
 function renderChart(sessions) {
     const container = document.getElementById('historyChart');
+    if (!container) return;
     container.innerHTML = '';
-    
     if (sessions.length === 0) return;
     
-    // Group time by task name
     const taskData = {};
     sessions.forEach(s => {
-        if (!taskData[s.taskName]) {
-            taskData[s.taskName] = {
-                time: 0,
-                color: s.taskColor || '#58a6ff'
-            };
-        }
+        if (!taskData[s.taskName]) taskData[s.taskName] = { time: 0, color: s.taskColor || '#58a6ff' };
         taskData[s.taskName].time += s.duration;
     });
     
-    const sortedTasks = Object.entries(taskData)
-        .sort((a, b) => b[1].time - a[1].time);
-        
-    const topTasks = sortedTasks.slice(0, 5);
-    if (sortedTasks.length > 5) {
-        const otherTime = sortedTasks.slice(5).reduce((acc, t) => acc + t[1].time, 0);
-        topTasks.push(['Others', { time: otherTime, color: '#8b949e' }]);
-    }
-    
+    const topTasks = Object.entries(taskData).sort((a, b) => b[1].time - a[1].time).slice(0, 5);
     const totalTime = sessions.reduce((acc, s) => acc + s.duration, 0);
-    
-    // Create SVG Pie Chart
     const chartSize = 140;
     const center = chartSize / 2;
     const radius = 60;
@@ -978,112 +933,67 @@ function renderChart(sessions) {
     
     topTasks.forEach(([name, data]) => {
         const sliceAngle = (data.time / totalTime) * 360;
-        
-        // Handle 100% case
-        if (sliceAngle === 360) {
+        if (sliceAngle >= 359.9) {
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', center);
-            circle.setAttribute('cy', center);
-            circle.setAttribute('r', radius);
-            circle.setAttribute('fill', data.color);
-            svg.appendChild(circle);
-            return;
+            circle.setAttribute('cx', center); circle.setAttribute('cy', center);
+            circle.setAttribute('r', radius); circle.setAttribute('fill', data.color);
+            svg.appendChild(circle); return;
         }
-        
         const x1 = center + radius * Math.cos(Math.PI * (currentAngle - 90) / 180);
         const y1 = center + radius * Math.sin(Math.PI * (currentAngle - 90) / 180);
-        
         currentAngle += sliceAngle;
-        
         const x2 = center + radius * Math.cos(Math.PI * (currentAngle - 90) / 180);
         const y2 = center + radius * Math.sin(Math.PI * (currentAngle - 90) / 180);
-        
-        const largeArcFlag = sliceAngle > 180 ? 1 : 0;
-        
-        const pathData = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-        
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', pathData);
-        path.setAttribute('fill', data.color);
-        svg.appendChild(path);
+        path.setAttribute('d', `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
+        path.setAttribute('fill', data.color); svg.appendChild(path);
     });
     
-    const chartWrapper = document.createElement('div');
-    chartWrapper.className = 'pie-chart-container';
-    chartWrapper.appendChild(svg);
-    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pie-chart-container';
+    wrapper.appendChild(svg);
     const legend = document.createElement('div');
     legend.className = 'pie-legend';
-    
     topTasks.forEach(([name, data]) => {
-        const mins = Math.round(data.time / 60);
-        const percent = Math.round((data.time / totalTime) * 100);
         const item = document.createElement('div');
         item.className = 'legend-item';
-        item.innerHTML = `
-            <div class="legend-color" style="background: ${data.color}"></div>
-            <div class="legend-label">${name}</div>
-            <div class="legend-value">${mins}m (${percent}%)</div>
-        `;
+        item.innerHTML = `<div class="legend-color" style="background: ${data.color}"></div><div class="legend-label">${escapeHtml(name)}</div><div class="legend-value">${Math.round(data.time/60)}m (${Math.round(data.time/totalTime*100)}%)</div>`;
         legend.appendChild(item);
     });
-    
-    chartWrapper.appendChild(legend);
-    container.appendChild(chartWrapper);
+    wrapper.appendChild(legend);
+    container.appendChild(wrapper);
 }
 
 function updateDateTime() {
     const el = document.getElementById('datetime');
-    const now = new Date();
-    
-    const options = { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: state.settings.use12Hour
-    };
-    
-    el.textContent = now.toLocaleDateString('en-US', options).replace(',', '');
+    if (!el) return;
+    el.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour }).replace(',', '');
 }
 
 function formatTimestamp(date) {
-    return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: state.settings.use12Hour
-    });
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
 }
 
-// Modal Functions
 function openSettings() {
     const modal = document.getElementById('settingsModal');
+    if (!modal) return;
     modal.classList.add('open');
-    
-    // Load current values
     document.getElementById('workDuration').value = state.settings.workDuration;
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
-    
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('shortBreakDurationValue').textContent = `${state.settings.shortBreakDuration} min`;
-    
     document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
     document.getElementById('longBreakDurationValue').textContent = `${state.settings.longBreakDuration} min`;
-    
     document.getElementById('sessionsBeforeLongBreak').value = state.settings.sessionsBeforeLongBreak;
     document.getElementById('autoStartBreaks').className = `setting-toggle ${state.settings.autoStartBreaks ? 'active' : ''}`;
     document.getElementById('autoStartWork').className = `setting-toggle ${state.settings.autoStartWork ? 'active' : ''}`;
     document.getElementById('timeFormat').className = `setting-toggle ${state.settings.use12Hour ? 'active' : ''}`;
-    
     document.getElementById('soundVolume').value = state.settings.soundVolume;
     document.getElementById('soundVolumeValue').textContent = `${state.settings.soundVolume}%`;
 }
 
 function closeSettings() {
     document.getElementById('settingsModal').classList.remove('open');
-    
-    // Save values
     state.settings.workDuration = parseInt(document.getElementById('workDuration').value);
     state.settings.shortBreakDuration = parseInt(document.getElementById('shortBreakDuration').value);
     state.settings.longBreakDuration = parseInt(document.getElementById('longBreakDuration').value);
@@ -1092,20 +1002,16 @@ function closeSettings() {
     state.settings.autoStartWork = document.getElementById('autoStartWork').classList.contains('active');
     state.settings.use12Hour = document.getElementById('timeFormat').classList.contains('active');
     state.settings.soundVolume = parseInt(document.getElementById('soundVolume').value);
-    
     saveData();
     if (!state.timerState.isRunning) applyMode(state.timerState.mode);
     updateDateTime();
 }
 
-// Simple confirmation modal
 let confirmResolve = null;
 function confirmAction(message) {
     document.getElementById('confirmMessage').textContent = message;
     document.getElementById('confirmModal').classList.add('open');
-    return new Promise(resolve => {
-        confirmResolve = resolve;
-    });
+    return new Promise(resolve => { confirmResolve = resolve; });
 }
 
 function closeConfirmModal() {
@@ -1130,26 +1036,15 @@ function closeSessionEditModal() {
 function saveSessionFromModal() {
     const duration = parseInt(document.getElementById('sessionEditDuration').value);
     if (isNaN(duration) || duration < 1) return;
-    
     const session = state.sessions.find(s => s.id === editingSessionId);
     if (session) {
         const oldDuration = session.duration;
-        const newDuration = duration * 60;
-        session.duration = newDuration;
-        
-        // Update task's total time
+        session.duration = duration * 60;
         if (session.taskId) {
             const task = state.tasks.find(t => t.id === session.taskId);
-            if (task) {
-                task.totalTime = Math.max(0, task.totalTime - oldDuration + newDuration);
-            }
+            if (task) task.totalTime = Math.max(0, task.totalTime - oldDuration + session.duration);
         }
-        
-        saveData();
-        renderTasks();
-        renderHistory(currentFilter);
-        updateStats();
-        closeSessionEditModal();
+        saveData(); renderTasks(); renderHistory(currentFilter); updateStats(); closeSessionEditModal();
     }
 }
 
@@ -1158,12 +1053,9 @@ function openTaskEditModal(task) {
     editingTaskId = task.id;
     state.editTaskColor = task.color;
     document.getElementById('taskEditName').value = task.name;
-    
-    const colorPicker = document.getElementById('taskEditColorPicker');
-    colorPicker.querySelectorAll('.color-dot').forEach(dot => {
+    document.getElementById('taskEditColorPicker').querySelectorAll('.color-dot').forEach(dot => {
         dot.classList.toggle('active', dot.dataset.color === task.color);
     });
-    
     document.getElementById('taskEditModal').classList.add('open');
 }
 
@@ -1175,33 +1067,16 @@ function closeTaskEditModal() {
 function saveTaskFromModal() {
     const name = document.getElementById('taskEditName').value.trim();
     if (!name) return;
-    
     const task = state.tasks.find(t => t.id === editingTaskId);
     if (task) {
-        task.name = name;
-        task.color = state.editTaskColor;
-        
-        // Also update future sessions' colors if they refer to this task
-        // We could also update past ones, let's keep them synced for consistency
-        state.sessions.forEach(s => {
-            if (s.taskId === task.id) {
-                s.taskName = task.name;
-                s.taskColor = task.color;
-            }
-        });
-        
-        saveData();
-        renderTasks();
-        renderHistory(currentFilter);
-        updateTimerDisplay(); // in case this is the active task
-        closeTaskEditModal();
+        task.name = name; task.color = state.editTaskColor;
+        state.sessions.forEach(s => { if (s.taskId === task.id) { s.taskName = task.name; s.taskColor = task.color; } });
+        saveData(); renderTasks(); renderHistory(currentFilter); updateTimerDisplay(); closeTaskEditModal();
     }
 }
 
-// Notification System
 function checkNotificationPrompt() {
-    const promptStatus = localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT);
-    if (Notification.permission === 'default' && promptStatus !== 'denied') {
+    if (Notification.permission === 'default' && localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT) !== 'denied') {
         document.getElementById('notificationPrompt').style.display = 'flex';
     }
 }
@@ -1210,176 +1085,110 @@ function requestNotificationPermission() {
     Notification.requestPermission().then(permission => {
         state.notificationPermission = permission;
         document.getElementById('notificationPrompt').style.display = 'none';
-        if (permission === 'granted') {
-            showNotification('Notifications enabled', 'You will be alerted when your sessions end.');
-        }
+        if (permission === 'granted') showNotification('Notifications enabled', 'You will be alerted when focus ends.');
     });
 }
 
 function showNotification(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body, icon: '/favicon.ico' });
-    }
+    if (Notification.permission === 'granted') new Notification(title, { body });
 }
 
-// Audio System
 function playTone(freq, duration, delay) {
     if (!audioContext) return;
-    
     const osc = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    
     const vol = state.settings.soundVolume / 100;
-    
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, audioContext.currentTime + delay);
-    
     gain.gain.setValueAtTime(0, audioContext.currentTime + delay);
     gain.gain.linearRampToValueAtTime(vol * 0.1, audioContext.currentTime + delay + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
-    
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-    
-    osc.start(audioContext.currentTime + delay);
-    osc.stop(audioContext.currentTime + delay + duration);
+    osc.connect(gain); gain.connect(audioContext.destination);
+    osc.start(audioContext.currentTime + delay); osc.stop(audioContext.currentTime + delay + duration);
 }
 
-// Data Import/Export
 function exportData() {
-    const data = {
-        tasks: state.tasks,
-        sessions: state.sessions,
-        settings: state.settings,
-        exportDate: new Date().toISOString(),
-        version: CURRENT_VERSION
-    };
-    
+    const data = { tasks: state.tasks, sessions: state.sessions, settings: state.settings, exportDate: new Date().toISOString(), version: CURRENT_VERSION };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pomoflow-data-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = `pomoflow-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 let pendingImportData = null;
 function handleImportFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
         try {
             const data = JSON.parse(event.target.result);
-            if (!data.tasks || !data.sessions) throw new Error('Invalid data format');
-            
+            if (!data.tasks || !data.sessions) throw new Error('Invalid format');
             pendingImportData = data;
-            const info = document.getElementById('importInfo');
-            info.innerHTML = `
-                <p>Found <strong>${data.tasks.length}</strong> tasks and <strong>${data.sessions.length}</strong> sessions.</p>
-                <p>How would you like to proceed?</p>
-            `;
+            document.getElementById('importInfo').innerHTML = `<p>Found <strong>${data.tasks.length}</strong> tasks and <strong>${data.sessions.length}</strong> sessions.</p><p>Proceed?</p>`;
             document.getElementById('importModal').classList.add('open');
-        } catch (err) {
-            alert('Error parsing file: ' + err.message);
-        }
+        } catch (err) { alert('Error: ' + err.message); }
     };
     reader.readAsText(file);
 }
 
-function closeImportModal() {
-    document.getElementById('importModal').classList.remove('open');
-    pendingImportData = null;
-    document.getElementById('importFile').value = '';
-}
+function closeImportModal() { document.getElementById('importModal').classList.remove('open'); pendingImportData = null; document.getElementById('importFile').value = ''; }
 
 function performImport(mode) {
     if (!pendingImportData) return;
-    
-    if (mode === 'replace') {
-        state.tasks = pendingImportData.tasks;
-        state.sessions = pendingImportData.sessions;
-        if (pendingImportData.settings) state.settings = { ...state.settings, ...pendingImportData.settings };
-    } else {
-        // Merge - avoid duplicates by ID
-        const existingTaskIds = new Set(state.tasks.map(t => t.id));
-        pendingImportData.tasks.forEach(t => {
-            if (!existingTaskIds.has(t.id)) state.tasks.push(t);
-        });
-        
-        const existingSessionIds = new Set(state.sessions.map(s => s.id));
-        pendingImportData.sessions.forEach(s => {
-            if (!existingSessionIds.has(s.id)) state.sessions.push(s);
-        });
+    if (mode === 'replace') { state.tasks = pendingImportData.tasks; state.sessions = pendingImportData.sessions; if (pendingImportData.settings) state.settings = { ...state.settings, ...pendingImportData.settings }; }
+    else {
+        const taskIds = new Set(state.tasks.map(t => t.id));
+        pendingImportData.tasks.forEach(t => { if (!taskIds.has(t.id)) state.tasks.push(t); });
+        const sessionIds = new Set(state.sessions.map(s => s.id));
+        pendingImportData.sessions.forEach(s => { if (!sessionIds.has(s.id)) state.sessions.push(s); });
     }
-    
-    saveData();
-    renderTasks();
-    renderHistory(currentFilter);
-    updateStats();
-    closeImportModal();
-    showToast('Data imported successfully');
+    saveData(); renderTasks(); renderHistory(currentFilter); updateStats(); closeImportModal(); showToast('Data imported');
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('flowtracker_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    const btn = document.getElementById('themeToggle');
-    btn.classList.toggle('dark', savedTheme === 'dark');
+    const theme = localStorage.getItem('flowtracker_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeToggle').classList.toggle('dark', theme === 'dark');
 }
 
 function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('flowtracker_theme', next);
     document.getElementById('themeToggle').classList.toggle('dark', next === 'dark');
 }
 
 function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.style.display = 'block';
-    toast.classList.add('show');
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.style.display = 'none', 200);
-    }, 3000);
+    const t = document.getElementById('toast'); t.textContent = message; t.style.display = 'block'; t.classList.add('show');
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.style.display = 'none', 200); }, 3000);
 }
 
 function restoreTimerState() {
     if (state.timerState.isRunning && state.timerState.startTime) {
-        const now = Date.now();
-        const elapsed = Math.floor((now - state.timerState.startTime) / 1000);
+        const elapsed = Math.floor((Date.now() - state.timerState.startTime) / 1000);
         state.timerState.remainingTime = Math.max(0, state.timerState.remainingTime - elapsed);
-        
-        if (state.timerState.remainingTime > 0) {
-            startTimer();
-        } else {
-            handleSessionComplete();
-        }
-    } else {
-        updateTimerDisplay();
-    }
+        if (state.timerState.remainingTime > 0) startTimer(); else handleSessionComplete();
+    } else updateTimerDisplay();
 }
 
-// Helper for range sliders
-document.querySelectorAll('.setting-slider').forEach(slider => {
-    slider.addEventListener('input', () => {
-        const valEl = document.getElementById(`${slider.id}Value`);
-        if (valEl) valEl.textContent = slider.id === 'soundVolume' ? `${slider.value}%` : `${slider.value} min`;
-    });
-});
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-// Helper for toggles
-document.querySelectorAll('.setting-toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-        toggle.classList.toggle('active');
+function clearHistory() {
+    confirmAction('Are you sure you want to clear all session history?').then(confirmed => {
+        if (confirmed) {
+            state.sessions = []; saveData(); renderHistory(currentFilter); updateStats();
+        }
     });
-});
+}
+
+document.querySelectorAll('.setting-slider').forEach(s => s.addEventListener('input', () => {
+    document.getElementById(`${s.id}Value`).textContent = s.id === 'soundVolume' ? `${s.value}%` : `${s.value} min`;
+}));
+
+document.querySelectorAll('.setting-toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('active')));
 
 init();

@@ -36,7 +36,10 @@
                 <div class="task-input-container">
                     <div class="task-input-wrapper">
                         <div class="inline-color-wrapper">
-                            <button type="button" class="selected-color-btn" id="inlineColorBtn" style="background: #58a6ff" aria-label="Choose color"></button>
+                            <button type="button" class="selected-color-btn" id="inlineColorBtn" aria-label="Choose color">
+                                <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
+                                <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                            </button>
                             <div class="color-dropdown" id="inlineColorDropdown">
                                 <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff"></button>
                                 <button type="button" class="color-dot" data-color="#3fb950" style="background: #3fb950"></button>
