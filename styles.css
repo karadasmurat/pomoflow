@@ -226,7 +226,7 @@ header {
 .task-input-wrapper {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .task-input {
@@ -264,6 +264,51 @@ header {
     box-shadow: 0 0 12px rgba(88, 166, 255, 0.4);
 }
 
+.color-picker {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 4px;
+    flex-wrap: wrap;
+}
+
+.color-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 200ms ease, border-color 200ms ease;
+    padding: 0;
+    min-width: 28px;
+    min-height: 28px;
+    position: relative;
+}
+
+/* Larger hit area for mobile */
+.color-dot::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+}
+
+.color-dot:hover {
+    transform: scale(1.1);
+}
+
+.color-dot.active {
+    border-color: #ffffff;
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(255,255,255,0.2);
+}
+
+[data-theme="light"] .color-dot.active {
+    border-color: #000000;
+}
+
 .task-list {
     display: flex;
     flex-direction: column;
@@ -281,6 +326,7 @@ header {
     position: relative;
     min-height: 50px;
     overflow: hidden;
+    touch-action: pan-y;
 }
 
 .task-item.menu-open .task-slide-wrapper {
@@ -913,6 +959,7 @@ header {
     min-height: 56px;
     overflow: hidden;
     border: 1px solid var(--border);
+    touch-action: pan-y;
 }
 
 .history-slide-wrapper {
@@ -1462,4 +1509,49 @@ button {
     border-radius: 4px;
     font-family: var(--font-time);
     margin: 0 2px;
+}
+
+/* MOBILE REFINEMENTS (< 600px) */
+@media (max-width: 600px) {
+    .history-header-grid {
+        display: none; /* Hide header on small screens */
+    }
+
+    .history-info {
+        grid-template-columns: 1fr; /* Stack into single column */
+        gap: 4px;
+        padding: 8px 0;
+    }
+
+    .history-task {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .history-duration, .history-time {
+        text-align: left;
+        justify-content: flex-start;
+        font-size: 12px;
+        min-width: 0;
+    }
+
+    .history-item {
+        min-height: 72px; /* Taller items for easier tap */
+    }
+
+    .history-type-indicator {
+        height: 48px;
+    }
+
+    .color-picker {
+        gap: 16px; /* Space out dots more for mobile */
+        justify-content: center;
+    }
+
+    .color-dot {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+    }
 }

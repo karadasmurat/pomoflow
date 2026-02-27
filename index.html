@@ -39,6 +39,14 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                     </button>
                 </div>
+                <div class="color-picker" id="taskColorPicker">
+                    <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Blue"></button>
+                    <button type="button" class="color-dot" data-color="#3fb950" style="background: #3fb950" aria-label="Green"></button>
+                    <button type="button" class="color-dot" data-color="#d29922" style="background: #d29922" aria-label="Orange"></button>
+                    <button type="button" class="color-dot" data-color="#f85149" style="background: #f85149" aria-label="Red"></button>
+                    <button type="button" class="color-dot" data-color="#a371f7" style="background: #a371f7" aria-label="Purple"></button>
+                    <button type="button" class="color-dot" data-color="#db61a2" style="background: #db61a2" aria-label="Pink"></button>
+                </div>
                 <div class="task-list" id="taskList"></div>
                 <div class="task-hint" id="taskHint" style="display: none;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -301,6 +309,17 @@
                 <div class="session-edit-field">
                     <label>Task Name</label>
                     <input type="text" id="taskEditName" class="session-edit-input">
+                </div>
+                <div class="session-edit-field">
+                    <label>Task Color</label>
+                    <div class="color-picker" id="taskEditColorPicker">
+                        <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Blue"></button>
+                        <button type="button" class="color-dot" data-color="#3fb950" style="background: #3fb950" aria-label="Green"></button>
+                        <button type="button" class="color-dot" data-color="#d29922" style="background: #d29922" aria-label="Orange"></button>
+                        <button type="button" class="color-dot" data-color="#f85149" style="background: #f85149" aria-label="Red"></button>
+                        <button type="button" class="color-dot" data-color="#a371f7" style="background: #a371f7" aria-label="Purple"></button>
+                        <button type="button" class="color-dot" data-color="#db61a2" style="background: #db61a2" aria-label="Pink"></button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

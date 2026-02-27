@@ -34,7 +34,9 @@ let state = {
     },
     notificationPermission: 'default',
     lastSessionId: null,
-    lastTaskId: null
+    lastTaskId: null,
+    selectedTaskColor: '#58a6ff',
+    editTaskColor: '#58a6ff'
 };
 
 let timerInterval = null;
@@ -72,10 +74,22 @@ function loadData() {
         }
 
         const tasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-        if (tasks) state.tasks = JSON.parse(tasks);
+        if (tasks) {
+            state.tasks = JSON.parse(tasks);
+            // Migrate existing tasks to have a default color
+            state.tasks.forEach(t => {
+                if (!t.color) t.color = '#58a6ff';
+            });
+        }
 
         const sessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
-        if (sessions) state.sessions = JSON.parse(sessions);
+        if (sessions) {
+            state.sessions = JSON.parse(sessions);
+            // Migrate existing sessions to have a task color
+            state.sessions.forEach(s => {
+                if (!s.taskColor) s.taskColor = '#58a6ff';
+            });
+        }
 
         const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
         if (settings) state.settings = { ...state.settings, ...JSON.parse(settings) };
@@ -114,6 +128,30 @@ function setupEventListeners() {
         e.preventDefault();
         addTask();
     });
+
+    // Color picker logic for new tasks
+    const mainColorPicker = document.getElementById('taskColorPicker');
+    if (mainColorPicker) {
+        mainColorPicker.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                mainColorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                state.selectedTaskColor = dot.dataset.color;
+            });
+        });
+    }
+
+    // Color picker logic for editing tasks
+    const editColorPicker = document.getElementById('taskEditColorPicker');
+    if (editColorPicker) {
+        editColorPicker.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                editColorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                state.editTaskColor = dot.dataset.color;
+            });
+        });
+    }
     
     document.getElementById('startPauseBtn').addEventListener('click', function(e) {
         e.preventDefault();
@@ -362,7 +400,8 @@ function addTask() {
         name: name,
         completed: false,
         totalTime: 0,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        color: state.selectedTaskColor || '#58a6ff'
     };
 
     state.tasks.push(task);
@@ -395,11 +434,12 @@ function renderTasks() {
         const isRunning = isActive && state.timerState.isRunning;
         const isCompleted = task.completed;
         const isNew = task.id === state.lastTaskId;
+        const taskColor = task.color || '#58a6ff';
         return `
         <div class="task-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isNew ? 'slide-in highlight' : ''}" 
              data-id="${task.id}">
             <div class="task-slide-wrapper" onclick="selectTask(${task.id})">
-                <div class="task-play-btn" onclick="event.stopPropagation(); toggleTaskTimer(${task.id})" title="${isRunning ? 'Pause timer' : 'Start timer'}">
+                <div class="task-play-btn" style="color: ${taskColor}" onclick="event.stopPropagation(); toggleTaskTimer(${task.id})" title="${isRunning ? 'Pause timer' : 'Start timer'}">
                     <svg viewBox="0 0 24 24">${isRunning 
                         ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
                         : '<path d="M8 5v14l11-7z"/>'}</svg>
@@ -666,6 +706,7 @@ function completeSession(forceComplete = false) {
             id: Date.now(),
             taskId: state.timerState.activeTaskId,
             taskName: task ? task.name : 'Untracked',
+            taskColor: task ? task.color : '#58a6ff',
             type: state.timerState.mode,
             duration: elapsedTime,
             completedAt: new Date().toISOString()
@@ -753,10 +794,15 @@ function updateTimerDisplay() {
         if (state.currentTask) {
             const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
             currentTaskEl.textContent = task ? `Current Focus: ${task.name}` : '';
+            if (task) {
+                currentTaskEl.style.color = task.color || 'var(--primary)';
+            }
         } else if (state.timerState.isRunning && state.timerState.mode === 'work') {
             currentTaskEl.textContent = 'Focus mode - select a task';
+            currentTaskEl.style.color = '';
         } else {
             currentTaskEl.textContent = '';
+            currentTaskEl.style.color = '';
         }
     }
 
@@ -787,6 +833,15 @@ function updateTimerDisplay() {
             progressRing.classList.add('break');
         } else if (state.timerState.mode === 'longBreak') {
             progressRing.classList.add('long-break');
+        } else if (state.timerState.mode === 'work' && state.currentTask) {
+            const task = state.tasks.find(t => String(t.id) === String(state.currentTask));
+            if (task) {
+                progressRing.style.stroke = task.color;
+            } else {
+                progressRing.style.stroke = '';
+            }
+        } else {
+            progressRing.style.stroke = '';
         }
     }
 }
@@ -849,10 +904,11 @@ function renderHistory(filter = 'all') {
 
     list.innerHTML = headerHtml + sessions.map(session => {
         const isNew = session.id === state.lastSessionId;
+        const taskColor = session.taskColor || '#58a6ff';
         return `
         <div class="history-item${isNew ? ' slide-in highlight' : ''}" data-session-id="${session.id}">
             <div class="history-slide-wrapper">
-                <div class="history-type-indicator"></div>
+                <div class="history-type-indicator" style="background: ${taskColor}"></div>
                 <div class="history-info">
                     <div class="history-task">${escapeHtml(session.taskName)}</div>
                     <div class="history-duration">
@@ -911,29 +967,31 @@ function renderChart(chartEl, filter) {
         return;
     }
 
-    const taskTotals = {};
+    const taskData = {}; // key: name, value: { duration, color }
     filteredSessions.forEach(s => {
         const name = s.taskName || 'Untracked';
-        taskTotals[name] = (taskTotals[name] || 0) + s.duration;
+        if (!taskData[name]) {
+            taskData[name] = { duration: 0, color: s.taskColor || '#58a6ff' };
+        }
+        taskData[name].duration += s.duration;
     });
 
-    const total = Object.values(taskTotals).reduce((a, b) => a + b, 0);
-    const colors = ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7', '#79c0ff', '#56d364'];
+    const total = Object.values(taskData).reduce((a, b) => a + b.duration, 0);
     
-    const sortedEntries = Object.entries(taskTotals).sort((a, b) => b[1] - a[1]);
+    const sortedEntries = Object.entries(taskData).sort((a, b) => b[1].duration - a[1].duration);
     const displayEntries = sortedEntries.slice(0, 4);
     
     if (sortedEntries.length > 4) {
-        const othersDuration = sortedEntries.slice(4).reduce((sum, entry) => sum + entry[1], 0);
-        displayEntries.push(['Others', othersDuration]);
+        const othersDuration = sortedEntries.slice(4).reduce((sum, entry) => sum + entry[1].duration, 0);
+        displayEntries.push(['Others', { duration: othersDuration, color: '#8b949e' }]);
     }
 
     let cumulative = 0;
-    const segments = displayEntries.map(([name, seconds], i) => {
-        const percent = (seconds / total) * 100;
+    const segments = displayEntries.map(([name, data], i) => {
+        const percent = (data.duration / total) * 100;
         const start = cumulative;
         cumulative += percent;
-        return { name, percent, start, seconds, color: colors[i % colors.length] };
+        return { name, percent, start, seconds: data.duration, color: data.color };
     });
 
     const circumference = 75.4;
@@ -1333,6 +1391,16 @@ function editTask(taskId) {
     const taskEditName = document.getElementById('taskEditName');
     if (taskEditName) {
         taskEditName.value = task.name;
+        
+        // Setup color picker in modal
+        const editColorPicker = document.getElementById('taskEditColorPicker');
+        if (editColorPicker) {
+            state.editTaskColor = task.color || '#58a6ff';
+            editColorPicker.querySelectorAll('.color-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.dataset.color === state.editTaskColor);
+            });
+        }
+
         const taskEditModal = document.getElementById('taskEditModal');
         if (taskEditModal) {
             taskEditModal.classList.add('open');
@@ -1355,16 +1423,23 @@ function saveTaskFromModal() {
     if (!taskEditName) return;
     const newName = taskEditName.value.trim();
     if (!newName) return;
+    
     task.name = newName;
+    task.color = state.editTaskColor;
+
+    // Update history colors for this task as well
     state.sessions.forEach(s => {
         if (s.taskId === task.id) {
             s.taskName = newName;
+            s.taskColor = state.editTaskColor;
         }
     });
+    
     saveData();
     closeTaskEditModal();
     renderTasks();
     renderHistory(currentFilter);
+    updateTimerDisplay(); // update ring color if active
 }
 
 function toggleSessionMenu(sessionId) {
