@@ -535,6 +535,20 @@ function updateTimerDisplay() {
     const currentStationIndex = (state.timerState.cycleStation || 1) - 1;
     
     if (sessionProgress) {
+        // Sync dots count with current settings
+        const dotCount = state.settings.sessionsBeforeLongBreak;
+        const currentDots = sessionProgress.querySelectorAll('.progress-step');
+        
+        if (currentDots.length !== dotCount) {
+            sessionProgress.innerHTML = '';
+            for (let i = 0; i < dotCount; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-step';
+                dot.dataset.step = i + 1;
+                sessionProgress.appendChild(dot);
+            }
+        }
+
         const steps = sessionProgress.querySelectorAll('.progress-step');
         steps.forEach((step, index) => {
             step.classList.remove('active', 'completed');

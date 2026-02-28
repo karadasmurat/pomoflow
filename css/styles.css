@@ -1898,6 +1898,11 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+}
+
+.setting-label span:first-child {
+    flex: 1;
 }
 
 .setting-value {
@@ -1913,11 +1918,11 @@ header {
 }
 
 .setting-input {
-    width: 80px;
+    width: 60px;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 4px 8px;
     color: var(--text-primary);
     font-family: var(--font-time);
     font-size: 14px;
