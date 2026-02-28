@@ -103,7 +103,14 @@ header {
     font-size: 12px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .datetime {
+        display: none;
+    }
 }
 
 .header-controls {
@@ -142,19 +149,23 @@ header {
 
 .theme-toggle {
     background: transparent;
-    border: none;
+    border: 1px solid var(--border);
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 8px;
+    padding: 0 8px;
     border-radius: 8px;
     transition: all 200ms ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 30px;
+    width: 36px;
+    min-height: 0;
 }
 
 .theme-toggle:hover {
     color: var(--text-primary);
+    border-color: var(--text-secondary);
     background: var(--surface-elevated);
 }
 
@@ -1671,12 +1682,18 @@ header {
 
 .settings-btn {
     background: transparent;
-    border: none;
+    border: 1px solid var(--border);
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 8px;
+    padding: 0 8px;
     border-radius: 8px;
     transition: all 200ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    width: 36px;
+    min-height: 0;
 }
 
 .settings-btn:hover {
@@ -2086,6 +2103,18 @@ button {
 
 /* MOBILE REFINEMENTS (< 600px) */
 @media (max-width: 600px) {
+    .history-panel .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .history-panel .panel-header-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
     .history-header-grid {
         display: none; /* Hide header on small screens */
     }

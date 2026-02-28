@@ -2,315 +2,326 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - PomoFlow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>About PomoFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface-elevated: #21262d;
+            --primary: #58a6ff;
+            --success: #3fb950;
+            --warning: #d29922;
+            --danger: #f85149;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --border: #30363d;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'DM Sans', sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --surface: #f6f8fa;
+            --surface-elevated: #eaeef2;
+            --primary: #0969da;
+            --success: #1a7f37;
+            --warning: #9a6700;
+            --danger: #cf222e;
+            --text-primary: #1f2328;
+            --text-secondary: #656d76;
+            --border: #d0d7de;
+        }
+
+        * {
+            margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
             background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 24px;
         }
-        .page-header {
-            width: 100%;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-        }
-        .header-content, .footer-content {
-            width: min(900px, 92vw);
+
+        .container {
+            max-width: 800px;
             margin: 0 auto;
+        }
+
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 48px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
         }
+
         .logo {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             color: var(--text-primary);
             text-decoration: none;
-        }
-        .logo svg {
-            width: 24px;
-            height: 24px;
-            fill: var(--primary);
-        }
-        .nav-link {
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            color: var(--text-secondary);
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: all 200ms ease;
-        }
-        .nav-link:hover {
-            color: var(--text-primary);
-            background: var(--surface-elevated);
-        }
-        main.page {
-            width: min(900px, 92vw);
-            margin: 0 auto;
-            padding-bottom: 4rem;
-        }
-        section {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 2rem;
-        }
-        h1, h2, h3 {
-            font-family: var(--font-sans);
-            color: var(--text-primary);
-            line-height: 1.3;
-            margin: 0 0 0.75rem 0;
-        }
-        h1 {
-            font-size: clamp(2rem, 5vw, 2.5rem);
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        h2 {
-            font-size: 1.75rem;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        h3 {
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .feature-icon {
-            color: var(--primary);
-            flex-shrink: 0;
-        }
-        p, li {
-            color: var(--text-secondary);
-            font-size: 1rem;
-            line-height: 1.7;
-        }
-        ol, ul {
-            padding-left: 1.5rem;
-        }
-        code, kbd {
-            font-family: var(--font-mono);
-            background: var(--bg);
-            border: 1px solid var(--border);
-            padding: 0.2em 0.4em;
-            border-radius: 6px;
-            font-size: 0.9em;
-        }
-        .grid {
-            display: grid;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-        .grid-2 {
-             grid-template-columns: repeat(2, 1fr);
-        }
-        .feature-card {
-            background: var(--surface-elevated);
-            border-radius: 8px;
-            padding: 1.5rem;
-        }
-        .shortcut-grid {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 0.75rem 1.5rem;
-            align-items: center;
-        }
-        footer.page-footer {
-            width: 100%;
-            border-top: 1px solid var(--border);
-            padding: 2rem 0;
-            margin-top: 2rem;
-            background: var(--surface);
-        }
-        
-        /* Cycle Tracker Styles */
-        .cycle-tracker-demo {
-            padding: 1.5rem;
-            border-radius: 8px;
-            background: var(--bg);
-            margin-top: 1rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
-        .cycle-tracker-demo p {
-            text-align: center;
-            font-size: 0.9rem;
-            margin: 0;
-        }
-        
-        /* Match app progress dots */
-        .demo-progress {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            align-items: center;
-        }
-        .demo-step {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            border: 1.5px solid var(--border);
-        }
-        .demo-step.active {
-            width: 12px;
-            height: 12px;
-            border-color: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
-            border-width: 2px;
-        }
-        .demo-step.completed {
-            border-color: var(--success);
-            background: transparent;
         }
 
-        @media (max-width: 760px) {
-            h1 { font-size: 1.8rem; }
-            h2 { font-size: 1.5rem; }
-            section { padding: 1.5rem; }
-            .grid-2 { grid-template-columns: 1fr; }
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: opacity 200ms;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        section {
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .feature-card h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .shortcuts-list {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            list-style: none;
+        }
+
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .shortcut-item:last-child {
+            margin-bottom: 0;
+        }
+
+        kbd {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--primary);
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .workflow-steps {
+            counter-reset: step;
+            list-style: none;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .workflow-step::before {
+            counter-increment: step;
+            content: counter(step);
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: var(--bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .philosophy-banner {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .philosophy-banner h2 {
+            margin-bottom: 24px;
+        }
+
+        footer {
+            margin-top: 64px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+            h1 {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
 <body>
-
-    <header class="page-header">
-        <div class="header-content">
+    <div class="container">
+        <header>
             <a href="index.html" class="logo">
-                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                 PomoFlow
             </a>
-            <a href="index.html" class="nav-link">← Back to Timer</a>
-        </div>
-    </header>
-
-    <main class="page">
-        <h1>About & How to Use</h1>
+            <a href="index.html" class="back-link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                Back to Timer
+            </a>
+        </header>
 
         <section>
-            <h2>What is the Pomodoro Technique?</h2>
-            <p>The Pomodoro Technique is a time management method that uses a timer to break work into focused intervals, separated by short breaks. This trains your brain to focus and helps prevent burnout.</p>
-            <ol>
-                <li>Choose a task you want to work on.</li>
-                <li>Set the timer for 25 minutes and start working without interruption.</li>
-                <li>When the timer rings, take a 5-minute short break.</li>
-                <li>After four focus sessions, take a longer 15-30 minute break.</li>
+            <h1>Focus on your flow</h1>
+            <p>PomoFlow is a minimalist productivity tool designed to help you maintain deep focus and track your goals with precision. Built on the core principles of the Pomodoro technique, it combines intuitive design with powerful analytics.</p>
+        </section>
+
+        <section>
+            <h2>How it works</h2>
+            <ol class="workflow-steps">
+                <li class="workflow-step">
+                    <div>
+                        <p><strong>Set your goal</strong></p>
+                        <p>Add a new goal to your list and give it a distinct color to help you categorize your work.</p>
+                    </div>
+                </li>
+                <li class="workflow-step">
+                    <div>
+                        <p><strong>Start your flow</strong></p>
+                        <p>Choose a goal you want to work on. Click play to start a 25-minute focus session.</p>
+                    </div>
+                </li>
+                <li class="workflow-step">
+                    <div>
+                        <p><strong>Rest and recharge</strong></p>
+                        <p>After each focus session, take a short break. After four sessions, take a longer break to stay fresh.</p>
+                    </div>
+                </li>
+                <li class="workflow-step">
+                    <div>
+                        <p><strong>Analyze progress</strong></p>
+                        <p>Review your session history and goal breakdown to see where you're most productive.</p>
+                    </div>
+                </li>
             </ol>
         </section>
 
         <section>
-            <h2>The PomoFlow Lifecycle</h2>
-            <p>PomoFlow automates this cycle for you. The visual <strong>Session Progress</strong> dots inside the timer show your position in the cycle. As you complete each focus session, the dots track your journey toward a long break.</p>
-            
-            <div class="cycle-tracker-demo">
-                <div class="demo-progress">
-                    <div class="demo-step active"></div>
-                    <div class="demo-step"></div>
-                    <div class="demo-step"></div>
-                    <div class="demo-step"></div>
-                </div>
-                <p>Your first <strong>Focus</strong> session is active.</p>
-            </div>
-
-            <div class="cycle-tracker-demo">
-                <div class="demo-progress">
-                    <div class="demo-step completed"></div>
-                    <div class="demo-step active"></div>
-                    <div class="demo-step"></div>
-                    <div class="demo-step"></div>
-                </div>
-                <p>One focus session completed. You are now on your second session.</p>
-            </div>
-
-            <div class="cycle-tracker-demo">
-                <div class="demo-progress">
-                    <div class="demo-step completed"></div>
-                    <div class="demo-step completed"></div>
-                    <div class="demo-step completed"></div>
-                    <div class="demo-step completed"></div>
-                </div>
-                <p>All focus sessions done! Time for a well-deserved <strong>Long Break</strong>.</p>
-            </div>
-        </section>
-
-        <section>
-            <h2>Key Features</h2>
-            <div class="grid grid-2">
-                <div class="feature-card">
-                    <h3>
-                        <svg class="feature-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M13.13 22.19L11.5 18.36C13.07 17.78 14.54 17 15.9 16.09L17.64 20.23L13.13 22.19M18.96 19.04L17.23 14.9C18.45 13.51 19.43 11.97 20.12 10.33L22.95 11.56L18.96 19.04M16.56 2.58L17.38 7.09C15.81 7.67 14.34 8.45 12.97 9.36L11.24 5.22L15.75 3.26M7.22 4.96L8.85 8.79C7.28 9.37 5.81 10.15 4.45 11.06L2.71 6.92L7.22 4.96M4.04 13.96L5.77 18.1C4.55 19.49 3.57 21.03 2.88 22.67L0.05 21.44L4.04 13.96M19 13C19 14.1 18.1 15 17 15S15 14.1 15 13 15.9 11 17 11 19 11.9 19 13M12 2C17.5 2 22 6.5 22 12S17.5 22 12 22 2 17.5 2 12 6.5 2 12 2M12 4C7.58 4 4 7.58 4 12S7.58 20 12 20 20 16.42 20 12 16.42 4 12 4M12 6C15.31 6 18 8.69 18 12S15.31 18 12 18 6 15.31 6 12 8.69 6 12 6Z"/></svg>
-                        Deep Focus
-                    </h3>
-                    <p>Propel your productivity with uninterrupted focus sessions. Link tasks directly to the timer to see exactly where your time goes.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>
-                        <svg class="feature-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M12 11.99H19C18.47 16.11 15.72 19.78 12 20.93V12H5V6.3L12 3.19V11.99Z"/></svg>
-                        Privacy First
-                    </h3>
-                    <p>Your data stays with you. PomoFlow uses local storage to keep your tasks and history secure on your own device, never on a remote server.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>
-                        <svg class="feature-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20C16.42 20 20 16.42 20 12S16.42 4 12 4 4 7.58 4 12 7.58 20 12 20M12 2C17.52 2 22 6.48 22 12S17.52 22 12 22 2 17.52 2 12 6.48 2 12 2M12.5 7V12.25L17 14.92L16.25 16.15L11 13V7H12.5Z"/></svg>
-                        Smart Timing
-                    </h3>
-                    <p>24/7 availability for your workflow. Customize focus and break intervals to match your energy levels and project requirements.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>
-                        <svg class="feature-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11 9H13V7H11V9M11 17H13V11H11V17M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z"/></svg>
-                        Session Insights
-                    </h3>
-                    <p>Gain valuable insights into your productivity with automated logging and visual history charts to help you improve over time.</p>
-                </div>
+            <div class="philosophy-banner">
+                <h2>The PomoFlow Philosophy</h2>
+                <p>Propel your productivity with uninterrupted focus sessions. Link goals directly to the timer to see exactly where your time goes.</p>
+                <p>Your data stays with you. PomoFlow uses local storage to keep your goals and history secure on your own device, never on a remote server.</p>
             </div>
         </section>
 
         <section>
             <h2>Keyboard Shortcuts</h2>
-            <div class="shortcut-grid">
-                <kbd>Spacebar</kbd><span>Start or Pause the current timer.</span>
-                <kbd>T</kbd><span>Toggle the task drawer open or closed.</span>
-                <kbd>R</kbd><span>Reset the timer for the current mode.</span>
-                <kbd>N</kbd><span>Skip to the next session in the cycle.</span>
-                <kbd>1</kbd><span>Switch to Focus mode.</span>
-                <kbd>2</kbd><span>Switch to Short Break mode.</span>
-                <kbd>3</kbd><span>Switch to Long Break mode.</span>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <kbd>Space</kbd><span>Start or pause the timer.</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>R</kbd><span>Reset the current session.</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>N</kbd><span>Skip to the next session.</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>G</kbd><span>Toggle the goal drawer open or closed.</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>1</kbd><span>Switch to Focus mode.</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>2</kbd><span>Switch to Short Break.</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>3</kbd><span>Switch to Long Break.</span>
+                </div>
             </div>
         </section>
-    </main>
 
-    <footer class="page-footer">
-        <div class="footer-content">
-            <span>&copy; 2026 PomoFlow</span>
-            <a href="index.html" class="nav-link">← Back to Timer</a>
-        </div>
-    </footer>
+        <footer>
+            <p>&copy; 2026 PomoFlow. Designed for focus.</p>
+        </footer>
+    </div>
 
     <script>
-        // Apply theme from localStorage or system preference to prevent flash of wrong theme
+        // Respect theme from main app
         const savedTheme = localStorage.getItem('flowtracker_theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', theme);
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
     </script>
 </body>
 </html>

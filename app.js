@@ -647,7 +647,7 @@ function renderTasks() {
         list.innerHTML = `
             <div class="empty-state">
                 <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                <p>No tasks yet. Add one above to start focusing.</p>
+                <p>No goals yet. Add one above to start focusing.</p>
             </div>
         `;
         if (taskSelectHeader) taskSelectHeader.style.display = 'none';
@@ -750,7 +750,9 @@ function renderTasks() {
 
         item.querySelector('.task-more').addEventListener('click', (e) => {
             e.stopPropagation();
-            item.classList.toggle('menu-open');
+            const isOpen = item.classList.toggle('menu-open');
+            wrapper.style.transition = 'transform 0.2s ease';
+            wrapper.style.transform = isOpen ? 'translateX(-160px)' : 'translateX(0)';
         });
 
         item.querySelector('.task-play-btn').addEventListener('click', (e) => {
@@ -772,11 +774,13 @@ function renderTasks() {
         item.querySelector('.edit-btn').addEventListener('click', () => {
             openTaskEditModal(task);
             item.classList.remove('menu-open');
+            wrapper.style.transform = 'translateX(0)';
         });
 
         item.querySelector('.completed-btn').addEventListener('click', () => {
             toggleTaskComplete(task.id);
             item.classList.remove('menu-open');
+            wrapper.style.transform = 'translateX(0)';
         });
 
         item.querySelector('.delete-btn').addEventListener('click', () => {
@@ -813,7 +817,7 @@ function toggleTaskComplete(id) {
 }
 
 function deleteTask(id) {
-    confirmAction('Are you sure you want to delete this task?').then(confirmed => {
+    confirmAction('Are you sure you want to delete this goal?').then(confirmed => {
         if (confirmed) {
             state.tasks = state.tasks.filter(t => t.id !== id);
             if (state.timerState.activeTaskId === id) {
@@ -830,7 +834,7 @@ function saveSession() {
     const session = {
         id: Date.now().toString(),
         taskId: state.timerState.activeTaskId,
-        taskName: 'Unknown Task',
+        taskName: 'Unknown Goal',
         taskColor: '#58a6ff',
         duration: state.settings.workDuration * 60,
         timestamp: new Date().toISOString()
@@ -951,12 +955,15 @@ function renderHistory(filter = 'today') {
 
         item.querySelector('.history-more').addEventListener('click', (e) => {
             e.stopPropagation();
-            item.classList.toggle('menu-open');
+            const isOpen = item.classList.toggle('menu-open');
+            wrapper.style.transition = 'transform 0.2s ease';
+            wrapper.style.transform = isOpen ? 'translateX(-120px)' : 'translateX(0)';
         });
 
         item.querySelector('.edit-btn').addEventListener('click', () => {
             openSessionEditModal(session);
             item.classList.remove('menu-open');
+            wrapper.style.transform = 'translateX(0)';
         });
 
         item.querySelector('.delete-btn').addEventListener('click', () => {
@@ -1095,7 +1102,9 @@ function renderChart(sessions) {
 function updateDateTime() {
     const el = document.getElementById('datetime');
     if (!el) return;
-    el.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour }).replace(',', '');
+    const now = new Date();
+    const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour };
+    el.textContent = now.toLocaleDateString('en-US', options).replace(',', '');
 }
 
 function formatTimestamp(date) {
@@ -1252,7 +1261,7 @@ function handleImportFile(e) {
             const data = JSON.parse(event.target.result);
             if (!data.tasks || !data.sessions) throw new Error('Invalid format');
             pendingImportData = data;
-            document.getElementById('importInfo').innerHTML = `<p>Found <strong>${data.tasks.length}</strong> tasks and <strong>${data.sessions.length}</strong> sessions.</p><p>Proceed?</p>`;
+            document.getElementById('importInfo').innerHTML = `<p>Found <strong>${data.tasks.length}</strong> goals and <strong>${data.sessions.length}</strong> sessions.</p><p>Proceed?</p>`;
             document.getElementById('importModal').classList.add('open');
         } catch (err) { alert('Error: ' + err.message); }
     };
