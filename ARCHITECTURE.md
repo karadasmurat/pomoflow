@@ -51,6 +51,7 @@ To maintain visual clarity and brand identity, the following constraints must be
 ## 5. File Structure
 
 - `index.html`: Skeleton and Modal definitions.
-- `styles.css`: All styling, utilizing CSS variables for theme support.
-- `app.js`: All logic, including timer, state, and DOM manipulation.
+- `js/app.js`: All logic, including timer, state, and DOM manipulation.
+- `css/styles.css`: All styling, utilizing CSS variables for theme support.
+- `assets/`: Media and static assets.
 - `about.html`: Static documentation for users.
