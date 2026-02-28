@@ -29,6 +29,7 @@ let state = {
         remainingTime: 25 * 60,
         totalTime: 25 * 60,
         sessionCount: 0,
+        cycleStation: 1,
         startTime: null,
         activeTaskId: null
     },
@@ -95,6 +96,7 @@ function loadData() {
         if (savedState) {
             const timerState = JSON.parse(savedState);
             state.timerState = { ...state.timerState, ...timerState };
+            if (!state.timerState.cycleStation) state.timerState.cycleStation = 1;
         }
     } catch (e) {
         console.error('Error loading data:', e);
@@ -117,6 +119,33 @@ function saveData() {
 }
 
 function setupEventListeners() {
+    // Task Panel Toggle
+    const taskLink = document.getElementById('taskLink');
+    const closeTaskPanel = document.getElementById('closeTaskPanel');
+    const taskOverlay = document.getElementById('taskOverlay');
+    const taskPanel = document.getElementById('taskPanel');
+
+    if (taskLink) {
+        taskLink.addEventListener('click', () => {
+            taskPanel.classList.add('open');
+            taskOverlay.classList.add('open');
+        });
+    }
+
+    if (closeTaskPanel) {
+        closeTaskPanel.addEventListener('click', () => {
+            taskPanel.classList.remove('open');
+            taskOverlay.classList.remove('open');
+        });
+    }
+
+    if (taskOverlay) {
+        taskOverlay.addEventListener('click', () => {
+            taskPanel.classList.remove('open');
+            taskOverlay.classList.remove('open');
+        });
+    }
+
     document.getElementById('taskInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTask();
     });
@@ -295,10 +324,14 @@ function switchMode(mode) {
     if (state.timerState.isRunning) {
         confirmAction('Switching modes will reset the current timer. Continue?').then(confirmed => {
             if (confirmed) {
+                const msgEl = document.getElementById('timerMessage');
+                if (msgEl) msgEl.textContent = '';
                 applyMode(mode);
             }
         });
     } else {
+        const msgEl = document.getElementById('timerMessage');
+        if (msgEl) msgEl.textContent = '';
         applyMode(mode);
     }
 }
@@ -343,6 +376,10 @@ function startTimer() {
         audioContext.resume();
     }
 
+    // Clear any previous post-session message
+    const msgEl = document.getElementById('timerMessage');
+    if (msgEl) msgEl.textContent = '';
+
     state.timerState.isRunning = true;
     state.timerState.startTime = Date.now();
     
@@ -372,6 +409,8 @@ function pauseTimer() {
 
 function resetTimer() {
     pauseTimer();
+    const msgEl = document.getElementById('timerMessage');
+    if (msgEl) msgEl.textContent = '';
     applyMode(state.timerState.mode);
 }
 
@@ -383,6 +422,24 @@ function handleSessionComplete(skipped = false) {
     pauseTimer();
     
     const wasWork = state.timerState.mode === 'work';
+    
+    const msgEl = document.getElementById('timerMessage');
+    if (msgEl) {
+        if (!skipped) {
+            const finishTime = new Date().toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit', 
+                hour12: state.settings.use12Hour 
+            });
+            if (wasWork) {
+                msgEl.innerHTML = `<span class="msg-status">Finished Focus at ${finishTime}</span><span class="msg-action">Let's give a break</span>`;
+            } else {
+                msgEl.innerHTML = `<span class="msg-status">Finished Break at ${finishTime}</span><span class="msg-action">Let's focus again</span>`;
+            }
+        } else {
+            msgEl.innerHTML = '';
+        }
+    }
     
     if (wasWork && !skipped) {
         state.timerState.sessionCount++;
@@ -399,13 +456,20 @@ function handleSessionComplete(skipped = false) {
 
     let nextMode;
     if (wasWork) {
-        if (state.timerState.sessionCount % state.settings.sessionsBeforeLongBreak === 0) {
+        // Finishing focus -> Go to break
+        if (state.timerState.cycleStation >= state.settings.sessionsBeforeLongBreak) {
             nextMode = 'longBreak';
         } else {
             nextMode = 'shortBreak';
         }
     } else {
+        // Finishing break -> Go to next station focus
         nextMode = 'work';
+        if (state.timerState.mode === 'longBreak') {
+            state.timerState.cycleStation = 1;
+        } else {
+            state.timerState.cycleStation++;
+        }
     }
     
     applyMode(nextMode);
@@ -421,15 +485,19 @@ function handleSessionComplete(skipped = false) {
 function updateTimerDisplay() {
     const timeDisplay = document.getElementById('timerTime');
     const modeDisplay = document.getElementById('timerMode');
-    const sessionDisplay = document.getElementById('timerSession');
     const startPauseText = document.getElementById('startPauseText');
     const playIcon = document.getElementById('playIcon');
     const timerProgress = document.getElementById('timerProgress');
     const timerTaskDisplay = document.getElementById('timerTask');
+    const sessionProgress = document.getElementById('sessionProgress');
+    const timerMessage = document.getElementById('timerMessage');
+    const timerDisplay = document.querySelector('.timer-display');
     
-    const minutes = Math.floor(state.timerState.remainingTime / 60);
-    const seconds = state.timerState.remainingTime % 60;
-    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const hasMsg = timerMessage && timerMessage.textContent.trim() !== '';
+    
+    const minutes = hasMsg ? 0 : Math.floor(state.timerState.remainingTime / 60);
+    const seconds = hasMsg ? 0 : state.timerState.remainingTime % 60;
+    const formattedTime = hasMsg ? '00:00' : `${minutes}:${seconds.toString().padStart(2, '0')}`;
     
     if (timeDisplay) timeDisplay.textContent = formattedTime;
     document.title = `${formattedTime} - PomoFlow`;
@@ -442,8 +510,28 @@ function updateTimerDisplay() {
     
     if (modeDisplay) modeDisplay.textContent = modeLabels[state.timerState.mode];
     
-    const currentSession = (state.timerState.sessionCount % state.settings.sessionsBeforeLongBreak) + 1;
-    if (sessionDisplay) sessionDisplay.textContent = `Session ${currentSession} of ${state.settings.sessionsBeforeLongBreak}`;
+    if (timerDisplay && timerMessage) {
+        if (hasMsg) {
+            timerDisplay.classList.add('has-message');
+        } else {
+            timerDisplay.classList.remove('has-message');
+        }
+    }
+
+    // Tracker highlight logic: cycleStation - 1
+    const currentStationIndex = (state.timerState.cycleStation || 1) - 1;
+    
+    if (sessionProgress) {
+        const steps = sessionProgress.querySelectorAll('.progress-step');
+        steps.forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index === currentStationIndex) {
+                step.classList.add('active');
+            } else if (index < currentStationIndex) {
+                step.classList.add('completed');
+            }
+        });
+    }
     
     if (state.timerState.isRunning) {
         if (startPauseText) startPauseText.textContent = 'Pause';
@@ -469,7 +557,7 @@ function updateTimerDisplay() {
             }
         }
     } else {
-        if (timerTaskDisplay) timerTaskDisplay.textContent = '';
+        if (timerTaskDisplay) timerTaskDisplay.textContent = 'Select Task';
         if (timerProgress) timerProgress.style.stroke = '';
     }
     
@@ -644,6 +732,10 @@ function renderTasks() {
                 startTimer();
             }
             renderTasks();
+            
+            // Close panel when task is selected/played
+            document.getElementById('taskPanel').classList.remove('open');
+            document.getElementById('taskOverlay').classList.remove('open');
         });
 
         item.querySelector('.edit-btn').addEventListener('click', () => {
