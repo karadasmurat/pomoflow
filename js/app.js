@@ -391,6 +391,7 @@ function startTimer() {
         state.timerState.remainingTime--;
         
         if (state.timerState.remainingTime <= 0) {
+            state.timerState.remainingTime = 0;
             handleSessionComplete();
         } else {
             updateTimerDisplay();
