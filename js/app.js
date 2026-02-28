@@ -31,6 +31,7 @@ let state = {
         sessionCount: 0,
         cycleStation: 1,
         startTime: null,
+        targetEndTime: null,
         activeTaskId: null
     },
     notificationPermission: 'default',
@@ -341,6 +342,7 @@ function switchMode(mode) {
 function applyMode(mode) {
     state.timerState.mode = mode;
     state.timerState.isRunning = false;
+    state.timerState.targetEndTime = null;
     
     if (mode === 'work') {
         state.timerState.totalTime = state.settings.workDuration * 60;
@@ -370,7 +372,7 @@ function toggleTimer() {
 }
 
 function startTimer() {
-    if (state.timerState.isRunning) return;
+    if (state.timerState.isRunning && timerInterval) return;
     
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -383,15 +385,19 @@ function startTimer() {
     if (msgEl) msgEl.textContent = '';
 
     state.timerState.isRunning = true;
-    state.timerState.startTime = Date.now();
+    state.timerState.startTime = state.timerState.startTime || Date.now();
+    state.timerState.targetEndTime = Date.now() + (state.timerState.remainingTime * 1000);
     
     updateTimerDisplay();
     
+    if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
-        state.timerState.remainingTime--;
+        const now = Date.now();
+        state.timerState.remainingTime = Math.max(0, Math.ceil((state.timerState.targetEndTime - now) / 1000));
         
         if (state.timerState.remainingTime <= 0) {
             state.timerState.remainingTime = 0;
+            state.timerState.targetEndTime = null;
             handleSessionComplete();
         } else {
             updateTimerDisplay();
@@ -402,6 +408,7 @@ function startTimer() {
 
 function pauseTimer() {
     state.timerState.isRunning = false;
+    state.timerState.targetEndTime = null;
     if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
@@ -412,6 +419,7 @@ function pauseTimer() {
 
 function resetTimer() {
     pauseTimer();
+    state.timerState.startTime = null;
     const msgEl = document.getElementById('timerMessage');
     if (msgEl) msgEl.textContent = '';
     applyMode(state.timerState.mode);
@@ -423,6 +431,7 @@ function skipSession() {
 
 function handleSessionComplete(skipped = false) {
     pauseTimer();
+    state.timerState.startTime = null;
     
     const wasWork = state.timerState.mode === 'work';
     
@@ -499,8 +508,8 @@ function updateTimerDisplay() {
     
     const hasMsg = timerMessage && timerMessage.textContent.trim() !== '';
     
-    const minutes = hasMsg ? 0 : Math.floor(state.timerState.remainingTime / 60);
-    const seconds = hasMsg ? 0 : state.timerState.remainingTime % 60;
+    const minutes = hasMsg ? 0 : Math.floor(Math.max(0, state.timerState.remainingTime) / 60);
+    const seconds = hasMsg ? 0 : Math.max(0, state.timerState.remainingTime) % 60;
     const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     
     if (timeDisplay) timeDisplay.textContent = formattedTime;
@@ -1314,11 +1323,20 @@ function showToast(message) {
 }
 
 function restoreTimerState() {
-    if (state.timerState.isRunning && state.timerState.startTime) {
-        const elapsed = Math.floor((Date.now() - state.timerState.startTime) / 1000);
-        state.timerState.remainingTime = Math.max(0, state.timerState.remainingTime - elapsed);
-        if (state.timerState.remainingTime > 0) startTimer(); else handleSessionComplete();
-    } else updateTimerDisplay();
+    if (state.timerState.isRunning && state.timerState.targetEndTime) {
+        const now = Date.now();
+        state.timerState.remainingTime = Math.max(0, Math.ceil((state.timerState.targetEndTime - now) / 1000));
+        
+        if (state.timerState.remainingTime > 0) {
+            startTimer();
+        } else {
+            state.timerState.remainingTime = 0;
+            state.timerState.targetEndTime = null;
+            handleSessionComplete();
+        }
+    } else {
+        updateTimerDisplay();
+    }
 }
 
 function escapeHtml(text) {
