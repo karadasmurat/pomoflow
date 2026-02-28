@@ -1,40 +1,42 @@
 # PomoFlow
 
-A beautiful Pomodoro-style timer with task tracking, session history, and focus analytics.
+A beautiful Pomodoro-style timer with goal tracking, session history, and focus analytics.
 
 ## Features
 
 ### Timer
 
 - **Pomodoro Timer** - Focus sessions with short (5 min) and long (15 min) breaks
-- **Twin Progress Rings** - Real-time synchronization between the main timer and the active task's play button
+- **Twin Progress Rings** - Real-time synchronization between the main timer and the active goal's play button
 - **Customizable Durations** - Adjust focus/break times to fit your workflow
 - **Smart Auto-Advance** - Automatically transition between focus and break sessions
 - **Visual Progress Ring** - Animated circular progress indicator
 - **Audio Notifications** - Subtle sound when sessions complete
 
-### Task Tracking
+### Goal Tracking
 
-- **Task Management** - Create, edit, complete, and delete tasks
-- **Time Tracking** - Track focused time spent on each task with visual totals
-- **Quick Controls** - Play/pause timer directly from task items
-- **Sliding Menu** - Edit task name, complete, or delete via sliding action menu
-- **Session History** - View completed sessions with charts filtered by Today/This Week/All
+- **Goal Management** - Create, edit, complete, and delete goals (tasks)
+- **Time Tracking** - Track focused time spent on each goal with visual totals
+- **Quick Controls** - Play/pause timer directly from goal items
+- **Sliding Menu** - Edit goal name, complete, or delete via sliding action menu
+- **Session History** - View completed sessions filtered by Today/Week/All with a "Show All" expansion
 - **Session Editing** - Adjust duration or correct unintended logs after completion
+- **High-Contrast Palette** - 8 distinct colors (Blue, Sky, Indigo, Violet, Pink, Orange, Yellow, Slate) designed for clarity and accessibility
 
 ### Focus Analytics
 
 - **Today's Focus Time** - Total time spent in focus sessions
 - **Sessions Completed** - Number of focus sessions done today
 - **Day Streak** - Consecutive days with completed focus sessions
-- **Visual Charts** - Bar chart for weekly overview, pie chart for today's task breakdown
+- **Visual Charts** - Pie chart for task breakdown and bar charts for historical data
 
 ### Design & Experience
 
 - **Modern UI** - Clean, consistent design following modern CSS principles
-- **Unified Design Standards** - Harmonized input heights (42px) and rounded corners (10px) across all interactive elements
+- **Unified Design Standards** - Harmonized input heights (42px), utility buttons (30px), and rounded corners across all interactive elements
 - **Tactile Feedback** - Interactive scale (1.12x) and active states (0.92x) using precision cubic-bezier timing
 - **Dark/Light Mode** - Toggle between themes with persistent preference
+- **Interactive Affordances** - Clear visual cues for active states, hover effects, and keyboard focus
 
 ### Keyboard Shortcuts
 
@@ -50,8 +52,8 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 ## Getting Started
 
 1. Open `index.html` in any modern browser
-2. Add tasks you want to work on
-3. Click the play button on a task to start tracking
+2. Add goals you want to work on
+3. Click the play button on a goal to start tracking
 4. Focus until the timer completes
 
 ## Browser Support
@@ -64,7 +66,7 @@ A beautiful Pomodoro-style timer with task tracking, session history, and focus 
 
 All data is stored locally in your browser using localStorage:
 
-- Tasks and time tracking
+- Goals and time tracking
 - Session history
 - User preferences
 - Timer state (survives page refresh)

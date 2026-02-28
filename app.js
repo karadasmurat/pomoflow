@@ -121,16 +121,18 @@ function saveData() {
 function setupEventListeners() {
     // Task Panel Toggle
     const taskLink = document.getElementById('taskLink');
+    const tasksNavBtn = document.getElementById('tasksNavBtn');
     const closeTaskPanel = document.getElementById('closeTaskPanel');
     const taskOverlay = document.getElementById('taskOverlay');
     const taskPanel = document.getElementById('taskPanel');
 
-    if (taskLink) {
-        taskLink.addEventListener('click', () => {
-            taskPanel.classList.add('open');
-            taskOverlay.classList.add('open');
-        });
-    }
+    const openTasks = () => {
+        taskPanel.classList.add('open');
+        taskOverlay.classList.add('open');
+    };
+
+    if (taskLink) taskLink.addEventListener('click', openTasks);
+    if (tasksNavBtn) tasksNavBtn.addEventListener('click', openTasks);
 
     if (closeTaskPanel) {
         closeTaskPanel.addEventListener('click', () => {
@@ -432,9 +434,9 @@ function handleSessionComplete(skipped = false) {
                 hour12: state.settings.use12Hour 
             });
             if (wasWork) {
-                msgEl.innerHTML = `<span class="msg-status">Finished Focus at ${finishTime}</span><span class="msg-action">Let's give a break</span>`;
+                msgEl.innerHTML = `<span class="msg-status">Finished Focus at ${finishTime}</span><span class="msg-action">Let's start a break!</span>`;
             } else {
-                msgEl.innerHTML = `<span class="msg-status">Finished Break at ${finishTime}</span><span class="msg-action">Let's focus again</span>`;
+                msgEl.innerHTML = `<span class="msg-status">Finished Break at ${finishTime}</span><span class="msg-action">Let's start focusing!</span>`;
             }
         } else {
             msgEl.innerHTML = '';
@@ -489,6 +491,7 @@ function updateTimerDisplay() {
     const playIcon = document.getElementById('playIcon');
     const timerProgress = document.getElementById('timerProgress');
     const timerTaskDisplay = document.getElementById('timerTask');
+    const timerTaskPrefix = document.getElementById('timerTaskPrefix');
     const sessionProgress = document.getElementById('sessionProgress');
     const timerMessage = document.getElementById('timerMessage');
     const timerDisplay = document.querySelector('.timer-display');
@@ -497,7 +500,7 @@ function updateTimerDisplay() {
     
     const minutes = hasMsg ? 0 : Math.floor(state.timerState.remainingTime / 60);
     const seconds = hasMsg ? 0 : state.timerState.remainingTime % 60;
-    const formattedTime = hasMsg ? '00:00' : `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     
     if (timeDisplay) timeDisplay.textContent = formattedTime;
     document.title = `${formattedTime} - PomoFlow`;
@@ -543,6 +546,8 @@ function updateTimerDisplay() {
         document.body.classList.remove('timer-running');
     }
     
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    
     if (state.timerState.activeTaskId) {
         const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
         if (task) {
@@ -550,15 +555,31 @@ function updateTimerDisplay() {
                 timerTaskDisplay.textContent = task.name;
                 timerTaskDisplay.style.color = task.color;
             }
-            if (state.timerState.mode === 'work' && timerProgress) {
-                timerProgress.style.stroke = task.color;
-            } else if (timerProgress) {
-                timerProgress.style.stroke = '';
+            if (timerTaskPrefix) timerTaskPrefix.style.display = 'inline';
+            if (taskLink) taskLink.classList.add('has-task');
+            
+            // Update Start button text and icon color to match task
+            if (startPauseBtn) {
+                startPauseBtn.style.color = task.color;
+                // Ensure the SVG icon inherits or uses this color
+                const icon = startPauseBtn.querySelector('svg');
+                if (icon) icon.style.fill = task.color;
             }
         }
     } else {
-        if (timerTaskDisplay) timerTaskDisplay.textContent = 'Select Task';
-        if (timerProgress) timerProgress.style.stroke = '';
+        if (timerTaskDisplay) {
+            timerTaskDisplay.textContent = 'Set a session goal';
+            timerTaskDisplay.style.color = '';
+        }
+        if (timerTaskPrefix) timerTaskPrefix.style.display = 'none';
+        if (taskLink) taskLink.classList.remove('has-task');
+        
+        // Revert Start button to default primary
+        if (startPauseBtn) {
+            startPauseBtn.style.color = '';
+            const icon = startPauseBtn.querySelector('svg');
+            if (icon) icon.style.fill = '';
+        }
     }
     
     const percent = (state.timerState.remainingTime / state.timerState.totalTime);
@@ -575,6 +596,7 @@ function updateTimerDisplay() {
         if (taskRing) {
             taskRing.style.strokeDashoffset = offset;
             taskRing.className = 'task-ring-progress';
+            if (state.timerState.mode === 'work') taskRing.classList.add('work');
             if (state.timerState.mode === 'shortBreak') taskRing.classList.add('break');
             if (state.timerState.mode === 'longBreak') taskRing.classList.add('long-break');
         }
@@ -617,7 +639,7 @@ function addTask() {
 
 function renderTasks() {
     const list = document.getElementById('taskList');
-    const hint = document.getElementById('taskHint');
+    const taskSelectHeader = document.getElementById('taskSelectHeader');
     if (!list) return;
     list.innerHTML = '';
     
@@ -628,25 +650,32 @@ function renderTasks() {
                 <p>No tasks yet. Add one above to start focusing.</p>
             </div>
         `;
-        if (hint) hint.style.display = 'none';
+        if (taskSelectHeader) taskSelectHeader.style.display = 'none';
         return;
     }
     
-    if (hint) hint.style.display = 'flex';
+    if (taskSelectHeader) taskSelectHeader.style.display = 'block';
     
     const activeTasks = state.tasks.filter(t => !t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     const completedTasks = state.tasks.filter(t => t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
     const renderTaskItem = (task) => {
         const item = document.createElement('div');
-        const isNew = task.id === state.lastTaskId;
-        item.className = `task-item ${isNew ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
-        
+        const isNewSlide = task.id === state.lastTaskId;
+
+        // Calculate "New" badge status (Option 1: < 24h old)
+        const createdAt = new Date(task.createdAt);
+        const now = new Date();
+        const isRecentlyCreated = (now - createdAt) < (24 * 60 * 60 * 1000);
+        const newBadge = isRecentlyCreated && !task.completed ? '<span class="new-badge">NEW</span>' : '';
+
+        item.className = `task-item ${isNewSlide ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
+
         const totalSeconds = task.totalTime;
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);
         const timeDisplay = `Total: ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-        
+
         item.innerHTML = `
             <div class="task-menu">
                 <button class="edit-btn">
@@ -659,7 +688,7 @@ function renderTasks() {
                 </button>
                 <button class="danger delete-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Del</span>
+                    <span>Delete</span>
                 </button>
             </div>
             <div class="task-slide-wrapper">
@@ -672,7 +701,10 @@ function renderTasks() {
                     <svg class="task-icon" viewBox="0 0 24 24"><path d="${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'}"/></svg>
                 </button>
                 <div class="task-info">
-                    <div class="task-name">${escapeHtml(task.name)}</div>
+                    <div class="task-name">
+                        <span class="task-text">${escapeHtml(task.name)}</span>
+                        ${newBadge}
+                    </div>
                     <div class="task-time">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                         ${timeDisplay}
@@ -683,7 +715,6 @@ function renderTasks() {
                 </button>
             </div>
         `;
-        
         let startX = 0;
         let currentTranslate = 0;
         let isSliding = false;
@@ -836,14 +867,14 @@ function renderHistory(filter = 'today') {
     sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     renderChart(sessions);
     
-    const displaySessions = showAllHistory ? sessions : sessions.slice(0, 10);
-    
+    const displaySessions = showAllHistory ? sessions : sessions.slice(0, 4);
+
     const header = document.createElement('div');
     header.className = 'history-header-grid';
     header.innerHTML = `
         <div class="history-header-indicator"></div>
         <div class="history-header-info">
-            <div>TASK</div>
+            <div>GOAL</div>
             <div>DURATION</div>
             <div>CHECKED OFF AT</div>
         </div>
@@ -854,10 +885,10 @@ function renderHistory(filter = 'today') {
     displaySessions.forEach(session => {
         const item = document.createElement('div');
         item.className = 'history-item slide-in';
-        
+
         const timeStr = formatTimestamp(new Date(session.timestamp));
         const durationMin = Math.round(session.duration / 60);
-        
+
         item.innerHTML = `
             <div class="history-menu">
                 <button class="edit-btn">
@@ -866,7 +897,7 @@ function renderHistory(filter = 'today') {
                 </button>
                 <button class="danger delete-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Del</span>
+                    <span>Delete</span>
                 </button>
             </div>
             <div class="history-slide-wrapper">
@@ -889,13 +920,13 @@ function renderHistory(filter = 'today') {
         let currentTranslate = 0;
         let isSliding = false;
         const wrapper = item.querySelector('.history-slide-wrapper');
-        
+
         wrapper.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
             isSliding = true;
             wrapper.style.transition = 'none';
         }, {passive: true});
-        
+
         wrapper.addEventListener('touchmove', (e) => {
             if (!isSliding) return;
             const diff = e.touches[0].clientX - startX;
@@ -904,7 +935,7 @@ function renderHistory(filter = 'today') {
                 wrapper.style.transform = `translateX(${currentTranslate}px)`;
             }
         }, {passive: true});
-        
+
         wrapper.addEventListener('touchend', () => {
             isSliding = false;
             wrapper.style.transition = 'transform 0.2s ease';
@@ -937,10 +968,12 @@ function renderHistory(filter = 'today') {
 
     const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
     if (showAllBtn) {
-        showAllBtn.textContent = showAllHistory ? 'Show Less' : 'Show All';
-        showAllBtn.style.display = sessions.length > 10 ? 'block' : 'none';
-    }
-}
+        const filterIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39A.998.998 0 0 0 20.95 4H3.04a.998.998 0 0 0-.79 1.61z"/></svg>`;
+        showAllBtn.innerHTML = showAllHistory ? 
+            `${filterIcon} Show Less` : 
+            `${filterIcon} Show All`;
+        showAllBtn.style.display = sessions.length > 4 ? 'flex' : 'none';
+    }}
 
 function filterSessions(sessions, filter) {
     const now = new Date();
@@ -1241,9 +1274,21 @@ function performImport(mode) {
 }
 
 function initTheme() {
-    const theme = localStorage.getItem('flowtracker_theme') || 'dark';
+    const savedTheme = localStorage.getItem('flowtracker_theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    
     document.documentElement.setAttribute('data-theme', theme);
     document.getElementById('themeToggle').classList.toggle('dark', theme === 'dark');
+
+    // Listen for system theme changes if no preference is saved
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        if (!localStorage.getItem('flowtracker_theme')) {
+            const nextTheme = e.matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            document.getElementById('themeToggle').classList.toggle('dark', nextTheme === 'dark');
+        }
+    });
 }
 
 function toggleTheme() {
