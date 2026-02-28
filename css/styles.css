@@ -1953,15 +1953,39 @@ header {
     background: var(--border);
     border-radius: 3px;
     outline: none;
+    margin: 12px 0;
 }
 
 .setting-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     background: var(--primary);
     border-radius: 50%;
     cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 150ms ease, background 150ms ease;
+}
+
+.setting-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background: var(--primary);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 150ms ease, background 150ms ease;
+}
+
+.setting-slider:hover::-webkit-slider-thumb {
+    background: var(--primary);
+    transform: scale(1.1);
+}
+
+.setting-slider:hover::-moz-range-thumb {
+    background: var(--primary);
+    transform: scale(1.1);
 }
 
 @keyframes pulse {
