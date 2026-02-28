@@ -1895,7 +1895,15 @@ header {
     font-size: 14px;
     color: var(--text-secondary);
     margin-bottom: 8px;
-    display: block;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.setting-value {
+    color: var(--primary);
+    font-family: var(--font-time);
+    font-weight: 600;
 }
 
 .setting-row {
