@@ -212,6 +212,23 @@ header {
     transform: translateX(0);
 }
 
+.plan-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    z-index: 2000;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-task);
+    border-radius: 12px 0 0 12px;
+}
+
+.plan-panel.open {
+    transform: translateX(0);
+}
+
 .task-overlay {
     position: fixed;
     top: 0;
@@ -227,6 +244,25 @@ header {
 }
 
 .task-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.plan-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(2px);
+    z-index: 1999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.plan-overlay.open {
     opacity: 1;
     visibility: visible;
 }
@@ -1022,24 +1058,16 @@ header {
 }
 
 .goal-progress-container {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
     margin-top: 8px;
-    overflow: hidden;
     width: 100%;
-}
-
-
-.goal-progress-bar {
-    height: 100%;
-    background: var(--primary);
-    border-radius: 2px;
-    transition: width 0.3s ease;
 }
 
 .task-item.aim-reached .goal-progress-bar {
     background: var(--success);
+}
+
+.task-item.aim-reached .goal-progress-handle {
+    color: var(--success) !important;
 }
 
 .task-item.aim-reached {
@@ -1676,7 +1704,7 @@ header {
 
 .history-type-indicator {
     width: 4px;
-    height: 32px;
+    align-self: stretch;
     background: var(--primary);
     border-radius: 2px;
     margin-right: 16px;
@@ -1998,6 +2026,283 @@ header {
     transition: background 200ms ease;
 }
 
+.aim-input-container {
+    margin-bottom: 16px;
+}
+
+.aim-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    transition: all 200ms ease;
+}
+
+.aim-input-row:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), 0 0 12px rgba(88, 166, 255, 0.2);
+    background: var(--bg);
+}
+
+.aim-select, .aim-duration-input {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    padding: 10px 4px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    outline: none !important;
+    box-shadow: none !important;
+    min-width: 0;
+    -webkit-appearance: none;
+}
+
+.aim-select {
+    color: var(--text-secondary);
+}
+
+.aim-select:focus {
+    color: var(--text-primary);
+}
+
+.plan-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: calc(100% - 140px); /* Adjust based on header/input height */
+    overflow-y: auto;
+}
+
+.plan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.plan-list.past {
+    opacity: 0.7;
+}
+
+.past-plan-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.past-date {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+}
+
+.empty-plan {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.plan-aim-item {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg);
+    border-radius: 8px;
+    position: relative;
+    min-height: 48px;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+.plan-aim-item.reached .aim-name {
+    text-decoration: line-through;
+    color: var(--success) !important;
+    opacity: 0.7;
+}
+
+.plan-aim-slide-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    transition: transform 200ms ease;
+    z-index: 2;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.plan-aim-item.menu-open .plan-aim-slide-wrapper {
+    transform: translateX(-120px);
+}
+
+.plan-aim-menu {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    padding-right: 8px;
+    background: var(--surface-elevated);
+    border-radius: 8px;
+    z-index: 1;
+}
+
+.plan-aim-menu button {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 0.8;
+    transition: all 200ms ease;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 50px;
+    height: auto;
+    font-size: 10px;
+}
+
+.plan-aim-menu button:hover {
+    opacity: 1;
+    color: var(--primary);
+    background: var(--bg);
+}
+
+.plan-aim-menu button.danger:hover {
+    color: var(--danger);
+    background: var(--bg);
+}
+
+.aim-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.aim-top-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.aim-bottom-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.aim-meta {
+    width: 100px;
+    flex: 0 0 100px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.aim-duration-label {
+    font-family: var(--font-time);
+    font-weight: 500;
+}
+
+.aim-name {
+    width: 100px;
+    flex: 0 0 100px;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aim-dual-slider {
+    position: relative;
+    width: 100%;
+    height: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.aim-slider-track {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.aim-slider-fill {
+    height: 100%;
+}
+
+.aim-handle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+}
+
+.aim-handle.spent .aim-handle-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+}
+
+.aim-handle.target .aim-handle-line {
+    width: 2px;
+    height: 16px;
+    background: var(--primary);
+    border-radius: 1px;
+}
+
+.plan-aim-more {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    opacity: 0.7;
+    transition: all 200ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+}
+
+.plan-aim-more:hover {
+    opacity: 1;
+    background: var(--surface-elevated);
+}
+
+/* FINAL STYLES */
 .setting-toggle.active {
     background: var(--primary);
 }

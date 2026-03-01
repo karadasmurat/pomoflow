@@ -47,7 +47,7 @@ To maintain visual clarity and brand identity, the following constraints must be
 ### Button Hierarchy
 - **Primary Controls (Start/Pause):** Height: 52px, Width: 100px. Vertical layout (icon top, text bottom).
 - **Secondary Controls (Reset/Skip):** Height: 52px, Width: 60px. Vertical layout.
-- **Utility Buttons (Filters, Clear All, Tasks):** 
+- **Utility Buttons (Filters, Clear All, Goals):** 
     - **Height:** 30px (Strict)
     - **Font Size:** 13px
     - **Border Radius:** 8px

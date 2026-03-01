@@ -53,6 +53,7 @@ function init() {
     setupEventListeners();
     renderTasks();
     renderHistory('today');
+    renderPlan();
     
     const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');
     if (todayBtn) {
@@ -176,13 +177,35 @@ function setupEventListeners() {
     const taskOverlay = document.getElementById('taskOverlay');
     const taskPanel = document.getElementById('taskPanel');
 
+    const planNavBtn = document.getElementById('planNavBtn');
+    const closePlanPanel = document.getElementById('closePlanPanel');
+    const planOverlay = document.getElementById('planOverlay');
+    const planPanel = document.getElementById('planPanel');
+    const clearAimsBtn = document.getElementById('clearAimsBtn');
+
     const openTasks = () => {
+        // Close plan if open
+        planPanel.classList.remove('open');
+        planOverlay.classList.remove('open');
+        
         taskPanel.classList.add('open');
         taskOverlay.classList.add('open');
     };
 
+    const openPlan = () => {
+        // Close tasks if open
+        taskPanel.classList.remove('open');
+        taskOverlay.classList.remove('open');
+        
+        populateAimGoalSelect();
+        renderPlan();
+        planPanel.classList.add('open');
+        planOverlay.classList.add('open');
+    };
+
     if (taskLink) taskLink.addEventListener('click', openTasks);
     if (tasksNavBtn) tasksNavBtn.addEventListener('click', openTasks);
+    if (planNavBtn) planNavBtn.addEventListener('click', openPlan);
 
     if (closeTaskPanel) {
         closeTaskPanel.addEventListener('click', () => {
@@ -198,6 +221,22 @@ function setupEventListeners() {
         });
     }
 
+    if (closePlanPanel) {
+        closePlanPanel.addEventListener('click', () => {
+            planPanel.classList.remove('open');
+            planOverlay.classList.remove('open');
+        });
+    }
+
+    if (planOverlay) {
+        planOverlay.addEventListener('click', () => {
+            planPanel.classList.remove('open');
+            planOverlay.classList.remove('open');
+        });
+    }
+
+    if (clearAimsBtn) clearAimsBtn.addEventListener('click', clearAims);
+
     document.getElementById('taskInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTask();
     });
@@ -205,6 +244,11 @@ function setupEventListeners() {
     document.getElementById('addTaskBtn').addEventListener('click', function(e) {
         e.preventDefault();
         addTask();
+    });
+
+    document.getElementById('addAimBtn').addEventListener('click', addAim);
+    document.getElementById('aimDurationInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addAim();
     });
 
     const inlineColorBtn = document.getElementById('inlineColorBtn');
@@ -361,6 +405,22 @@ function setupEventListeners() {
             resetTimer();
         } else if (e.key.toLowerCase() === 'n') {
             skipSession();
+        } else if (e.key.toLowerCase() === 'g') {
+            const taskPanel = document.getElementById('taskPanel');
+            if (taskPanel.classList.contains('open')) {
+                taskPanel.classList.remove('open');
+                document.getElementById('taskOverlay').classList.remove('open');
+            } else {
+                openTasks();
+            }
+        } else if (e.key.toLowerCase() === 'p') {
+            const planPanel = document.getElementById('planPanel');
+            if (planPanel.classList.contains('open')) {
+                planPanel.classList.remove('open');
+                document.getElementById('planOverlay').classList.remove('open');
+            } else {
+                openPlan();
+            }
         } else if (e.key === '1') {
             switchMode('work');
         } else if (e.key === '2') {
@@ -647,7 +707,7 @@ function updateTimerDisplay() {
                     const spentStr = hToday > 0 ? `${hToday}h ${mToday}m` : `${mToday}m`;
                     const hAim = Math.floor(todayAim / 60);
                     const mAim = todayAim % 60;
-                    const aimStr = hAim > 0 ? `${hAim}h ${mAim}m` : `${mAim}m`;
+                    const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
                     
                     const barLength = 10;
                     const filledBlocks = Math.round((progressPercent / 100) * barLength);
@@ -770,10 +830,22 @@ function addTask() {
     }
 }
 
+function formatDurationHM(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
 function getTodayTimeForTask(taskId) {
     const today = new Date().toDateString();
     return state.sessions
         .filter(s => s.taskId === taskId && new Date(s.timestamp).toDateString() === today)
+        .reduce((acc, s) => acc + s.duration, 0);
+}
+
+function getTotalTimeForTask(taskId) {
+    return state.sessions
+        .filter(s => s.taskId === taskId)
         .reduce((acc, s) => acc + s.duration, 0);
 }
 
@@ -799,7 +871,7 @@ function renderTasks() {
     const activeTasks = state.tasks.filter(t => !t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     const completedTasks = state.tasks.filter(t => t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-    const renderTaskItem = (task) => {
+        const renderTaskItem = (task) => {
         const item = document.createElement('div');
         const isNewSlide = task.id === state.lastTaskId;
 
@@ -808,37 +880,24 @@ function renderTasks() {
         const isRecentlyCreated = (now - createdAt) < (24 * 60 * 60 * 1000);
         const newBadge = isRecentlyCreated && !task.completed ? '<span class="new-badge">NEW</span>' : '';
 
-        let aimProgressHtml = '';
         let aimReached = false;
         const todaySeconds = getTodayTimeForTask(task.id);
+        const totalSeconds = getTotalTimeForTask(task.id);
         const todayAim = getTodayAimForGoal(task.id);
+        let progressPercent = 0;
         
         if (todayAim > 0) {
-            const progressPercent = Math.min(100, (todaySeconds / (todayAim * 60)) * 100);
+            progressPercent = Math.min(100, (todaySeconds / (todayAim * 60)) * 100);
             aimReached = progressPercent >= 100;
-            aimProgressHtml = `
-                <div class="goal-progress-container">
-                    <div class="goal-progress-bar" style="width: ${progressPercent}%"></div>
-                </div>
-            `;
         }
-
-        const aimBadge = aimReached ? '<span class="aim-badge">AIM REACHED</span>' : '';
 
         item.className = `task-item ${isNewSlide ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''} ${aimReached ? 'aim-reached' : ''}`;
 
-        const hToday = Math.floor(todaySeconds / 3600);
-        const mToday = Math.floor((todaySeconds % 3600) / 60);
-        const spentStr = hToday > 0 ? `${hToday}h ${mToday}m` : `${mToday}m`;
-        
-        let targetStr = 'Set Target';
-        let targetClass = 'empty';
-        if (todayAim > 0) {
-            const hAim = Math.floor(todayAim / 60);
-            const mAim = todayAim % 60;
-            targetStr = hAim > 0 ? `${hAim}h ${mAim}m` : `${mAim}m`;
-            targetClass = '';
-        }
+        const todayStr = formatDurationHM(todaySeconds);
+        const totalStr = formatDurationHM(totalSeconds);
+        const hAim = Math.floor(todayAim / 60);
+        const mAim = todayAim % 60;
+        const aimStr = todayAim > 0 ? (hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`) : 'Set';
 
         item.innerHTML = `
             <div class="task-menu">
@@ -866,31 +925,65 @@ function renderTasks() {
                 </button>
                 <div class="task-info">
                     <div class="task-name">
-                        <span class="task-text">${escapeHtml(task.name)}</span>
+                        <span class="task-text" style="color: ${task.color}">${escapeHtml(task.name)}</span>
                         ${newBadge}
-                        ${aimBadge}
                     </div>
                     <div class="task-stats-row">
-                        <div class="task-stat-item spent">
-                            <span class="stat-label">Spent Today</span>
-                            <span class="stat-value">${spentStr}</span>
+                        <div class="task-stat-item">
+                            <span class="stat-label">Today</span>
+                            <span class="stat-value">${todayStr}</span>
                         </div>
-                        <div class="task-stat-item target" title="Click to adjust daily aim">
+                        <div class="task-stat-item">
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value">${totalStr}</span>
+                        </div>
+                        <div class="task-stat-item target">
                             <span class="stat-label">Daily Target</span>
-                            <span class="stat-value ${targetClass}">${targetStr}</span>
+                            <span class="stat-value ${todayAim === 0 ? 'empty' : ''}">${aimStr}</span>
                         </div>
                     </div>
-                    <div class="inline-aim-input-wrapper" style="display: none;">
-                        <input type="text" class="inline-aim-input" placeholder="e.g. 45m or 2h" style="width: 100px;">
-                        <button class="inline-aim-save">Set</button>
+                    ${todayAim > 0 ? `
+                    <div class="goal-progress-container">
+                        <progress-compact 
+                            value="${todaySeconds}" 
+                            max="${todayAim * 60}" 
+                            color="${task.color}" 
+                            label="${aimStr}">
+                        </progress-compact>
                     </div>
-                    ${aimProgressHtml}
+                    ` : ''}
                 </div>
                 <button class="task-more">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
             </div>
         `;
+
+        // Click handler for target
+        item.querySelector('.task-stat-item.target').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentStr = todayAim > 0 ? todayAim + 'm' : '';
+            const newAim = prompt('Set daily target (e.g. 45m or 2h):', currentStr);
+            if (newAim !== null) {
+                let mins = 0;
+                const val = newAim.toLowerCase().trim();
+                if (!val) {
+                    setTodayAimForGoal(task.id, 0);
+                } else if (val.includes('h')) {
+                    const parts = val.split('h');
+                    mins += (parseFloat(parts[0]) || 0) * 60;
+                    if (parts[1]) mins += parseFloat(parts[1]) || 0;
+                    setTodayAimForGoal(task.id, Math.max(0, Math.round(mins)));
+                } else {
+                    mins = parseFloat(val) || 0;
+                    setTodayAimForGoal(task.id, Math.max(0, Math.round(mins)));
+                }
+                renderTasks();
+                renderPlan();
+                updateTimerDisplay();
+            }
+        });
+
         let startX = 0;
         let currentTranslate = 0;
         let isSliding = false;
@@ -943,47 +1036,6 @@ function renderTasks() {
             renderTasks();
             document.getElementById('taskPanel').classList.remove('open');
             document.getElementById('taskOverlay').classList.remove('open');
-        });
-
-        const targetTrigger = item.querySelector('.task-stat-item.target');
-        const aimInputWrapper = item.querySelector('.inline-aim-input-wrapper');
-        const aimInput = item.querySelector('.inline-aim-input');
-        const aimSave = item.querySelector('.inline-aim-save');
-        const statsRow = item.querySelector('.task-stats-row');
-
-        targetTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            statsRow.style.display = 'none';
-            aimInputWrapper.style.display = 'flex';
-            aimInput.value = todayAim > 0 ? todayAim + 'm' : '';
-            aimInput.focus();
-        });
-
-        const saveAim = () => {
-            const val = aimInput.value.trim().toLowerCase();
-            let minutes = 0;
-            if (val === '') {
-                minutes = 0;
-            } else if (val.includes('h')) {
-                const parts = val.split('h');
-                minutes += (parseFloat(parts[0]) || 0) * 60;
-                if (parts[1]) minutes += parseFloat(parts[1]) || 0;
-            } else {
-                minutes = parseFloat(val) || 0;
-            }
-            
-            setTodayAimForGoal(task.id, Math.max(0, Math.round(minutes)));
-            renderTasks();
-            updateTimerDisplay();
-        };
-
-        aimSave.addEventListener('click', (e) => {
-            e.stopPropagation();
-            saveAim();
-        });
-
-        aimInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveAim();
         });
 
         item.querySelector('.edit-btn').addEventListener('click', () => {
@@ -1577,6 +1629,278 @@ function clearHistory() {
         }
     });
 }
+
+function populateAimGoalSelect() {
+    const select = document.getElementById('aimGoalSelect');
+    if (!select) return;
+    
+    const activeTasks = state.tasks.filter(t => !t.completed);
+    
+    select.innerHTML = '<option value="" disabled selected>Select a goal...</option>';
+    activeTasks.forEach(task => {
+        const option = document.createElement('option');
+        option.value = task.id;
+        option.textContent = task.name;
+        select.appendChild(option);
+    });
+}
+
+function addAim() {
+    const goalSelect = document.getElementById('aimGoalSelect');
+    const durationInput = document.getElementById('aimDurationInput');
+    
+    const goalId = goalSelect.value;
+    const durationRaw = durationInput.value.trim().toLowerCase();
+    
+    if (!goalId) {
+        showToast('Please select a goal');
+        return;
+    }
+    
+    if (!durationRaw) {
+        showToast('Please enter a duration');
+        return;
+    }
+    
+    let minutes = 0;
+    // Simple hh:mm or mm parsing
+    if (durationRaw.includes(':')) {
+        const parts = durationRaw.split(':');
+        minutes = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+    } else if (durationRaw.includes('h')) {
+        const parts = durationRaw.split('h');
+        minutes += (parseFloat(parts[0]) || 0) * 60;
+        if (parts[1]) minutes += parseFloat(parts[1]) || 0;
+    } else {
+        minutes = parseFloat(durationRaw) || 0;
+    }
+    
+    if (minutes <= 0) {
+        showToast('Invalid duration');
+        return;
+    }
+    
+    setTodayAimForGoal(goalId, Math.round(minutes));
+    
+    durationInput.value = '';
+    renderPlan();
+    renderTasks();
+    updateTimerDisplay();
+    showToast('Aim added to plan');
+}
+
+function renderPlan() {
+    const todayList = document.getElementById('todayPlanList');
+    const pastList = document.getElementById('pastPlanList');
+    if (!todayList || !pastList) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const todayAims = state.aims.filter(a => a.date === today);
+    const pastAims = state.aims.filter(a => a.date !== today);
+    
+        const renderAimItem = (aim) => {
+        const task = state.tasks.find(t => t.id === aim.goalId);
+        const name = task ? task.name : 'Unknown Goal';
+        const color = task ? task.color : '#58a6ff';
+        
+        const spentSeconds = getTodayTimeForTask(aim.goalId);
+        const targetSeconds = aim.targetMinutes * 60;
+        
+        const hAim = Math.floor(aim.targetMinutes / 60);
+        const mAim = aim.targetMinutes % 60;
+        const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
+        
+        const item = document.createElement('div');
+        const rawProgress = (spentSeconds / targetSeconds) * 100;
+        const displayProgress = Math.min(100, rawProgress);
+        const reached = rawProgress >= 100;
+        item.className = `plan-aim-item ${reached ? 'reached' : ''}`;
+        
+        item.innerHTML = `
+            <div class="plan-aim-menu">
+                <button class="edit-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button class="danger delete-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Delete</span>
+                </button>
+            </div>
+            <div class="plan-aim-slide-wrapper">
+                <div class="history-type-indicator" style="background: ${color}; margin-right: 12px;"></div>
+                <div class="aim-info">
+                    <div class="aim-top-row">
+                        <div class="aim-name">${escapeHtml(name)}</div>
+                    </div>
+                    <div class="aim-bottom-row">
+                        <div class="aim-meta">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5z"/></svg>
+                            <span class="aim-duration-label">${aimStr}</span>
+                        </div>
+                        <progress-compact 
+                            value="${spentSeconds}" 
+                            max="${targetSeconds}" 
+                            color="${color}" 
+                            label="${aimStr}">
+                        </progress-compact>
+                    </div>
+                </div>
+                <button class="plan-aim-more">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+            </div>
+        `;
+
+        let startX = 0;
+        let currentTranslate = 0;
+        let isSliding = false;
+        const wrapper = item.querySelector('.plan-aim-slide-wrapper');
+        
+        wrapper.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSliding = true;
+            wrapper.style.transition = 'none';
+        }, {passive: true});
+        
+        wrapper.addEventListener('touchmove', (e) => {
+            if (!isSliding) return;
+            const diff = e.touches[0].clientX - startX;
+            if (diff < 0) {
+                currentTranslate = Math.max(diff, -120);
+                wrapper.style.transform = `translateX(${currentTranslate}px)`;
+            }
+        }, {passive: true});
+        
+        wrapper.addEventListener('touchend', () => {
+            isSliding = false;
+            wrapper.style.transition = 'transform 0.2s ease';
+            if (currentTranslate < -60) {
+                item.classList.add('menu-open');
+                wrapper.style.transform = 'translateX(-120px)';
+            } else {
+                item.classList.remove('menu-open');
+                wrapper.style.transform = 'translateX(0)';
+            }
+            currentTranslate = 0;
+        });
+
+        item.querySelector('.plan-aim-more').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = item.classList.toggle('menu-open');
+            wrapper.style.transition = 'transform 0.2s ease';
+            wrapper.style.transform = isOpen ? 'translateX(-120px)' : 'translateX(0)';
+        });
+
+        item.querySelector('.edit-btn').addEventListener('click', () => {
+            editAim(aim.id);
+            item.classList.remove('menu-open');
+            wrapper.style.transform = 'translateX(0)';
+        });
+
+        item.querySelector('.delete-btn').addEventListener('click', () => {
+            removeAim(aim.id);
+        });
+
+        return item;
+    };
+    
+    todayList.innerHTML = '';
+    if (todayAims.length === 0) {
+        todayList.innerHTML = '<p class="empty-plan">No aims for today. Plan your intent above.</p>';
+    } else {
+        todayAims.forEach(aim => todayList.appendChild(renderAimItem(aim)));
+    }
+    
+    // Group past aims by date
+    const groupedPast = pastAims.reduce((acc, aim) => {
+        if (!acc[aim.date]) acc[aim.date] = [];
+        acc[aim.date].push(aim);
+        return acc;
+    }, {});
+    
+    pastList.innerHTML = '';
+    const sortedDates = Object.keys(groupedPast).sort((a, b) => new Date(b) - new Date(a));
+    
+    if (sortedDates.length === 0) {
+        pastList.innerHTML = '<p class="empty-plan">No past plan history.</p>';
+    } else {
+        sortedDates.forEach(date => {
+            const section = document.createElement('div');
+            section.className = 'past-plan-section';
+            section.innerHTML = `<div class="past-date">${date}</div>`;
+            groupedPast[date].forEach(aim => section.appendChild(renderAimItem(aim)));
+            pastList.appendChild(section);
+        });
+    }
+}
+
+function removeAim(aimId) {
+    confirmAction('Delete this daily aim?').then(confirmed => {
+        if (confirmed) {
+            const index = state.aims.findIndex(a => a.id === aimId);
+            if (index > -1) {
+                state.aims.splice(index, 1);
+                saveData();
+                renderPlan();
+                renderTasks();
+                updateTimerDisplay();
+                showToast('Aim removed');
+            }
+        }
+    });
+}
+
+function editAim(aimId) {
+    const aim = state.aims.find(a => a.id === aimId);
+    if (!aim) return;
+    
+    const hAim = Math.floor(aim.targetMinutes / 60);
+    const mAim = aim.targetMinutes % 60;
+    const currentStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
+    
+    const newAim = prompt('Adjust daily target (e.g. 45m or 2h):', currentStr);
+    if (newAim !== null) {
+        let mins = 0;
+        const val = newAim.toLowerCase();
+        if (val.includes('h')) {
+            const parts = val.split('h');
+            mins += (parseFloat(parts[0]) || 0) * 60;
+            if (parts[1]) mins += parseFloat(parts[1]) || 0;
+        } else {
+            mins = parseFloat(val) || 0;
+        }
+        
+        if (mins > 0) {
+            aim.targetMinutes = Math.round(mins);
+            saveData();
+            renderPlan();
+            renderTasks();
+            updateTimerDisplay();
+            showToast('Aim updated');
+        } else {
+            showToast('Invalid duration');
+        }
+    }
+}
+
+window.removeAim = removeAim;
+
+function clearAims() {
+    confirmAction('Clear all aims for today?').then(confirmed => {
+        if (confirmed) {
+            const today = new Date().toISOString().split('T')[0];
+            state.aims = state.aims.filter(a => a.date !== today);
+            saveData();
+            renderPlan();
+            renderTasks();
+            updateTimerDisplay();
+            showToast('Today\'s plan cleared');
+        }
+    });
+}
+
+window.clearAims = clearAims;
 
 document.querySelectorAll('.setting-slider').forEach(s => s.addEventListener('input', () => {
     const valEl = document.getElementById(`${s.id}Value`);

@@ -44,6 +44,8 @@ A minimalist, privacy-focused Pomodoro timer built for focus and intent. PomoFlo
 | `Space` | Start/Pause timer     |
 | `R`     | Reset current session |
 | `N`     | Skip to next session  |
+| `G`     | Toggle Goals drawer   |
+| `P`     | Toggle Plan drawer    |
 | `1`     | Switch to Focus mode  |
 | `2`     | Switch to Short Break |
 | `3`     | Switch to Long Break  |
