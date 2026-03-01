@@ -319,6 +319,12 @@ function setupEventListeners() {
             switchMode('longBreak');
         }
     });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            restoreTimerState();
+        }
+    });
 }
 
 function switchMode(mode) {
