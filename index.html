@@ -62,7 +62,7 @@
                             </div>
                         </div>
                         <input type="text" class="task-input" id="taskInput" placeholder="Enter Goal Title...">
-                        <button type="button" class="btn-add" id="addTaskBtn" aria-label="Add task">
+                        <button type="button" class="btn-add" id="addTaskBtn" aria-label="Add goal">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                         </button>
                     </div>
@@ -104,11 +104,14 @@
                 <div aria-live="polite" id="timerAnnouncer"></div>
 
                 <div class="timer-task-display">
-                    <button class="timer-task-link" id="taskLink">
-                        <span class="timer-task-prefix" id="timerTaskPrefix" style="display: none;">Focusing on:</span>
-                        <span id="timerTask">Set a session goal</span>
-                        <svg class="task-link-chevron" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-                    </button>
+                    <div class="timer-task-container">
+                        <button class="timer-task-link" id="taskLink">
+                            <span class="timer-task-prefix" id="timerTaskPrefix" style="display: none;">Focusing on:</span>
+                            <span id="timerTask">Set a session goal</span>
+                            <svg class="task-link-chevron" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                        </button>
+                        <div id="goalProgressHUD" class="goal-progress-hud"></div>
+                    </div>
                 </div>
 
                 <div class="timer-controls">

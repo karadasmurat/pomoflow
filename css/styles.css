@@ -257,6 +257,14 @@ header {
     width: 100%;
 }
 
+.timer-task-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
 .timer-task-link {
     background: var(--surface-elevated);
     border: 1px solid var(--border);
@@ -273,6 +281,21 @@ header {
     text-decoration: none;
     max-width: 320px;
     border-radius: 20px;
+}
+
+.goal-progress-hud {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: none; /* Hidden by default, JS shows it */
+    text-align: center;
+}
+
+.goal-progress-hud:hover {
+    color: var(--text-primary);
 }
 
 .timer-task-link:hover {
@@ -915,76 +938,112 @@ header {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 12px;
+    padding: 10px 12px;
 }
 
-.task-actions {
+.task-stats-row {
     display: flex;
-    gap: 8px;
-    margin-left: auto;
+    gap: 16px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.task-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.task-stat-item .stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.task-stat-item .stat-value {
+    font-size: 12px;
+    font-family: var(--font-time);
+    color: var(--text-primary);
+}
+
+.task-stat-item.target {
+    cursor: pointer;
+    padding: 2px 6px;
+    margin: -2px -6px;
+    border-radius: 4px;
+    transition: background 200ms ease;
+}
+
+.task-stat-item.target:hover {
+    background: var(--surface-elevated);
+}
+
+.task-stat-item.target .stat-value.empty {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.inline-aim-input-wrapper {
+    display: none;
     align-items: center;
+    margin-top: 6px;
+    background: var(--surface-elevated);
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--primary);
+}
+
+.inline-aim-input {
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: var(--font-time);
+    padding: 2px 4px;
+    outline: none;
+}
+
+.inline-aim-save {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
     flex-shrink: 0;
 }
 
-.new-badge {
-    background: var(--glow-primary);
-    color: var(--primary);
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 8px;
-    vertical-align: middle;
-    letter-spacing: 0.5px;
-    border: 1px solid var(--primary);
-    background: transparent;
-}
-
-[data-theme="light"] .new-badge {
-    background: transparent;
-    color: var(--primary);
-    border-color: var(--primary);
-}
-
-.task-name {
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex: 1;
-    min-width: 0;
-}
-
-.task-text {
-    white-space: nowrap;
+.goal-progress-container {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
     overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    flex: 0 1 auto;
-}
-
-.task-name-input {
-    padding: 2px 4px;
-    font-size: 14px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text-primary);
     width: 100%;
 }
 
-.task-time {
-    font-size: 12px;
-    color: var(--text-secondary);
-    font-family: var(--font-time);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
+
+.goal-progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width 0.3s ease;
 }
 
-.task-time svg {
-    opacity: 0.7;
+.task-item.aim-reached .goal-progress-bar {
+    background: var(--success);
+}
+
+.task-item.aim-reached {
+    border-left: 3px solid var(--success);
 }
 
 .task-edit,

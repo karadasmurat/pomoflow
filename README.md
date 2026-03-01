@@ -1,44 +1,43 @@
 # PomoFlow
 
-A beautiful Pomodoro-style timer with goal tracking, session history, and focus analytics.
+A minimalist, privacy-focused Pomodoro timer built for focus and intent. PomoFlow helps you track your deep work sessions with wall-clock accuracy and daily planning.
 
 ## Features
 
 ### Timer
 
-- **Pomodoro Timer** - Focus sessions with short (5 min) and long (15 min) breaks
-- **Twin Progress Rings** - Real-time synchronization between the main timer and the active goal's play button
-- **Customizable Durations** - Adjust focus/break times to fit your workflow
-- **Smart Auto-Advance** - Automatically transition between focus and break sessions
-- **Visual Progress Ring** - Animated circular progress indicator
-- **Audio Notifications** - Subtle sound when sessions complete
+- **Accurate Tracking** - Uses target end times to ensure your timer stays accurate even when the tab is in the background or the device sleeps.
+- **Smart Auto-Advance** - Automatically transition between focus and break sessions.
+- **Visual Progress Ring** - Animated circular progress indicator synchronized with active goals.
+- **Audio Notifications** - Subtle sound when sessions complete.
 
-### Goal Tracking
+### Intent & Planning
 
-- **Goal Management** - Create, edit, complete, and delete goals (tasks)
-- **Time Tracking** - Track focused time spent on each goal with visual totals
-- **Quick Controls** - Play/pause timer directly from goal items
-- **Sliding Menu** - Edit goal name, complete, or delete via sliding action menu
-- **Session History** - View completed sessions filtered by Today/Week/All with a "Show All" expansion
-- **Session Editing** - Adjust duration or correct unintended logs after completion
-- **High-Contrast Palette** - 8 distinct colors (Blue, Sky, Indigo, Violet, Pink, Orange, Yellow, Slate) designed for clarity and accessibility
+- **Daily Aims** - Decoupled daily targets that let you plan your focus time fresh each day.
+- **Progress Visualization** - Today-only progress bars on goal cards to track budget vs. actual.
+- **Date-Aware Tracking** - Aims are specific to the current date, allowing for historical trend analysis.
 
-### Focus Analytics
+### Goal Management
 
-- **Today's Focus Time** - Total time spent in focus sessions
-- **Sessions Completed** - Number of focus sessions done today
-- **Day Streak** - Consecutive days with completed focus sessions
-- **Visual Charts** - Pie chart for task breakdown and bar charts for historical data
+- **Goal Tracking** - Create, edit, complete, and delete goals.
+- **Time Attribution** - Track focused time spent on each goal with visual totals and progress rings.
+- **Sliding Menus** - Mobile-first sliding action menus for quick goal management.
+- **High-Contrast Palette** - Distinct colors designed for clarity and focus.
 
-### Design & Experience
+### Analytics & History
 
-- **Modern UI** - Clean, consistent design following modern CSS principles
-- **Unified Design Standards** - Harmonized input heights (42px), utility buttons (30px), and rounded corners across all interactive elements
-- **Tactile Feedback** - Interactive scale (1.12x) and active states (0.92x) using precision cubic-bezier timing
-- **Dark/Light Mode** - Toggle between themes with persistent preference
-- **Interactive Affordances** - Clear visual cues for active states, hover effects, and keyboard focus
+- **Session History** - Detailed history of focus sessions filtered by Today/Week/All.
+- **Session Editing** - Correct unintended logs or adjust durations after the fact.
+- **Focus Stats** - Track today's focus time, session counts, and day streaks.
+- **Visual Charts** - Pie chart for daily goal breakdown.
 
-### Keyboard Shortcuts
+### Experience
+
+- **Modern UI** - Clean, responsive design following modern CSS principles.
+- **Theming** - Light and Dark modes that respect your system preferences.
+- **Privacy Focused** - All data is stored locally in your browser's `localStorage`. No accounts, no tracking.
+
+## Keyboard Shortcuts
 
 | Key     | Action                |
 | ------- | --------------------- |
@@ -51,26 +50,10 @@ A beautiful Pomodoro-style timer with goal tracking, session history, and focus 
 
 ## Getting Started
 
-1. Open `index.html` in any modern browser
-2. Add goals you want to work on
-3. Click the play button on a goal to start tracking
-4. Focus until the timer completes
-
-## Browser Support
-
-- Chrome/Edge 80+
-- Firefox 75+
-- Safari 14+
-
-## Data Storage
-
-All data is stored locally in your browser using localStorage:
-
-- Goals and time tracking
-- Session history
-- User preferences
-- Timer state (survives page refresh)
-- Theme preference
+1. Open `index.html` in any modern browser.
+2. Add a goal you want to work on.
+3. (Optional) Set a Daily Target on the goal card.
+4. Click the play button on a goal to start focusing.
 
 ## License
 

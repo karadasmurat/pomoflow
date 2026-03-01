@@ -21,7 +21,16 @@ The timer follows a "Station" based cycle rather than a simple count.
     - Station 4 -> Long Break.
 - **`sessionCount`:** A persistent lifetime total of completed focus sessions.
 
-## 3. Design Constraints (CRITICAL)
+## 3. Daily Planning & Aims
+
+PomoFlow implements an intent-first planning model where daily targets are decoupled from static goal definitions.
+
+- **`state.aims`**: A collection of objects containing `goalId`, `date` (YYYY-MM-DD), and `targetMinutes`.
+- **Date-Awareness**: The UI dynamically resolves the active aim for each goal based on the current system date. 
+- **Resets**: Because aims are keyed by date, goal targets "reset" at midnight, encouraging users to plan their day fresh every morning while preserving historical data for trend analysis.
+- **Spent vs. Target**: Progress is calculated by filtering session history for the current date and comparing total duration against the resolved daily aim.
+
+## 4. Design Constraints (CRITICAL)
 
 To maintain visual clarity and brand identity, the following constraints must be strictly followed:
 
