@@ -33,7 +33,7 @@ class ProgressCompact extends HTMLElement {
         const label = this.getAttribute('label') || '';
         
         const rawProgress = max > 0 ? (value / max) * 100 : 0;
-        const percent = Math.round(rawProgress);
+        const percent = Math.min(100, Math.round(rawProgress));
         
         // Calculate blocks (10 block scale)
         const barLength = 10;

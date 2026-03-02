@@ -5,7 +5,8 @@ const STORAGE_KEYS = {
     SETTINGS: 'flowtracker_settings',
     STATE: 'flowtracker_state',
     VERSION: 'flowtracker_version',
-    NOTIFICATION_PROMPT: 'flowtracker_notification_prompt'
+    NOTIFICATION_PROMPT: 'flowtracker_notification_prompt',
+    PROFILE: 'flowtracker_profile'
 };
 
 const CURRENT_VERSION = 1;
@@ -40,11 +41,70 @@ let state = {
     lastSessionId: null,
     lastTaskId: null,
     selectedTaskColor: '#58a6ff',
-    editTaskColor: '#58a6ff'
+    editTaskColor: '#58a6ff',
+    selectedGoalIds: [],
+    xp: 0,
+    totalXp: 0,
+    level: 1,
+    avatar: '🦉'
 };
 
-let timerInterval = null;
+let timerWorker = null;
 let audioContext = null;
+
+function initTimerWorker() {
+    if (timerWorker) return;
+    
+    const workerCode = `
+        let timerInterval = null;
+        let endTime = null;
+
+        self.onmessage = function(e) {
+            if (e.data.action === 'start') {
+                endTime = e.data.endTime;
+                if (timerInterval) clearInterval(timerInterval);
+                
+                timerInterval = setInterval(() => {
+                    const now = Date.now();
+                    const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+                    
+                    self.postMessage({ 
+                        action: 'tick', 
+                        remaining: remaining 
+                    });
+                    
+                    if (remaining <= 0) {
+                        clearInterval(timerInterval);
+                    }
+                }, 500);
+            } else if (e.data.action === 'stop') {
+                if (timerInterval) clearInterval(timerInterval);
+            }
+        };
+    `;
+
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    timerWorker = new Worker(URL.createObjectURL(blob));
+    
+    timerWorker.onmessage = function(e) {
+        if (e.data.action === 'tick') {
+            state.timerState.remainingTime = e.data.remaining;
+            if (state.timerState.remainingTime <= 0) {
+                state.timerState.remainingTime = 0;
+                state.timerState.isRunning = false;
+                state.timerState.targetEndTime = null;
+                handleSessionComplete();
+            } else {
+                updateTimerDisplay();
+                if (state.timerState.remainingTime % 10 === 0) saveData();
+            }
+        }
+    };
+
+    timerWorker.onerror = function(err) {
+        console.error('Worker Error:', err);
+    };
+}
 let currentFilter = 'today';
 let showAllHistory = false;
 
@@ -54,9 +114,9 @@ function init() {
     renderTasks();
     renderHistory('today');
     renderPlan();
-    
-    const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');
-    if (todayBtn) {
+    updateLevelUI();
+
+    const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');    if (todayBtn) {
         document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
         todayBtn.classList.add('active');
     }
@@ -75,6 +135,15 @@ function loadData() {
         const version = localStorage.getItem(STORAGE_KEYS.VERSION);
         if (!version || parseInt(version) !== CURRENT_VERSION) {
             localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
+        }
+
+        const profile = localStorage.getItem(STORAGE_KEYS.PROFILE);
+        if (profile) {
+            const savedProfile = JSON.parse(profile);
+            state.xp = savedProfile.xp || 0;
+            state.totalXp = savedProfile.totalXp || 0;
+            state.level = savedProfile.level || 1;
+            state.avatar = savedProfile.avatar || '🦉';
         }
 
         const tasks = localStorage.getItem(STORAGE_KEYS.TASKS);
@@ -135,6 +204,13 @@ function saveData() {
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
         localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state.timerState));
         localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
+
+        localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify({
+            xp: state.xp,
+            totalXp: state.totalXp,
+            level: state.level,
+            avatar: state.avatar
+        }));
     } catch (e) {
         console.error('Error saving data:', e);
         if (e.name === 'QuotaExceededError') {
@@ -143,31 +219,92 @@ function saveData() {
     }
 }
 
+function getLogicalDate(date = new Date()) {
+    const timestamp = date instanceof Date ? date.getTime() : new Date(date).getTime();
+    // Shift the "logical day" by 4 hours. 
+    // This means 00:00 - 03:59 still counts as the previous day.
+    const shifted = new Date(timestamp - (4 * 60 * 60 * 1000));
+    return shifted.toISOString().split('T')[0];
+}
+
+function getActiveAimForGoal(goalId) {
+    // Find the most recent aim for this goal
+    const aims = state.aims.filter(a => a.goalId === goalId);
+    if (aims.length === 0) return null;
+    // Sort by createdAt descending to get the newest one
+    return aims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+}
+
 function getTodayAimForGoal(goalId) {
-    const today = new Date().toISOString().split('T')[0];
-    const aim = state.aims.find(a => a.goalId === goalId && a.date === today);
+    const aim = getActiveAimForGoal(goalId);
     return aim ? aim.targetMinutes : 0;
 }
 
 function setTodayAimForGoal(goalId, minutes) {
-    const today = new Date().toISOString().split('T')[0];
-    const existingIndex = state.aims.findIndex(a => a.goalId === goalId && a.date === today);
+    const existingAim = getActiveAimForGoal(goalId);
     
     if (minutes <= 0) {
-        if (existingIndex > -1) state.aims.splice(existingIndex, 1);
+        if (existingAim) {
+            state.aims = state.aims.filter(a => a.id !== existingAim.id);
+        }
     } else {
-        if (existingIndex > -1) {
-            state.aims[existingIndex].targetMinutes = minutes;
+        if (existingAim) {
+            existingAim.targetMinutes = minutes;
         } else {
             state.aims.push({
                 id: Date.now().toString(),
                 goalId: goalId,
-                date: today,
-                targetMinutes: minutes
+                targetMinutes: minutes,
+                createdAt: new Date().toISOString()
             });
         }
     }
     saveData();
+}
+
+function getTimeSpentOnAim(aim) {
+    if (!aim) return 0;
+    return state.sessions
+        .filter(s => s.taskId === aim.goalId && new Date(s.timestamp) >= new Date(aim.createdAt))
+        .reduce((acc, s) => acc + s.duration, 0);
+}
+
+function openTasks() {
+    const taskPanel = document.getElementById('taskPanel');
+    const taskOverlay = document.getElementById('taskOverlay');
+    const planPanel = document.getElementById('planPanel');
+    const planOverlay = document.getElementById('planOverlay');
+    const menuDropdown = document.getElementById('menuDropdown');
+
+    // Close plan if open
+    if (planPanel) planPanel.classList.remove('open');
+    if (planOverlay) planOverlay.classList.remove('open');
+    if (menuDropdown) menuDropdown.classList.remove('open');
+    
+    if (taskPanel) taskPanel.classList.add('open');
+    if (taskOverlay) taskOverlay.classList.add('open');
+}
+
+function openPlan() {
+    const taskPanel = document.getElementById('taskPanel');
+    const taskOverlay = document.getElementById('taskOverlay');
+    const planPanel = document.getElementById('planPanel');
+    const planOverlay = document.getElementById('planOverlay');
+    const menuDropdown = document.getElementById('menuDropdown');
+    const selectDropdown = document.getElementById('selectDropdown');
+
+    // Close tasks if open
+    if (taskPanel) taskPanel.classList.remove('open');
+    if (taskOverlay) taskOverlay.classList.remove('open');
+    if (menuDropdown) menuDropdown.classList.remove('open');
+    if (selectDropdown) selectDropdown.classList.remove('open');
+    
+    state.selectedGoalIds = [];
+    updateCustomSelectUI();
+    populateCustomGoalSelect();
+    renderPlan();
+    if (planPanel) planPanel.classList.add('open');
+    if (planOverlay) planOverlay.classList.add('open');
 }
 
 function setupEventListeners() {
@@ -183,29 +320,64 @@ function setupEventListeners() {
     const planPanel = document.getElementById('planPanel');
     const clearAimsBtn = document.getElementById('clearAimsBtn');
 
-    const openTasks = () => {
-        // Close plan if open
-        planPanel.classList.remove('open');
-        planOverlay.classList.remove('open');
-        
-        taskPanel.classList.add('open');
-        taskOverlay.classList.add('open');
-    };
+    const menuBtn = document.getElementById('menuBtn');
+    const menuDropdown = document.getElementById('menuDropdown');
 
-    const openPlan = () => {
-        // Close tasks if open
-        taskPanel.classList.remove('open');
-        taskOverlay.classList.remove('open');
-        
-        populateAimGoalSelect();
-        renderPlan();
-        planPanel.classList.add('open');
-        planOverlay.classList.add('open');
-    };
+    const headerAvatar = document.getElementById('headerAvatar');
+    if (headerAvatar) {
+        headerAvatar.addEventListener('click', openSettings);
+    }
+
+    if (menuBtn && menuDropdown) {
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
+                menuDropdown.classList.remove('open');
+            }
+        });
+    }
 
     if (taskLink) taskLink.addEventListener('click', openTasks);
     if (tasksNavBtn) tasksNavBtn.addEventListener('click', openTasks);
     if (planNavBtn) planNavBtn.addEventListener('click', openPlan);
+
+    // Custom Select Event Listeners
+    const selectTrigger = document.getElementById('selectTrigger');
+    if (selectTrigger) {
+        selectTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('selectDropdown');
+            const searchInput = document.getElementById('goalSearchInput');
+            if (dropdown) {
+                dropdown.classList.toggle('open');
+                if (dropdown.classList.contains('open') && searchInput) {
+                    searchInput.value = '';
+                    populateCustomGoalSelect();
+                    searchInput.focus();
+                }
+            }
+        });
+    }
+
+    const goalSearchInput = document.getElementById('goalSearchInput');
+    if (goalSearchInput) {
+        goalSearchInput.addEventListener('input', (e) => {
+            populateCustomGoalSelect(e.target.value);
+        });
+        goalSearchInput.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('selectDropdown');
+        const customSelect = document.getElementById('customGoalSelect');
+        if (dropdown && !customSelect.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
 
     if (closeTaskPanel) {
         closeTaskPanel.addEventListener('click', () => {
@@ -250,6 +422,14 @@ function setupEventListeners() {
     document.getElementById('aimDurationInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addAim();
     });
+
+    const deadlineSelect = document.getElementById('aimDeadlineSelect');
+    const customDateInput = document.getElementById('aimCustomDate');
+    if (deadlineSelect && customDateInput) {
+        deadlineSelect.addEventListener('change', () => {
+            customDateInput.style.display = deadlineSelect.value === 'custom' ? 'inline-block' : 'none';
+        });
+    }
 
     const inlineColorBtn = document.getElementById('inlineColorBtn');
     const selectedColorCircle = document.getElementById('selectedColorCircle');
@@ -330,11 +510,11 @@ function setupEventListeners() {
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
     document.getElementById('closeSettings').addEventListener('click', closeSettings);
     document.getElementById('saveSettings').addEventListener('click', () => {
-        showToast('Settings saved');
+        notify('Settings saved');
         closeSettings();
     });
-    document.getElementById('settingsModal').addEventListener('click', (e) => {
-        if (e.target.id === 'settingsModal') closeSettings();
+    document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'settingsOverlay') closeSettings();
     });
 
     document.getElementById('exportData').addEventListener('click', exportData);
@@ -342,6 +522,18 @@ function setupEventListeners() {
     document.getElementById('importData').addEventListener('click', () => {
         document.getElementById('importFile').click();
     });
+
+    // Avatar Selection
+    document.querySelectorAll('.avatar-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            state.avatar = opt.dataset.avatar;
+            document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            saveData();
+            updateLevelUI();
+        });
+    });
+
     document.getElementById('closeImport').addEventListener('click', closeImportModal);
     document.getElementById('importReplace').addEventListener('click', () => performImport('replace'));
     document.getElementById('importMerge').addEventListener('click', () => performImport('merge'));
@@ -393,6 +585,12 @@ function setupEventListeners() {
         localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'denied');
         const prompt = document.getElementById('notificationPrompt');
         if (prompt) prompt.style.display = 'none';
+    });
+    document.getElementById('requestNotifyManual').addEventListener('click', () => {
+        requestNotificationPermission();
+    });
+    document.getElementById('testNotify').addEventListener('click', () => {
+        notify('This is a test notification! It works.', 'PomoFlow Test', 'milestone');
     });
 
     document.addEventListener('keydown', (e) => {
@@ -470,9 +668,8 @@ function applyMode(mode) {
     
     state.timerState.remainingTime = state.timerState.totalTime;
     
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+    if (timerWorker) {
+        timerWorker.postMessage({ action: 'stop' });
     }
     
     updateTimerDisplay();
@@ -488,7 +685,7 @@ function toggleTimer() {
 }
 
 function startTimer() {
-    if (state.timerState.isRunning && timerInterval) return;
+    if (state.timerState.isRunning) return;
     
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -505,28 +702,20 @@ function startTimer() {
     
     updateTimerDisplay();
     
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        const now = Date.now();
-        state.timerState.remainingTime = Math.max(0, Math.ceil((state.timerState.targetEndTime - now) / 1000));
-        
-        if (state.timerState.remainingTime <= 0) {
-            state.timerState.remainingTime = 0;
-            state.timerState.targetEndTime = null;
-            handleSessionComplete();
-        } else {
-            updateTimerDisplay();
-            if (state.timerState.remainingTime % 10 === 0) saveData();
-        }
-    }, 1000);
+    initTimerWorker();
+    if (timerWorker) {
+        timerWorker.postMessage({ 
+            action: 'start', 
+            endTime: state.timerState.targetEndTime 
+        });
+    }
 }
 
 function pauseTimer() {
     state.timerState.isRunning = false;
     state.timerState.targetEndTime = null;
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+    if (timerWorker) {
+        timerWorker.postMessage({ action: 'stop' });
     }
     updateTimerDisplay();
     saveData();
@@ -572,13 +761,34 @@ function handleSessionComplete(skipped = false) {
         state.timerState.sessionCount++;
         saveSession();
         updateStats();
+        
+        // Timer Pulse Animation
+        const timerContainer = document.querySelector('.timer-container');
+        if (timerContainer) {
+            timerContainer.classList.add('timer-pulse');
+            setTimeout(() => timerContainer.classList.remove('timer-pulse'), 600);
+        }
+
         playTone(440, 0.1, 0);
         setTimeout(() => playTone(880, 0.2, 0.1), 100);
-        showNotification('Focus session complete!', 'Time for a break.');
+        const duration = state.settings.workDuration * 60;
+        const xpGained = Math.floor(duration / 60) * 10;
+        setTimeout(() => {
+            notify(`Focus session complete! +${xpGained} XP earned 🚀`, 'PomoFlow');
+        }, 500);
     } else if (!wasWork && !skipped) {
+        // Timer Pulse Animation
+        const timerContainer = document.querySelector('.timer-container');
+        if (timerContainer) {
+            timerContainer.classList.add('timer-pulse');
+            setTimeout(() => timerContainer.classList.remove('timer-pulse'), 600);
+        }
+
         playTone(880, 0.1, 0);
         setTimeout(() => playTone(440, 0.2, 0.1), 100);
-        showNotification('Break is over!', 'Ready to get back to work?');
+        setTimeout(() => {
+            notify('Break is over! Ready to get back to work?', 'PomoFlow');
+        }, 500);
     }
 
     let nextMode;
@@ -603,7 +813,8 @@ function handleSessionComplete(skipped = false) {
                       (nextMode !== 'work' && state.settings.autoStartBreaks);
                       
     if (autoStart) {
-        setTimeout(startTimer, 1000);
+        // Delay auto-start slightly to let sounds/animation breathe
+        setTimeout(startTimer, 1500);
     }
 }
 
@@ -700,55 +911,61 @@ function updateTimerDisplay() {
                 hudEl.style.display = 'block';
                 if (todayAim > 0) {
                     const todayTime = getTodayTimeForTask(task.id);
-                    const progressPercent = Math.min(100, Math.floor((todayTime / (todayAim * 60)) * 100));
-                    
-                    const hToday = Math.floor(todayTime / 3600);
-                    const mToday = Math.floor((todayTime % 3600) / 60);
-                    const spentStr = hToday > 0 ? `${hToday}h ${mToday}m` : `${mToday}m`;
                     const hAim = Math.floor(todayAim / 60);
                     const mAim = todayAim % 60;
                     const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
                     
-                    const barLength = 10;
-                    const filledBlocks = Math.round((progressPercent / 100) * barLength);
-                    const bar = '█'.repeat(filledBlocks) + '░'.repeat(barLength - filledBlocks);
-                    
-                    hudEl.textContent = `[${bar}] ${spentStr} / ${aimStr}`;
+                    hudEl.innerHTML = `
+                        <progress-compact 
+                            value="${todayTime}" 
+                            max="${todayAim * 60}" 
+                            color="${task.color}" 
+                            label="${aimStr}">
+                        </progress-compact>
+                    `;
                     hudEl.onclick = (e) => {
                         e.stopPropagation();
-                        const newAim = prompt('Adjust daily target (e.g. 45m or 2h):', todayAim + 'm');
-                        if (newAim !== null) {
-                            let mins = 0;
-                            const val = newAim.toLowerCase();
-                            if (val.includes('h')) {
-                                const parts = val.split('h');
-                                mins += (parseFloat(parts[0]) || 0) * 60;
-                                if (parts[1]) mins += parseFloat(parts[1]) || 0;
-                            } else {
-                                mins = parseFloat(val) || 0;
-                            }
-                            setTodayAimForGoal(task.id, Math.max(0, Math.round(mins)));
-                            renderTasks(); updateTimerDisplay();
+                        // Open Plan and select this task
+                        openPlan();
+                        if (state.timerState.activeTaskId) {
+                            state.selectedGoalIds = [state.timerState.activeTaskId];
+                            updateCustomSelectUI();
+                            populateCustomGoalSelect();
                         }
+                        
+                        // Focus the duration input
+                        const durInput = document.getElementById('aimDurationInput');
+                        if (durInput) setTimeout(() => durInput.focus(), 300);
                     };
                 } else {
-                    hudEl.innerHTML = '<span style="text-decoration: underline; opacity: 0.8;">Set Target</span>';
+                    hudEl.innerHTML = `
+                        <div class="set-aim-cta">
+                            <span class="set-aim-text">Set a target for today now.</span>
+                            <div class="info-popover-wrapper">
+                                <svg class="info-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                <div class="info-popover">Daily Aims are specific focus targets for today. They help you stay intentional without changing your overall goal.</div>
+                            </div>
+                        </div>
+                    `;
                     hudEl.onclick = (e) => {
-                        e.stopPropagation();
-                        const newAim = prompt('Set daily target (e.g. 45m or 2h):');
-                        if (newAim) {
-                            let mins = 0;
-                            const val = newAim.toLowerCase();
-                            if (val.includes('h')) {
-                                const parts = val.split('h');
-                                mins += (parseFloat(parts[0]) || 0) * 60;
-                                if (parts[1]) mins += parseFloat(parts[1]) || 0;
-                            } else {
-                                mins = parseFloat(val) || 0;
-                            }
-                            setTodayAimForGoal(task.id, Math.max(0, Math.round(mins)));
-                            renderTasks(); updateTimerDisplay();
+                        // Prevent click if clicking the info icon/popover specifically
+                        if (e.target.closest('.info-popover-wrapper')) {
+                            e.stopPropagation();
+                            return;
                         }
+                        e.stopPropagation();
+                        
+                        // Open Plan and select this task
+                        openPlan();
+                        if (state.timerState.activeTaskId) {
+                            state.selectedGoalIds = [state.timerState.activeTaskId];
+                            updateCustomSelectUI();
+                            populateCustomGoalSelect();
+                        }
+                        
+                        // Focus the duration input for quick entry
+                        const durInput = document.getElementById('aimDurationInput');
+                        if (durInput) setTimeout(() => durInput.focus(), 300);
                     };
                 }
             }
@@ -780,6 +997,7 @@ function updateTimerDisplay() {
     if (timerProgress) {
         timerProgress.style.strokeDashoffset = offset;
         timerProgress.className = 'timer-ring-progress';
+        if (state.timerState.mode === 'work') timerProgress.classList.add('work');
         if (state.timerState.mode === 'shortBreak') timerProgress.classList.add('break');
         if (state.timerState.mode === 'longBreak') timerProgress.classList.add('long-break');
     }
@@ -837,9 +1055,9 @@ function formatDurationHM(seconds) {
 }
 
 function getTodayTimeForTask(taskId) {
-    const today = new Date().toDateString();
+    const today = getLogicalDate();
     return state.sessions
-        .filter(s => s.taskId === taskId && new Date(s.timestamp).toDateString() === today)
+        .filter(s => s.taskId === taskId && getLogicalDate(new Date(s.timestamp)) === today)
         .reduce((acc, s) => acc + s.duration, 0);
 }
 
@@ -880,24 +1098,13 @@ function renderTasks() {
         const isRecentlyCreated = (now - createdAt) < (24 * 60 * 60 * 1000);
         const newBadge = isRecentlyCreated && !task.completed ? '<span class="new-badge">NEW</span>' : '';
 
-        let aimReached = false;
         const todaySeconds = getTodayTimeForTask(task.id);
         const totalSeconds = getTotalTimeForTask(task.id);
-        const todayAim = getTodayAimForGoal(task.id);
-        let progressPercent = 0;
         
-        if (todayAim > 0) {
-            progressPercent = Math.min(100, (todaySeconds / (todayAim * 60)) * 100);
-            aimReached = progressPercent >= 100;
-        }
-
-        item.className = `task-item ${isNewSlide ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''} ${aimReached ? 'aim-reached' : ''}`;
+        item.className = `task-item ${isNewSlide ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
 
         const todayStr = formatDurationHM(todaySeconds);
         const totalStr = formatDurationHM(totalSeconds);
-        const hAim = Math.floor(todayAim / 60);
-        const mAim = todayAim % 60;
-        const aimStr = todayAim > 0 ? (hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`) : 'Set';
 
         item.innerHTML = `
             <div class="task-menu">
@@ -937,52 +1144,13 @@ function renderTasks() {
                             <span class="stat-label">Total</span>
                             <span class="stat-value">${totalStr}</span>
                         </div>
-                        <div class="task-stat-item target">
-                            <span class="stat-label">Daily Target</span>
-                            <span class="stat-value ${todayAim === 0 ? 'empty' : ''}">${aimStr}</span>
-                        </div>
                     </div>
-                    ${todayAim > 0 ? `
-                    <div class="goal-progress-container">
-                        <progress-compact 
-                            value="${todaySeconds}" 
-                            max="${todayAim * 60}" 
-                            color="${task.color}" 
-                            label="${aimStr}">
-                        </progress-compact>
-                    </div>
-                    ` : ''}
                 </div>
                 <button class="task-more">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
             </div>
         `;
-
-        // Click handler for target
-        item.querySelector('.task-stat-item.target').addEventListener('click', (e) => {
-            e.stopPropagation();
-            const currentStr = todayAim > 0 ? todayAim + 'm' : '';
-            const newAim = prompt('Set daily target (e.g. 45m or 2h):', currentStr);
-            if (newAim !== null) {
-                let mins = 0;
-                const val = newAim.toLowerCase().trim();
-                if (!val) {
-                    setTodayAimForGoal(task.id, 0);
-                } else if (val.includes('h')) {
-                    const parts = val.split('h');
-                    mins += (parseFloat(parts[0]) || 0) * 60;
-                    if (parts[1]) mins += parseFloat(parts[1]) || 0;
-                    setTodayAimForGoal(task.id, Math.max(0, Math.round(mins)));
-                } else {
-                    mins = parseFloat(val) || 0;
-                    setTodayAimForGoal(task.id, Math.max(0, Math.round(mins)));
-                }
-                renderTasks();
-                renderPlan();
-                updateTimerDisplay();
-            }
-        });
 
         let startX = 0;
         let currentTranslate = 0;
@@ -1106,23 +1274,135 @@ function saveSession() {
         duration: state.settings.workDuration * 60,
         timestamp: new Date().toISOString()
     };
-    
+
     if (state.timerState.activeTaskId) {
         const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
         if (task) {
             task.totalTime += session.duration;
             session.taskName = task.name;
             session.taskColor = task.color;
+
+            // Check for Aim Completion Bonus
+            const aim = getActiveAimForGoal(task.id);
+            if (aim && !aim.completedBonusAwarded) {
+                const spentSeconds = getTimeSpentOnAim(aim);
+                const targetSeconds = aim.targetMinutes * 60;
+
+                if (spentSeconds >= targetSeconds) {
+                    aim.completedBonusAwarded = true;
+                    const bonusAmount = 500;
+                    addXP(bonusAmount, true);
+
+                    // Visual feedback for bonus
+                    setTimeout(() => {
+                        const items = document.querySelectorAll('.plan-aim-item');
+                        items.forEach(item => {
+                            if (item.dataset.goalId === task.id) {
+                                const bonusFloat = document.createElement('div');
+                                bonusFloat.className = 'xp-float-bonus';
+                                bonusFloat.textContent = `🎯 +${bonusAmount} XP BONUS`;
+                                item.appendChild(bonusFloat);
+                                setTimeout(() => bonusFloat.remove(), 2000);
+                            }
+                        });
+                    }, 500);
+
+                    notify(`Milestone Reached: +${bonusAmount} XP Bonus!`, 'PomoFlow', 'milestone');
+                }
+            }
         }
     }
     
     state.sessions.push(session);
+
+    // Award standard XP: 10 XP per minute focused
+    const xpGained = Math.floor(session.duration / 60) * 10;
+    if (xpGained > 0) {
+        addXP(xpGained);
+    }
+
     saveData();
     renderTasks();
     renderHistory(currentFilter);
 }
 
-function renderHistory(filter = 'today') {
+function addXP(amount, isBonus = false) {
+    const oldTotalXp = state.totalXp;
+    state.xp += amount;
+    state.totalXp += amount;
+
+    // XP Float Animation
+    const xpDisplay = document.querySelector('.level-xp-display');
+    if (xpDisplay && !isBonus) {
+        const float = document.createElement('span');
+        float.className = 'xp-float';
+        float.textContent = `+${amount} XP`;
+        xpDisplay.appendChild(float);
+        setTimeout(() => float.remove(), 1500);
+    }
+
+    const xpToLevel = state.level * 1000;
+    if (state.xp >= xpToLevel) {
+        state.xp -= xpToLevel;
+        state.level++;
+        notify(`LEVEL UP! You are now Level ${state.level}`, 'PomoFlow', 'milestone');
+
+        // Avatar Victory Animation
+        const avatar = document.getElementById('headerAvatar');
+        if (avatar) {
+            avatar.classList.add('avatar-victory');
+            setTimeout(() => avatar.classList.remove('avatar-victory'), 800);
+        }
+
+        // Success sound
+        playTone(523.25, 0.1, 0); // C5
+        setTimeout(() => playTone(659.25, 0.1, 0.1), 100); // E5
+        setTimeout(() => playTone(783.99, 0.2, 0.2), 200); // G5
+    }
+
+    updateLevelUI(oldTotalXp);
+}
+function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.textContent = Math.floor(progress * (end - start) + start).toLocaleString();
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+function updateLevelUI(previousTotalXp = null) {
+    const xpEl = document.getElementById('userXP');
+    const rankEl = document.getElementById('userRank');
+    const headerAvatar = document.getElementById('headerAvatar');
+    const levelContainer = document.getElementById('levelContainer');
+
+    if (!xpEl || !rankEl) return;
+
+    if (previousTotalXp !== null && previousTotalXp !== state.totalXp) {
+        animateValue(xpEl, previousTotalXp, state.totalXp, 500);
+    } else {
+        xpEl.textContent = state.totalXp.toLocaleString();
+    }
+
+    if (levelContainer) levelContainer.title = `Level ${state.level}`;
+    if (headerAvatar) headerAvatar.textContent = state.avatar || '🦉';
+
+    const ranks = [        { min: 1, name: 'Novice' },
+        { min: 5, name: 'Focused' },
+        { min: 10, name: 'Deep Worker' },
+        { min: 20, name: 'Flow State' },
+        { min: 35, name: 'Master' },
+        { min: 50, name: 'Zen Architect' }
+    ];
+
+    const currentRank = [...ranks].reverse().find(r => state.level >= r.min);
+    rankEl.textContent = currentRank ? currentRank.name : 'Novice';
+    }function renderHistory(filter = 'today') {
     const list = document.getElementById('historyList');
     if (!list) return;
     list.innerHTML = '';
@@ -1280,8 +1560,8 @@ function deleteSession(id) {
 }
 
 function updateStats() {
-    const today = new Date().toDateString();
-    const todaySessions = state.sessions.filter(s => new Date(s.timestamp).toDateString() === today);
+    const today = getLogicalDate();
+    const todaySessions = state.sessions.filter(s => getLogicalDate(new Date(s.timestamp)) === today);
     const totalSeconds = todaySessions.reduce((acc, s) => acc + s.duration, 0);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -1298,12 +1578,14 @@ function updateStats() {
 
 function calculateStreak(sessions) {
     if (sessions.length === 0) return 0;
-    const dates = [...new Set(sessions.map(s => new Date(s.timestamp).toDateString()))]
+    // Map sessions to logical dates to preserve streak for late-night workers
+    const dates = [...new Set(sessions.map(s => getLogicalDate(new Date(s.timestamp))))]
         .map(d => new Date(d))
         .sort((a, b) => b - a);
     let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
+    let currentDateStr = getLogicalDate();
+    let currentDate = new Date(currentDateStr);
+    
     if (Math.floor((currentDate - dates[0]) / 86400000) > 1) return 0;
     for (let i = 0; i < dates.length; i++) {
         if (i === 0) { streak = 1; continue; }
@@ -1382,9 +1664,27 @@ function formatTimestamp(date) {
 }
 
 function openSettings() {
-    const modal = document.getElementById('settingsModal');
-    if (!modal) return;
-    modal.classList.add('open');
+    const panel = document.getElementById('settingsPanel');
+    const overlay = document.getElementById('settingsOverlay');
+    if (!panel || !overlay) return;
+    
+    const menuDropdown = document.getElementById('menuDropdown');
+    if (menuDropdown) menuDropdown.classList.remove('open');
+    
+    // Close other panels
+    document.getElementById('taskPanel').classList.remove('open');
+    document.getElementById('taskOverlay').classList.remove('open');
+    document.getElementById('planPanel').classList.remove('open');
+    document.getElementById('planOverlay').classList.remove('open');
+    
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    
+    // Highlight active avatar
+    document.querySelectorAll('.avatar-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.avatar === state.avatar);
+    });
+    
     document.getElementById('workDuration').value = state.settings.workDuration;
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
@@ -1400,7 +1700,9 @@ function openSettings() {
 }
 
 function closeSettings() {
-    document.getElementById('settingsModal').classList.remove('open');
+    document.getElementById('settingsPanel').classList.remove('open');
+    document.getElementById('settingsOverlay').classList.remove('open');
+    
     state.settings.workDuration = parseInt(document.getElementById('workDuration').value);
     state.settings.shortBreakDuration = parseInt(document.getElementById('shortBreakDuration').value);
     state.settings.longBreakDuration = parseInt(document.getElementById('longBreakDuration').value);
@@ -1492,15 +1794,55 @@ function checkNotificationPrompt() {
 
 function requestNotificationPermission() {
     Notification.requestPermission().then(permission => {
+        console.log('Notification permission result:', permission);
         state.notificationPermission = permission;
         const prompt = document.getElementById('notificationPrompt');
         if (prompt) prompt.style.display = 'none';
-        if (permission === 'granted') showNotification('Notifications enabled', 'You will be alerted when focus ends.');
+        if (permission === 'granted') {
+            notify('Notifications enabled! You will be alerted when focus ends.');
+        }
     });
 }
 
-function showNotification(title, body) {
-    if (Notification.permission === 'granted') new Notification(title, { body });
+function notify(message, title = 'PomoFlow', type = 'info') {
+    const isBackground = document.visibilityState === 'hidden';
+    
+    // Always try to show the internal toast if visible OR if it's a milestone
+    if (!isBackground || type === 'milestone') {
+        showToast(message, type);
+    }
+    
+    // Push notification logic
+    if (Notification.permission === 'granted') {
+        // If background, or major milestone, send system notification
+        if (isBackground || type === 'milestone') {
+            try {
+                new Notification(title, { 
+                    body: message,
+                    tag: 'pomoflow-notification-' + Date.now(), // Unique tag per notification
+                    silent: false // Ensure system sound is played if allowed
+                });
+            } catch (err) {
+                console.error('Notification Error:', err);
+            }
+        }
+    } else if (isBackground || type === 'milestone') {
+        // Only log if we intended to send a push but didn't have permission
+        console.log('Notification permission state:', Notification.permission);
+    }
+}
+
+function showToast(message, type = 'info') {
+    const t = document.getElementById('toast'); 
+    if (!t) return;
+    
+    t.textContent = message;
+    t.className = `toast show ${type}`;
+    
+    if (t.timeout) clearTimeout(t.timeout);
+    t.timeout = setTimeout(() => {
+        t.classList.remove('show');
+    }, 4000);
 }
 
 function playTone(freq, duration, delay) {
@@ -1563,7 +1905,7 @@ function performImport(mode) {
         const sessionIds = new Set(state.sessions.map(s => s.id));
         pendingImportData.sessions.forEach(s => { if (!sessionIds.has(s.id)) state.sessions.push(s); });
     }
-    saveData(); renderTasks(); renderHistory(currentFilter); updateStats(); closeImportModal(); showToast('Data imported');
+    saveData(); renderTasks(); renderHistory(currentFilter); updateStats(); closeImportModal(); notify('Data imported');
 }
 
 function initTheme() {
@@ -1592,19 +1934,17 @@ function toggleTheme() {
     if (themeToggle) themeToggle.classList.toggle('dark', next === 'dark');
 }
 
-function showToast(message) {
-    const t = document.getElementById('toast'); 
-    if (!t) return;
-    t.textContent = message; t.style.display = 'block'; t.classList.add('show');
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.style.display = 'none', 200); }, 3000);
-}
-
 function restoreTimerState() {
     if (state.timerState.isRunning && state.timerState.targetEndTime) {
         const now = Date.now();
         state.timerState.remainingTime = Math.max(0, Math.ceil((state.timerState.targetEndTime - now) / 1000));
         
         if (state.timerState.remainingTime > 0) {
+            initTimerWorker();
+            timerWorker.postMessage({ 
+                action: 'start', 
+                endTime: state.timerState.targetEndTime 
+            });
             startTimer();
         } else {
             state.timerState.remainingTime = 0;
@@ -1630,92 +1970,261 @@ function clearHistory() {
     });
 }
 
-function populateAimGoalSelect() {
-    const select = document.getElementById('aimGoalSelect');
-    if (!select) return;
+function populateCustomGoalSelect(searchQuery = '') {
+    const optionsContainer = document.getElementById('selectOptions');
+    const noResults = document.getElementById('selectNoResults');
+    if (!optionsContainer) return;
     
     const activeTasks = state.tasks.filter(t => !t.completed);
+    const filteredTasks = activeTasks.filter(task => 
+        task.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
     
-    select.innerHTML = '<option value="" disabled selected>Select a goal...</option>';
-    activeTasks.forEach(task => {
-        const option = document.createElement('option');
-        option.value = task.id;
-        option.textContent = task.name;
-        select.appendChild(option);
-    });
+    optionsContainer.innerHTML = '';
+    
+    if (filteredTasks.length === 0) {
+        noResults.style.display = 'block';
+    } else {
+        noResults.style.display = 'none';
+        filteredTasks.forEach(task => {
+            const isSelected = state.selectedGoalIds.includes(task.id);
+            const option = document.createElement('div');
+            option.className = `select-option ${isSelected ? 'selected' : ''}`;
+            option.innerHTML = `
+                <div class="option-color" style="background: ${task.color}"></div>
+                <div class="option-name">${escapeHtml(task.name)}</div>
+                <div class="option-check">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+            `;
+            
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleGoalSelection(task.id);
+            });
+            
+            optionsContainer.appendChild(option);
+        });
+    }
+}
+
+function toggleGoalSelection(goalId) {
+    const index = state.selectedGoalIds.indexOf(goalId);
+    if (index > -1) {
+        state.selectedGoalIds.splice(index, 1);
+    } else {
+        state.selectedGoalIds.push(goalId);
+    }
+    
+    updateCustomSelectUI();
+    const searchInput = document.getElementById('goalSearchInput');
+    populateCustomGoalSelect(searchInput ? searchInput.value : '');
+}
+
+function updateCustomSelectUI() {
+    const triggerText = document.querySelector('.trigger-text');
+    const badge = document.getElementById('selectedCountBadge');
+    if (!triggerText || !badge) return;
+    
+    const count = state.selectedGoalIds.length;
+    
+    if (count === 0) {
+        triggerText.textContent = 'Select Goals...';
+        badge.style.display = 'none';
+    } else {
+        triggerText.textContent = `${count} Goal${count > 1 ? 's' : ''} Selected`;
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+    }
+}
+
+function parseDuration(val) {
+    val = val.toLowerCase().trim();
+    if (!val) return 0;
+    
+    let minutes = 0;
+    if (val.includes(':')) {
+        const parts = val.split(':');
+        minutes = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+    } else if (val.includes('h')) {
+        const parts = val.split('h');
+        minutes += (parseFloat(parts[0]) || 0) * 60;
+        if (parts[1]) {
+            const mPart = parts[1].replace('min', '').replace('m', '').trim();
+            minutes += parseFloat(mPart) || 0;
+        }
+    } else {
+        minutes = parseFloat(val) || 0;
+    }
+    return Math.round(minutes);
 }
 
 function addAim() {
-    const goalSelect = document.getElementById('aimGoalSelect');
     const durationInput = document.getElementById('aimDurationInput');
-    
-    const goalId = goalSelect.value;
+    const durationWrapper = document.querySelector('.aim-input-row');
     const durationRaw = durationInput.value.trim().toLowerCase();
     
-    if (!goalId) {
-        showToast('Please select a goal');
+    if (state.selectedGoalIds.length === 0) {
+        notify('Please select at least one goal');
         return;
     }
     
     if (!durationRaw) {
-        showToast('Please enter a duration');
+        if (durationWrapper) {
+            durationWrapper.classList.add('shake');
+            setTimeout(() => durationWrapper.classList.remove('shake'), 400);
+        }
+        notify('Please enter a duration');
         return;
     }
     
-    let minutes = 0;
-    // Simple hh:mm or mm parsing
-    if (durationRaw.includes(':')) {
-        const parts = durationRaw.split(':');
-        minutes = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
-    } else if (durationRaw.includes('h')) {
-        const parts = durationRaw.split('h');
-        minutes += (parseFloat(parts[0]) || 0) * 60;
-        if (parts[1]) minutes += parseFloat(parts[1]) || 0;
-    } else {
-        minutes = parseFloat(durationRaw) || 0;
-    }
+    const minutes = parseDuration(durationRaw);
     
     if (minutes <= 0) {
-        showToast('Invalid duration');
+        notify('Invalid duration');
         return;
     }
     
-    setTodayAimForGoal(goalId, Math.round(minutes));
+    const updatedGoalIds = [...state.selectedGoalIds];
+    
+    // Calculate Deadline
+    const deadlineType = document.getElementById('aimDeadlineSelect').value;
+    let deadlineDate = null;
+    
+    if (deadlineType !== 'infinite') {
+        const d = new Date();
+        if (deadlineType === 'today') {
+            deadlineDate = getLogicalDate();
+        } else if (deadlineType === 'tomorrow') {
+            d.setDate(d.getDate() + 1);
+            deadlineDate = getLogicalDate(d);
+        } else if (deadlineType === 'week') {
+            // End of current week (Sunday)
+            const day = d.getDay();
+            const diff = d.getDate() + (7 - day) % 7;
+            d.setDate(diff);
+            deadlineDate = getLogicalDate(d);
+        } else if (deadlineType === 'custom') {
+            const customVal = document.getElementById('aimCustomDate').value;
+            if (customVal) deadlineDate = customVal;
+        }
+    }
+
+    state.selectedGoalIds.forEach(goalId => {
+        // Find existing aim
+        const existingAim = getActiveAimForGoal(goalId);
+        if (existingAim) {
+            existingAim.targetMinutes = Math.round(minutes);
+            existingAim.deadline = deadlineDate;
+        } else {
+            state.aims.push({
+                id: Date.now().toString() + '-' + goalId,
+                goalId: goalId,
+                targetMinutes: Math.round(minutes),
+                createdAt: new Date().toISOString(),
+                deadline: deadlineDate
+            });
+        }
+    });
     
     durationInput.value = '';
+    state.selectedGoalIds = [];
+    updateCustomSelectUI();
+    
+    const selectDropdown = document.getElementById('selectDropdown');
+    if (selectDropdown) selectDropdown.classList.remove('open');
+    
+    const searchInput = document.getElementById('goalSearchInput');
+    if (searchInput) searchInput.value = '';
+    
+    // Reset deadline fields
+    document.getElementById('aimDeadlineSelect').value = 'infinite';
+    document.getElementById('aimCustomDate').style.display = 'none';
+    document.getElementById('aimCustomDate').value = '';
+    
     renderPlan();
     renderTasks();
     updateTimerDisplay();
-    showToast('Aim added to plan');
+    
+    // Highlight updated cards
+    updatedGoalIds.forEach(goalId => {
+        const items = document.querySelectorAll('.plan-aim-item');
+        items.forEach(item => {
+            // We need to find the item that matches this goalId
+            // The item doesn't have a data attribute yet, we'll need to add it in renderAimItem
+            if (item.dataset.goalId === goalId) {
+                item.classList.add('highlight');
+                setTimeout(() => item.classList.remove('highlight'), 1500);
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
+    });
+    
+    const btn = document.getElementById('addAimBtn');
+    if (btn) {
+        btn.style.background = 'var(--success)';
+        btn.style.color = 'var(--text-on-accent)';
+        setTimeout(() => {
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 500);
+    }
+    
+    notify('Aim(s) added to plan');
 }
 
 function renderPlan() {
     const todayList = document.getElementById('todayPlanList');
     const pastList = document.getElementById('pastPlanList');
     if (!todayList || !pastList) return;
+
+    // Group aims into Active and Completed (Reached)
+    const activeAims = [];
+    const completedAims = [];
     
-    const today = new Date().toISOString().split('T')[0];
-    const todayAims = state.aims.filter(a => a.date === today);
-    const pastAims = state.aims.filter(a => a.date !== today);
-    
-        const renderAimItem = (aim) => {
+    state.aims.forEach(aim => {
+        const spentSeconds = getTimeSpentOnAim(aim);
+        const targetSeconds = aim.targetMinutes * 60;
+        if (spentSeconds >= targetSeconds) {
+            completedAims.push(aim);
+        } else {
+            activeAims.push(aim);
+        }
+    });
+
+    const renderAimItem = (aim) => {
         const task = state.tasks.find(t => t.id === aim.goalId);
         const name = task ? task.name : 'Unknown Goal';
         const color = task ? task.color : '#58a6ff';
-        
-        const spentSeconds = getTodayTimeForTask(aim.goalId);
+
+        const spentSeconds = getTimeSpentOnAim(aim);
         const targetSeconds = aim.targetMinutes * 60;
-        
+
         const hAim = Math.floor(aim.targetMinutes / 60);
         const mAim = aim.targetMinutes % 60;
         const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
-        
+
+        // Deadline Logic
+        let deadlineLabel = 'Until Done';
+        let isExpired = false;
+        if (aim.deadline) {
+            const today = getLogicalDate();
+            if (aim.deadline === today) {
+                deadlineLabel = 'by Today';
+            } else {
+                const d = new Date(aim.deadline);
+                const options = { month: 'short', day: 'numeric' };
+                deadlineLabel = `by ${d.toLocaleDateString('en-US', options)}`;
+                if (aim.deadline < today) isExpired = true;
+            }
+        }
+
         const item = document.createElement('div');
         const rawProgress = (spentSeconds / targetSeconds) * 100;
-        const displayProgress = Math.min(100, rawProgress);
         const reached = rawProgress >= 100;
-        item.className = `plan-aim-item ${reached ? 'reached' : ''}`;
-        
+        item.className = `plan-aim-item ${reached ? 'reached' : ''} ${isExpired && !reached ? 'expired' : ''}`;
+        item.dataset.goalId = aim.goalId;
+
         item.innerHTML = `
             <div class="plan-aim-menu">
                 <button class="edit-btn">
@@ -1734,16 +2243,17 @@ function renderPlan() {
                         <div class="aim-name">${escapeHtml(name)}</div>
                     </div>
                     <div class="aim-bottom-row">
-                        <div class="aim-meta">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5z"/></svg>
-                            <span class="aim-duration-label">${aimStr}</span>
-                        </div>
                         <progress-compact 
                             value="${spentSeconds}" 
                             max="${targetSeconds}" 
                             color="${color}" 
                             label="${aimStr}">
                         </progress-compact>
+                        <div class="aim-meta">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5z"/></svg>
+                            <span class="aim-duration-label">${aimStr}</span>
+                        </div>
+                        <div class="aim-deadline-badge ${isExpired ? 'expired' : ''}">${deadlineLabel}</div>
                     </div>
                 </div>
                 <button class="plan-aim-more">
@@ -1752,6 +2262,7 @@ function renderPlan() {
             </div>
         `;
 
+        // ... event listeners remain the same ...
         let startX = 0;
         let currentTranslate = 0;
         let isSliding = false;
@@ -1806,47 +2317,31 @@ function renderPlan() {
     };
     
     todayList.innerHTML = '';
-    if (todayAims.length === 0) {
-        todayList.innerHTML = '<p class="empty-plan">No aims for today. Plan your intent above.</p>';
+    if (activeAims.length === 0) {
+        todayList.innerHTML = '<p class="empty-plan">No active focus aims. Set one above!</p>';
     } else {
-        todayAims.forEach(aim => todayList.appendChild(renderAimItem(aim)));
+        activeAims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                  .forEach(aim => todayList.appendChild(renderAimItem(aim)));
     }
     
-    // Group past aims by date
-    const groupedPast = pastAims.reduce((acc, aim) => {
-        if (!acc[aim.date]) acc[aim.date] = [];
-        acc[aim.date].push(aim);
-        return acc;
-    }, {});
-    
     pastList.innerHTML = '';
-    const sortedDates = Object.keys(groupedPast).sort((a, b) => new Date(b) - new Date(a));
-    
-    if (sortedDates.length === 0) {
-        pastList.innerHTML = '<p class="empty-plan">No past plan history.</p>';
+    if (completedAims.length === 0) {
+        pastList.innerHTML = '<p class="empty-plan">No completed aims yet.</p>';
     } else {
-        sortedDates.forEach(date => {
-            const section = document.createElement('div');
-            section.className = 'past-plan-section';
-            section.innerHTML = `<div class="past-date">${date}</div>`;
-            groupedPast[date].forEach(aim => section.appendChild(renderAimItem(aim)));
-            pastList.appendChild(section);
-        });
+        completedAims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                     .forEach(aim => pastList.appendChild(renderAimItem(aim)));
     }
 }
 
 function removeAim(aimId) {
-    confirmAction('Delete this daily aim?').then(confirmed => {
+    confirmAction('Delete this focus aim?').then(confirmed => {
         if (confirmed) {
-            const index = state.aims.findIndex(a => a.id === aimId);
-            if (index > -1) {
-                state.aims.splice(index, 1);
-                saveData();
-                renderPlan();
-                renderTasks();
-                updateTimerDisplay();
-                showToast('Aim removed');
-            }
+            state.aims = state.aims.filter(a => a.id !== aimId);
+            saveData();
+            renderPlan();
+            renderTasks();
+            updateTimerDisplay();
+            notify('Aim removed');
         }
     });
 }
@@ -1859,27 +2354,19 @@ function editAim(aimId) {
     const mAim = aim.targetMinutes % 60;
     const currentStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
     
-    const newAim = prompt('Adjust daily target (e.g. 45m or 2h):', currentStr);
+    const newAim = prompt('Adjust daily target (e.g. 45 or 1:30):', currentStr);
     if (newAim !== null) {
-        let mins = 0;
-        const val = newAim.toLowerCase();
-        if (val.includes('h')) {
-            const parts = val.split('h');
-            mins += (parseFloat(parts[0]) || 0) * 60;
-            if (parts[1]) mins += parseFloat(parts[1]) || 0;
-        } else {
-            mins = parseFloat(val) || 0;
-        }
+        const mins = parseDuration(newAim);
         
         if (mins > 0) {
-            aim.targetMinutes = Math.round(mins);
+            aim.targetMinutes = mins;
             saveData();
             renderPlan();
             renderTasks();
             updateTimerDisplay();
-            showToast('Aim updated');
+            notify('Aim updated');
         } else {
-            showToast('Invalid duration');
+            notify('Invalid duration');
         }
     }
 }
@@ -1889,13 +2376,13 @@ window.removeAim = removeAim;
 function clearAims() {
     confirmAction('Clear all aims for today?').then(confirmed => {
         if (confirmed) {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLogicalDate();
             state.aims = state.aims.filter(a => a.date !== today);
             saveData();
             renderPlan();
             renderTasks();
             updateTimerDisplay();
-            showToast('Today\'s plan cleared');
+            notify('Today\'s plan cleared');
         }
     });
 }

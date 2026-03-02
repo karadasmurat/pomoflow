@@ -12,28 +12,51 @@
 <body>
     <div class="app">
         <header>
+            <div class="header-left">
+                <div class="user-profile">
+                    <div class="user-avatar" id="headerAvatar">🦉</div>
+                    <div class="level-container" id="levelContainer">
+                        <div class="level-rank" id="userRank">Novice</div>
+                        <div class="level-xp-display"><span id="userXP">0</span> XP</div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="logo">
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                 PomoFlow
             </div>
-            <div class="datetime" id="datetime"></div>
+
             <div class="header-controls">
-                <button class="header-nav-btn" id="planNavBtn" aria-label="Open daily plan">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
-                    <span>Daily Plan</span>
-                </button>
-                <button class="header-nav-btn" id="tasksNavBtn" aria-label="Open goals">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-                    <span>Goals</span>
-                </button>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
                     <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
                 </button>
-                <button class="settings-btn" id="settingsBtn" aria-label="Settings">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                </button>
+                <div class="menu-container">
+                    <button class="hamburger-btn" id="menuBtn" aria-label="Open menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                    </button>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <button class="menu-item" id="planNavBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
+                            <span>Focus Plan</span>
+                        </button>
+                        <button class="menu-item" id="tasksNavBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                            <span>Goals</span>
+                        </button>
+                        <button class="menu-item" id="settingsBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                            <span>Settings</span>
+                        </button>
+                        <a href="about.html" class="menu-item" style="text-decoration: none;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            <span>About</span>
+                        </a>
+                    </div>
+                </div>
             </div>
+        </header>
         </header>
 
         <main class="main-content">
@@ -80,7 +103,9 @@
                     </div>
                 </div>
 
-                <div class="task-list" id="taskList"></div>
+                <div class="task-list-container">
+                    <div class="task-list" id="taskList"></div>
+                </div>
             </aside>
 
             <section class="panel timer-panel">
@@ -90,7 +115,7 @@
                     <button class="notification-prompt-btn deny" id="denyNotifications">Later</button>
                 </div>
 
-                <div id="toast" class="toast" style="display: none;">Settings saved</div>
+                <div id="toast" class="toast"></div>
 
                 <div class="timer-container" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
                     <svg class="timer-ring" viewBox="0 0 100 100">
@@ -193,11 +218,11 @@
         <div class="plan-overlay" id="planOverlay"></div>
         <aside class="panel plan-panel" id="planPanel">
             <div class="panel-header">
-                <span>Daily Plan</span>
+                <span>Focus Plan</span>
                 <div class="panel-header-actions">
-                    <button id="clearAimsBtn" class="clear-all-btn" aria-label="Clear today's aims">
+                    <button id="clearAimsBtn" class="clear-all-btn" aria-label="Clear active aims">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                        <span>Clear Plan</span>
+                        <span>Clear Active</span>
                     </button>
                     <button class="panel-close" id="closePlanPanel" aria-label="Close daily plan">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -205,47 +230,100 @@
                 </div>
             </div>
 
-            <div class="task-section-header">Create Aim for Today</div>
+            <div class="task-section-header">Set a Focus Aim</div>
             <div class="aim-input-container">
                 <div class="aim-input-row">
-                    <select id="aimGoalSelect" class="aim-select">
-                        <option value="" disabled selected>Select Goal...</option>
-                    </select>
-                    <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="hh:mm" maxlength="5">
-                    <button type="button" class="btn-add" id="addAimBtn" aria-label="Add aim">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    </button>
+                    <div class="custom-select" id="customGoalSelect">
+                        <button type="button" class="select-trigger" id="selectTrigger">
+                            <span class="trigger-text">Select Goals...</span>
+                            <span class="selected-count-badge" id="selectedCountBadge" style="display: none;">0</span>
+                            <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                        </button>
+                        <div class="select-dropdown" id="selectDropdown">
+                            <div class="select-search-wrapper">
+                                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" id="goalSearchInput" class="select-search-input" placeholder="Search goals...">
+                            </div>
+                            <div class="select-options" id="selectOptions">
+                                <!-- Options will be populated by JS -->
+                            </div>
+                            <div class="select-no-results" id="selectNoResults" style="display: none;">No results found</div>
+                        </div>
+                    </div>
                 </div>
+                <div class="aim-options-row">
+                    <div class="aim-option-group">
+                        <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="min or h:mm" maxlength="8">
+                        <span class="aim-divider"></span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                        <select id="aimDeadlineSelect" class="aim-deadline-select">
+                            <option value="infinite">Until Done</option>
+                            <option value="today">Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="week">End of Week</option>
+                            <option value="custom">Pick Date...</option>
+                        </select>
+                        <input type="date" id="aimCustomDate" class="aim-custom-date" style="display: none;">
+                    </div>
+                </div>
+                <button type="button" class="btn-add" id="addAimBtn" aria-label="Save focus aim">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                </button>
             </div>
+<div class="plan-sections">
+    <div class="plan-section">
+        <div class="task-section-header">Active Aims</div>
+        <div id="todayPlanList" class="plan-list"></div>
+    </div>
 
-            <div class="plan-sections">
-                <div class="plan-section">
-                    <div class="task-section-header">Today's Aims</div>
-                    <div id="todayPlanList" class="plan-list"></div>
-                </div>
-                <div class="plan-section">
-                    <div class="task-section-header">Past Aims</div>
-                    <div id="pastPlanList" class="plan-list past"></div>
-                </div>
-            </div>
+    <div class="plan-section">
+        <div class="task-section-header">Completed Aims</div>
+        <div id="pastPlanList" class="plan-list past"></div>
+    </div>
+</div>
         </aside>
 
         <footer class="app-footer">
-            <a href="about.html" class="footer-link">About PomoFlow</a>
-            <span class="footer-separator">&bull;</span>
-            <span class="footer-copy">&copy; 2026 PomoFlow</span>
+            <div class="datetime" id="datetime"></div>
+            <div class="footer-links">
+                <a href="about.html" class="footer-link">About PomoFlow</a>
+                <span class="footer-separator">&bull;</span>
+                <span class="footer-copy">&copy; 2026 PomoFlow</span>
+            </div>
         </footer>
     </div>
 
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Settings</h2>
-                <button class="modal-close" id="closeSettings">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                </button>
+    <div class="modal-overlay" id="settingsOverlay"></div>
+    <aside class="panel settings-panel" id="settingsPanel">
+        <div class="panel-header">
+            <span>Settings</span>
+            <button class="panel-close" id="closeSettings" aria-label="Close settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <div class="settings-content">
+            <div class="setting-group">
+                <div class="setting-label">Avatar Persona</div>
+                <div class="avatar-grid" id="avatarGrid">
+                    <!-- Animals -->
+                    <button class="avatar-option" data-avatar="🦉" title="Sage">🦉</button>
+                    <button class="avatar-option" data-avatar="🦊" title="Agile">🦊</button>
+                    <button class="avatar-option" data-avatar="🐼" title="Zen">🐼</button>
+                    <button class="avatar-option" data-avatar="🦁" title="Persistent">🦁</button>
+                    <button class="avatar-option" data-avatar="🐯" title="Focused">🐯</button>
+                    <!-- Tech/Space -->
+                    <button class="avatar-option" data-avatar="🤖" title="Productive">🤖</button>
+                    <button class="avatar-option" data-avatar="🚀" title="Ambitious">🚀</button>
+                    <button class="avatar-option" data-avatar="👾" title="Creative">👾</button>
+                    <!-- Zen/Focus -->
+                    <button class="avatar-option" data-avatar="🧘" title="Mindful">🧘</button>
+                    <button class="avatar-option" data-avatar="🎯" title="Precise">🎯</button>
+                    <button class="avatar-option" data-avatar="💎" title="Resilient">💎</button>
+                    <button class="avatar-option" data-avatar="🔥" title="High Energy">🔥</button>
+                </div>
             </div>
-            
+
             <div class="setting-group">
                 <label class="setting-label">
                     <span>Work Duration (minutes)</span>
@@ -307,6 +385,20 @@
             </div>
 
             <div class="setting-group">
+                <label class="setting-label">Notifications</label>
+                <div class="setting-row" style="gap: 12px; margin-top: 8px;">
+                    <button class="filter-btn" id="requestNotifyManual" style="flex: 1; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5z"/></svg>
+                        Enable Push
+                    </button>
+                    <button class="filter-btn" id="testNotify" style="flex: 1; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.58 4.08L6.15 2.65C3.75 4.48 2.17 7.3 2.03 10.5h2c.15-2.65 1.51-4.97 3.55-6.42zm12.39 6.42h2c-.15-3.2-1.73-6.02-4.12-7.85l-1.42 1.43c2.02 1.45 3.39 3.77 3.54 6.42zM18 11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5zm-6 11c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2z"/></svg>
+                        Test
+                    </button>
+                </div>
+            </div>
+
+            <div class="setting-group">
                 <label class="setting-label">Data Management</label>
                 <div class="data-buttons">
                     <button class="btn btn-secondary" id="exportData">Export Data</button>
@@ -316,12 +408,12 @@
                     </div>
                 </div>
             </div>
-
-            <div class="modal-footer">
-                <button class="btn-save" id="saveSettings">Save Settings</button>
-            </div>
         </div>
-    </div>
+
+        <div class="panel-footer">
+            <button class="btn-save" id="saveSettings" style="width: 100%;">Save & Close</button>
+        </div>
+    </aside>
 
     <div class="modal-overlay" id="confirmModal">
         <div class="modal confirm-modal">
