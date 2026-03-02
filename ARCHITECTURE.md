@@ -40,7 +40,7 @@ To maintain visual clarity and brand identity, the following constraints must be
 - **Requirement:** No UI accents, goal colors, or icons should use these specific shades of red or green to avoid confusion with the session state.
 
 ### Terminology Standard
-- **"Goal" over "Task":** The application uses intentional phrasing to encourage productivity. Use "Goal", "Daily Goals", or "Set a session goal" instead of "Task" in all user-facing strings.
+- **"Goal" over "Task":** The application uses intentional phrasing to encourage productivity. Use "Goal", "Daily Goals", or "Assign a goal to this session" instead of "Task" in all user-facing strings.
 
 ## 4. UI Standards
 

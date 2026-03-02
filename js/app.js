@@ -577,6 +577,21 @@ function setupEventListeners() {
         if (e.target.id === 'confirmModal') closeConfirmModal();
     });
 
+    document.getElementById('clearTask').addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent opening the task panel
+        if (state.timerState.isRunning) {
+             confirmAction('Clearing the goal will reset the timer. Continue?').then(confirmed => {
+                if (confirmed) {
+                    state.timerState.activeTaskId = null;
+                    resetTimer();
+                }
+            });
+        } else {
+            state.timerState.activeTaskId = null;
+            updateTimerDisplay();
+        }
+    });
+
     document.getElementById('enableNotifications').addEventListener('click', () => {
         requestNotificationPermission();
     });
@@ -829,6 +844,7 @@ function updateTimerDisplay() {
     const sessionProgress = document.getElementById('sessionProgress');
     const timerMessage = document.getElementById('timerMessage');
     const timerDisplay = document.querySelector('.timer-display');
+    const clearTaskBtn = document.getElementById('clearTask');
     
     const hasMsg = timerMessage && timerMessage.textContent.trim() !== '';
     
@@ -905,6 +921,7 @@ function updateTimerDisplay() {
             }
             if (timerTaskPrefix) timerTaskPrefix.style.display = 'inline';
             if (taskLink) taskLink.classList.add('has-task');
+            if (clearTaskBtn) clearTaskBtn.style.display = 'flex';
             
             const todayAim = getTodayAimForGoal(task.id);
             if (hudEl) {
@@ -978,12 +995,13 @@ function updateTimerDisplay() {
         }
     } else {
         if (timerTaskDisplay) {
-            timerTaskDisplay.textContent = 'Set a session goal';
+            timerTaskDisplay.textContent = 'Assign a goal to this session';
             timerTaskDisplay.style.color = '';
         }
         if (timerTaskPrefix) timerTaskPrefix.style.display = 'none';
         if (taskLink) taskLink.classList.remove('has-task');
         if (hudEl) hudEl.style.display = 'none';
+        if (clearTaskBtn) clearTaskBtn.style.display = 'none';
         
         if (startPauseBtn) {
             startPauseBtn.style.color = '';
@@ -1405,12 +1423,24 @@ function updateLevelUI(previousTotalXp = null) {
     }function renderHistory(filter = 'today') {
     const list = document.getElementById('historyList');
     if (!list) return;
-    list.innerHTML = '';
     
+    // Header HTML
+    const headerHTML = `
+        <div class="history-header-grid sticky-header">
+            <div class="history-header-indicator"></div>
+            <div class="history-header-info">
+                <div>GOAL</div>
+                <div>DURATION</div>
+                <div>CHECKED OFF AT</div>
+            </div>
+            <div class="history-header-more"></div>
+        </div>
+    `;
+
     let sessions = filterSessions(state.sessions, filter);
     
     if (sessions.length === 0) {
-        list.innerHTML = '<div class="empty-state"><p>No sessions found for this period.</p></div>';
+        list.innerHTML = headerHTML + '<div class="empty-state"><p>No sessions found for this period.</p></div>';
         renderChart([]);
         return;
     }
@@ -1418,20 +1448,10 @@ function updateLevelUI(previousTotalXp = null) {
     sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     renderChart(sessions);
     
+    // Clear list but start with header
+    list.innerHTML = headerHTML;
+    
     const displaySessions = showAllHistory ? sessions : sessions.slice(0, 4);
-
-    const header = document.createElement('div');
-    header.className = 'history-header-grid';
-    header.innerHTML = `
-        <div class="history-header-indicator"></div>
-        <div class="history-header-info">
-            <div>GOAL</div>
-            <div>DURATION</div>
-            <div>CHECKED OFF AT</div>
-        </div>
-        <div class="history-header-more"></div>
-    `;
-    list.appendChild(header);
 
     displaySessions.forEach(session => {
         const item = document.createElement('div');
@@ -1660,7 +1680,13 @@ function updateDateTime() {
 }
 
 function formatTimestamp(date) {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
+    return date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: state.settings.use12Hour 
+    });
 }
 
 function openSettings() {
