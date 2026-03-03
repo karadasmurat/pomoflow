@@ -4,24 +4,27 @@ A minimalist, privacy-focused Pomodoro timer built for focus and intent. PomoFlo
 
 ## Features
 
-### Timer
+### Timer & Smart Flow
 
 - **Accurate Tracking** - Uses target end times to ensure your timer stays accurate even when the tab is in the background or the device sleeps.
-- **Smart Auto-Advance** - Automatically transition between focus and break sessions.
+- **Dynamic Guidance** - Context-specific post-session messages (e.g., "Let's start a break!" or "Let's start a long break!") guide you through your cycle.
+- **Intentional Transitions** - The timer stays at `0:00` after a session finishes, allowing you to breathe and choose when to start the next phase.
+- **Smart Auto-Advance** - Optional automatic transition between focus and break sessions via settings.
 - **Visual Progress Ring** - Animated circular progress indicator synchronized with active goals.
-- **Audio Notifications** - Subtle sound when sessions complete.
+- **Audio Notifications** - Subtle tone and push notifications when sessions complete.
 
 ### Intent & Planning
 
 - **Daily Aims** - Decoupled daily targets that let you plan your focus time fresh each day.
-- **Progress Visualization** - Today-only progress bars on goal cards to track budget vs. actual.
-- **Date-Aware Tracking** - Aims are specific to the current date, allowing for historical trend analysis.
+- **Contextual Prompting** - Conversational "What are you focusing on?" interface encourages goal attribution.
+- **Progress Visualization** - Today-only progress bars on goal cards and a main HUD to track budget vs. actual.
+- **Date-Aware Tracking** - Intelligent "Logical Day" handling (4 AM rollover) ensures night-owl sessions are attributed correctly.
 
 ### Goal Management
 
 - **Goal Tracking** - Create, edit, complete, and delete goals.
+- **Multi-Goal Support** - Flexible selection UI showing single names or "x Goals Selected" for batch planning.
 - **Time Attribution** - Track focused time spent on each goal with visual totals and progress rings.
-- **Sliding Menus** - Mobile-first sliding action menus for quick goal management.
 - **High-Contrast Palette** - Distinct colors designed for clarity and focus.
 
 ### Analytics & History
@@ -33,7 +36,7 @@ A minimalist, privacy-focused Pomodoro timer built for focus and intent. PomoFlo
 
 ### Experience
 
-- **Modern UI** - Clean, responsive design following modern CSS principles.
+- **Modern UI** - Clean, responsive design with a refined "Pill/Tag" aesthetic.
 - **Theming** - Light and Dark modes that respect your system preferences.
 - **Privacy Focused** - All data is stored locally in your browser's `localStorage`. No accounts, no tracking.
 
@@ -53,9 +56,9 @@ A minimalist, privacy-focused Pomodoro timer built for focus and intent. PomoFlo
 ## Getting Started
 
 1. Open `index.html` in any modern browser.
-2. Add a goal you want to work on.
-3. (Optional) Set a Daily Target on the goal card.
-4. Click the play button on a goal to start focusing.
+2. Add a goal you want to work on in the **Goals** section.
+3. Link your current session to a goal using the **[+ Goal]** button.
+4. Start your focus session and earn XP.
 
 ## License
 

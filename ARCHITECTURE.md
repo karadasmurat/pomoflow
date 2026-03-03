@@ -8,59 +8,42 @@ PomoFlow uses a single, centralized `state` object in `app.js` to manage the app
 
 ### Data Persistence
 - **Storage:** All data is persisted in `localStorage` using the `flowtracker_` prefix.
-- **Syncing:** The state is saved to storage on every major event (timer start/pause, goal completion, settings change) and periodically every 10 seconds during an active session.
+- **Syncing:** The state is saved to storage on every major event (timer start/pause, goal completion, settings change) and periodically during an active session.
 - **Initialization:** The `init()` function handles the restoration of state, including re-calculating remaining time if the page was refreshed while a timer was running.
 
-## 2. Timer Logic
+## 2. Timer Logic & Session Transitions
 
-The timer follows a "Station" based cycle rather than a simple count.
+The timer follows a "Station" based cycle and prioritizes user intent during transitions.
 
 - **`cycleStation` (1-4):** Tracks the current position within a focus block. 
-- **Auto-Advance:** When a focus session completes, the system automatically suggests a break based on the `cycleStation`:
-    - Stations 1, 2, 3 -> Short Break.
-    - Station 4 -> Long Break.
-- **`sessionCount`:** A persistent lifetime total of completed focus sessions.
+- **Dynamic Guidance:** Upon completion or skip of a running session, the UI displays a context-specific message (e.g., "Let's start a long break!") based on the current station.
+- **Intentional 0:00 State:** When a session finishes, the timer stays at `0:00` while the guidance message is visible. This prevents jarring jumps to the next duration and lets the user manually initiate the next phase.
+- **Logical Day Rollover:** All daily stats and history filters use a 4:00 AM rollover. This ensures that sessions completed after midnight but before 4 AM are correctly attributed to the previous day's effort.
 
 ## 3. Daily Planning & Aims
 
 PomoFlow implements an intent-first planning model where daily targets are decoupled from static goal definitions.
 
 - **`state.aims`**: A collection of objects containing `goalId`, `date` (YYYY-MM-DD), and `targetMinutes`.
-- **Date-Awareness**: The UI dynamically resolves the active aim for each goal based on the current system date. 
-- **Resets**: Because aims are keyed by date, goal targets "reset" at midnight, encouraging users to plan their day fresh every morning while preserving historical data for trend analysis.
-- **Spent vs. Target**: Progress is calculated by filtering session history for the current date and comparing total duration against the resolved daily aim.
-
-## 4. Design Constraints (CRITICAL)
-
-To maintain visual clarity and brand identity, the following constraints must be strictly followed:
-
-### Reserved Session Colors
-- **Focus Mode:** Red (`--danger`) is reserved exclusively for the Focus session rings and high-priority alerts.
-- **Break Mode:** Green (`--success`) is reserved exclusively for Break session rings and completion states.
-- **Requirement:** No UI accents, goal colors, or icons should use these specific shades of red or green to avoid confusion with the session state.
-
-### Terminology Standard
-- **"Goal" over "Task":** The application uses intentional phrasing to encourage productivity. Use "Goal", "Daily Goals", or "Assign a goal to this session" instead of "Task" in all user-facing strings.
+- **Progress Calculation:** Progress is calculated by comparing total session duration against the resolved daily aim for the logical date.
+- **Multi-Selection UI:** The planning interface supports selecting multiple goals simultaneously, displaying a count (e.g., "3 Goals Selected") or a single name for clarity.
 
 ## 4. UI Standards
 
-### Button Hierarchy
-- **Primary Controls (Start/Pause):** Height: 52px, Width: 100px. Vertical layout (icon top, text bottom).
-- **Secondary Controls (Reset/Skip):** Height: 52px, Width: 60px. Vertical layout.
-- **Utility Buttons (Filters, Clear All, Goals):** 
-    - **Height:** 30px (Strict)
-    - **Font Size:** 13px
-    - **Border Radius:** 8px
-    - **Background:** Transparent (standard) or `var(--surface-elevated)` (hover).
+### Visual Hierarchy
+- **Primary Controls:** Rounded vertical buttons for high-frequency actions (Start/Pause, Reset, Skip).
+- **Secondary Actions:** Sleek, pill-shaped buttons with a 1px border, matching the `clear-all-btn` aesthetic (30px height, 13px font).
+- **Conversational UX:** Use of uppercase slot labels (e.g., "WHAT ARE YOU FOCUSING ON?") to provide context for interactive elements.
 
-### Goal Visuals
-- **Color Palette:** Goals must use the high-contrast 8-color palette (Blue, Sky Blue, Indigo, Violet, Pink, Vivid Orange, Bright Yellow, Slate) to ensure accessibility and distinction.
-- **Truncation:** Goal names use `text-overflow: ellipsis` but must **never** hide the "NEW" badge if it is present.
+### Reserved Session Colors
+- **Focus Mode:** Red (`--danger`) is reserved for Focus session rings.
+- **Break Mode:** Green (`--success`) is reserved for Break session rings.
+- **Requirement:** No UI accents or goal colors should use these specific shades to avoid confusion.
 
 ## 5. File Structure
 
-- `index.html`: Skeleton and Modal definitions.
-- `js/app.js`: All logic, including timer, state, and DOM manipulation.
-- `css/styles.css`: All styling, utilizing CSS variables for theme support.
-- `assets/`: Media and static assets.
+- `index.html`: Main application skeleton and modern modal definitions.
+- `js/app.js`: Central logic, including timer, state management, and "Logical Day" calculations.
+- `js/components/`: Modular UI elements like `progress-pill` and `progress-compact`.
+- `css/styles.css`: All styling, utilizing CSS variables for theme support and shared button aesthetics.
 - `about.html`: Static documentation for users.

@@ -21,6 +21,7 @@
             --border: #30363d;
             --font-mono: 'JetBrains Mono', monospace;
             --font-sans: 'DM Sans', sans-serif;
+            --grid-color: rgba(88, 166, 255, 0.05);
         }
 
         [data-theme="light"] {
@@ -34,6 +35,7 @@
             --text-primary: #1f2328;
             --text-secondary: #656d76;
             --border: #d0d7de;
+            --grid-color: rgba(9, 105, 218, 0.05);
         }
 
         * {
@@ -45,6 +47,10 @@
         body {
             font-family: var(--font-sans);
             background: var(--bg);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
             color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
@@ -54,6 +60,7 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
+            position: relative;
         }
 
         header {
@@ -63,6 +70,7 @@
             margin-bottom: 48px;
             padding-bottom: 16px;
             border-bottom: 1px solid var(--border);
+            background: var(--bg);
         }
 
         .logo {
@@ -96,20 +104,55 @@
         }
 
         section {
-            margin-bottom: 48px;
+            margin-bottom: 64px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .hero-graphic {
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .hero-graphic svg {
+            width: 120px;
+            height: 120px;
+            filter: drop-shadow(0 0 20px var(--primary));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         h1 {
-            font-size: 32px;
+            font-size: 40px;
             margin-bottom: 24px;
+            letter-spacing: -1px;
         }
 
         h2 {
-            font-size: 20px;
-            margin-bottom: 16px;
+            font-size: 14px;
+            margin-bottom: 24px;
             color: var(--primary);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h2::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border), transparent);
         }
 
         p {
@@ -117,103 +160,115 @@
             color: var(--text-secondary);
         }
 
-        .feature-grid {
+        .workflow-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-            margin-top: 32px;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
         }
 
-        .feature-card {
+        .workflow-item {
             background: var(--surface);
-            padding: 24px;
-            border-radius: 12px;
+            padding: 32px;
+            border-radius: 16px;
             border: 1px solid var(--border);
+            transition: transform 0.3s ease, border-color 0.3s ease;
         }
 
-        .feature-card h3 {
+        .workflow-item:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .workflow-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--surface-elevated);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .workflow-item h3 {
             font-size: 18px;
             margin-bottom: 12px;
             color: var(--text-primary);
         }
 
+        .philosophy-banner {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+            padding: 48px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .philosophy-banner::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle at 20% 20%, rgba(88, 166, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .philosophy-banner h2 {
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .philosophy-banner h2::after { display: none; }
+
         .shortcuts-list {
             background: var(--surface);
-            padding: 24px;
-            border-radius: 12px;
+            padding: 32px;
+            border-radius: 16px;
             border: 1px solid var(--border);
-            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
         }
 
         .shortcut-item {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        .shortcut-item:last-child {
-            margin-bottom: 0;
+            gap: 12px;
         }
 
         kbd {
-            background: var(--bg);
+            background: var(--surface-elevated);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 4px 8px;
+            border-bottom: 3px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 10px;
             font-family: var(--font-mono);
-            font-size: 14px;
+            font-size: 13px;
             color: var(--primary);
-            min-width: 32px;
+            min-width: 36px;
             text-align: center;
-        }
-
-        .workflow-steps {
-            counter-reset: step;
-            list-style: none;
-        }
-
-        .workflow-step {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 24px;
-            position: relative;
-        }
-
-        .workflow-step::before {
-            counter-increment: step;
-            content: counter(step);
-            width: 32px;
-            height: 32px;
-            background: var(--primary);
-            color: var(--bg);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .philosophy-banner {
-            background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            text-align: center;
-        }
-
-        .philosophy-banner h2 {
-            margin-bottom: 24px;
         }
 
         footer {
-            margin-top: 64px;
+            margin-top: 80px;
             padding-top: 32px;
             border-top: 1px solid var(--border);
             text-align: center;
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
+            .philosophy-banner {
+                padding: 32px 24px;
+            }
         }
 
         @media (max-width: 600px) {
@@ -221,7 +276,7 @@
                 padding: 16px;
             }
             h1 {
-                font-size: 24px;
+                font-size: 32px;
             }
         }
     </style>
@@ -239,86 +294,84 @@
             </a>
         </header>
 
-        <section>
-            <h1>Focus on your flow</h1>
-            <p>PomoFlow is a minimalist productivity tool designed to help you maintain deep focus and track your goals with precision. Built on the core principles of the Pomodoro technique, it combines intuitive design with powerful analytics.</p>
-        </section>
-
-        <section>
-            <h2>How it works</h2>
-            <ol class="workflow-steps">
-                <li class="workflow-step">
-                    <div>
-                        <p><strong>Set your goal</strong></p>
-                        <p>Add a new goal to your list and give it a distinct color to help you categorize your work.</p>
-                    </div>
-                </li>
-                <li class="workflow-step">
-                    <div>
-                        <p><strong>Start your flow</strong></p>
-                        <p>Choose a goal you want to work on. Click play to start a 25-minute focus session.</p>
-                    </div>
-                </li>
-                <li class="workflow-step">
-                    <div>
-                        <p><strong>Rest and recharge</strong></p>
-                        <p>After each focus session, take a short break. After four sessions, take a longer break to stay fresh.</p>
-                    </div>
-                </li>
-                <li class="workflow-step">
-                    <div>
-                        <p><strong>Analyze progress</strong></p>
-                        <p>Review your session history and goal breakdown to see where you're most productive.</p>
-                    </div>
-                </li>
-            </ol>
+        <section class="hero">
+            <div class="hero-graphic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                    <path d="M12 2a10 10 0 0 1 10 10" opacity="0.3"></path>
+                </svg>
+            </div>
+            <h1>Intentional Focus</h1>
+            <p style="font-size: 18px; max-width: 600px; margin: 0 auto;">PomoFlow is a minimalist productivity tool designed to help you maintain deep focus and track your goals with precision.</p>
         </section>
 
         <section>
             <div class="philosophy-banner">
                 <h2>The PomoFlow Philosophy</h2>
-                <p>Propel your productivity with uninterrupted focus sessions. Link goals directly to the timer to see exactly where your time goes.</p>
-                <p>Your data stays with you. PomoFlow uses local storage to keep your goals and history secure on your own device, never on a remote server.</p>
+                <p style="font-size: 22px; color: var(--text-primary); font-weight: 500; margin-bottom: 24px; line-height: 1.4; letter-spacing: -0.5px;">
+                    From "being busy" to making <span style="color: var(--primary);">meaningful progress</span>.
+                </p>
+                <p>Productivity begins with intent. By attributing every focus block to a specific goal, you ensure that every minute counts toward what truly matters.</p>
+                <p>PomoFlow provides the clarity you need to stay aware of your effort and intentional with your time—helping you stop wondering where the day went and start seeing exactly where your energy is going.</p>
+                <p style="margin-top: 32px; font-size: 13px; opacity: 0.8;"><strong>YOUR DATA IS YOURS.</strong> PomoFlow uses local storage to keep your goals and history secure on your own device.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>How it works</h2>
+            <div class="workflow-grid">
+                <div class="workflow-item">
+                    <div class="workflow-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                    </div>
+                    <h3>Define your Goals</h3>
+                    <p>Add the goals you want to focus on. Give them distinct colors to visually categorize your effort.</p>
+                </div>
+                <div class="workflow-item">
+                    <div class="workflow-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    </div>
+                    <h3>Set your Intent</h3>
+                    <p>Link your session to a goal using the <strong>[+ Goal]</strong> button to ensure every minute counts.</p>
+                </div>
+                <div class="workflow-item">
+                    <div class="workflow-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+                    </div>
+                    <h3>Focus and Flow</h3>
+                    <p>Start your session. Get dynamic guidance to transition smoothly between focus and rest.</p>
+                </div>
+                <div class="workflow-item">
+                    <div class="workflow-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </div>
+                    <h3>Analyze and Adapt</h3>
+                    <p>Review your breakdown. With 4 AM rollovers, your night sessions stay with the day they started.</p>
+                </div>
             </div>
         </section>
 
         <section>
             <h2>Keyboard Shortcuts</h2>
             <div class="shortcuts-list">
-                <div class="shortcut-item">
-                    <kbd>Space</kbd><span>Start or pause the timer.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>R</kbd><span>Reset the current session.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>N</kbd><span>Skip to the next session.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>G</kbd><span>Toggle the goal drawer open or closed.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>P</kbd><span>Toggle the daily plan drawer open or closed.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>1</kbd><span>Switch to Focus mode.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>2</kbd><span>Switch to Short Break.</span>
-                </div>
-                <div class="shortcut-item">
-                    <kbd>3</kbd><span>Switch to Long Break.</span>
-                </div>
+                <div class="shortcut-item"><kbd>Space</kbd><span>Start / Pause</span></div>
+                <div class="shortcut-item"><kbd>R</kbd><span>Reset Session</span></div>
+                <div class="shortcut-item"><kbd>N</kbd><span>Skip Session</span></div>
+                <div class="shortcut-item"><kbd>G</kbd><span>Goals Drawer</span></div>
+                <div class="shortcut-item"><kbd>P</kbd><span>Daily Plan</span></div>
+                <div class="shortcut-item"><kbd>1</kbd><span>Focus Mode</span></div>
+                <div class="shortcut-item"><kbd>2</kbd><span>Short Break</span></div>
+                <div class="shortcut-item"><kbd>3</kbd><span>Long Break</span></div>
             </div>
         </section>
 
         <footer>
-            <p>&copy; 2026 PomoFlow. Designed for focus.</p>
+            <p>&copy; 2026 PomoFlow &bull; Designed for intentional focus.</p>
         </footer>
     </div>
 
     <script>
-        // Respect theme from main app
         const savedTheme = localStorage.getItem('flowtracker_theme');
         if (savedTheme) {
             document.documentElement.setAttribute('data-theme', savedTheme);

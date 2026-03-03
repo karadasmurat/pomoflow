@@ -584,40 +584,89 @@ header {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 12px;
+}
+
+.task-question {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .timer-task-main-row {
+        flex-direction: column;
+        gap: 6px;
+    }
 }
 
 .timer-task-link {
-    background: var(--surface-elevated);
+    background: transparent;
     border: 1px solid var(--border);
-    padding: 6px 6px 6px 14px;
     color: var(--text-secondary);
-    font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 500;
     cursor: pointer;
+    padding: 0 14px;
+    border-radius: 8px;
+    transition: all 200ms ease;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 200ms ease;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    height: 30px;
+    min-height: 0;
     text-decoration: none;
-    max-width: 320px;
-    border-radius: 20px;
+}
+
+.timer-task-link:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+    background: var(--surface-elevated);
 }
 
 .task-clear-icon {
     display: none; /* Hidden by default */
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
     background: transparent;
     transition: all 200ms ease;
+    margin-left: 4px;
+    flex-shrink: 0;
 }
 
 .timer-task-link.has-task .task-clear-icon {
-    display: flex; /* Shown when a task is active */
+    display: flex;
+}
+
+.task-clear-icon:hover {
+    background: var(--border);
+    color: var(--danger);
+}
+
+.task-placeholder-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.task-add-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 200ms ease;
+    flex-shrink: 0;
+}
+
+.timer-task-link:hover .task-add-icon {
+    color: var(--text-primary);
 }
 
 .task-clear-icon:hover {
@@ -744,6 +793,9 @@ header {
 
 #timerTask {
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .task-link-chevron {

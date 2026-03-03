@@ -742,10 +742,35 @@ function resetTimer() {
     const msgEl = document.getElementById('timerMessage');
     if (msgEl) msgEl.textContent = '';
     applyMode(state.timerState.mode);
+    renderHistory(currentFilter);
 }
 
 function skipSession() {
-    handleSessionComplete(true);
+    const wasRunning = state.timerState.isRunning || (state.timerState.startTime !== null);
+    if (!wasRunning) {
+        const msgEl = document.getElementById('timerMessage');
+        if (msgEl) msgEl.textContent = '';
+        
+        // Just move to next mode without guidance message
+        let nextMode;
+        if (state.timerState.mode === 'work') {
+            if (state.timerState.cycleStation >= state.settings.sessionsBeforeLongBreak) {
+                nextMode = 'longBreak';
+            } else {
+                nextMode = 'shortBreak';
+            }
+        } else {
+            nextMode = 'work';
+            if (state.timerState.mode === 'longBreak') {
+                state.timerState.cycleStation = 1;
+            } else {
+                state.timerState.cycleStation++;
+            }
+        }
+        applyMode(nextMode);
+    } else {
+        handleSessionComplete(true);
+    }
 }
 
 function handleSessionComplete(skipped = false) {
@@ -754,21 +779,34 @@ function handleSessionComplete(skipped = false) {
     
     const wasWork = state.timerState.mode === 'work';
     
+    let nextMode;
+    if (wasWork) {
+        if (state.timerState.cycleStation >= state.settings.sessionsBeforeLongBreak) {
+            nextMode = 'longBreak';
+        } else {
+            nextMode = 'shortBreak';
+        }
+    } else {
+        nextMode = 'work';
+    }
+
     const msgEl = document.getElementById('timerMessage');
     if (msgEl) {
-        if (!skipped) {
-            const finishTime = new Date().toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit', 
-                hour12: state.settings.use12Hour 
-            });
-            if (wasWork) {
-                msgEl.innerHTML = `<span class="msg-status">Finished Focus at ${finishTime}</span><span class="msg-action">Let's start a break!</span>`;
-            } else {
-                msgEl.innerHTML = `<span class="msg-status">Finished Break at ${finishTime}</span><span class="msg-action">Let's start focusing!</span>`;
-            }
+        const finishTime = new Date().toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: state.settings.use12Hour 
+        });
+        
+        const statusMsg = skipped 
+            ? `Skipped ${wasWork ? 'Focus' : 'Break'}` 
+            : `Finished ${wasWork ? 'Focus' : 'Break'} at ${finishTime}`;
+            
+        if (wasWork) {
+            const breakType = nextMode === 'longBreak' ? 'long break' : 'break';
+            msgEl.innerHTML = `<span class="msg-status">${statusMsg}</span><span class="msg-action">Let's start a ${breakType}!</span>`;
         } else {
-            msgEl.innerHTML = '';
+            msgEl.innerHTML = `<span class="msg-status">${statusMsg}</span><span class="msg-action">Let's start focusing!</span>`;
         }
     }
     
@@ -806,15 +844,7 @@ function handleSessionComplete(skipped = false) {
         }, 500);
     }
 
-    let nextMode;
-    if (wasWork) {
-        if (state.timerState.cycleStation >= state.settings.sessionsBeforeLongBreak) {
-            nextMode = 'longBreak';
-        } else {
-            nextMode = 'shortBreak';
-        }
-    } else {
-        nextMode = 'work';
+    if (!wasWork && !skipped) {
         if (state.timerState.mode === 'longBreak') {
             state.timerState.cycleStation = 1;
         } else {
@@ -823,6 +853,7 @@ function handleSessionComplete(skipped = false) {
     }
     
     applyMode(nextMode);
+    renderHistory(currentFilter);
     
     const autoStart = (nextMode === 'work' && state.settings.autoStartWork) || 
                       (nextMode !== 'work' && state.settings.autoStartBreaks);
@@ -845,8 +876,10 @@ function updateTimerDisplay() {
     const timerMessage = document.getElementById('timerMessage');
     const timerDisplay = document.querySelector('.timer-display');
     const clearTaskBtn = document.getElementById('clearTask');
+    const taskQuestion = document.getElementById('taskQuestion');
     
     const hasMsg = timerMessage && timerMessage.textContent.trim() !== '';
+    // ... rest of time formatting ...
     
     const minutes = hasMsg ? 0 : Math.floor(Math.max(0, state.timerState.remainingTime) / 60);
     const seconds = hasMsg ? 0 : Math.max(0, state.timerState.remainingTime) % 60;
@@ -919,7 +952,8 @@ function updateTimerDisplay() {
                 timerTaskDisplay.textContent = task.name;
                 timerTaskDisplay.style.color = task.color;
             }
-            if (timerTaskPrefix) timerTaskPrefix.style.display = 'inline';
+            if (taskQuestion) taskQuestion.textContent = 'Focusing on:';
+            if (timerTaskPrefix) timerTaskPrefix.style.display = 'none';
             if (taskLink) taskLink.classList.add('has-task');
             if (clearTaskBtn) clearTaskBtn.style.display = 'flex';
             
@@ -994,8 +1028,16 @@ function updateTimerDisplay() {
             }
         }
     } else {
+        if (taskQuestion) taskQuestion.textContent = 'What are you focusing on?';
         if (timerTaskDisplay) {
-            timerTaskDisplay.textContent = 'Assign a goal to this session';
+            timerTaskDisplay.innerHTML = `
+                <span class="task-add-icon">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                </span>
+                <span class="task-placeholder-text">Goal</span>
+            `;
             timerTaskDisplay.style.color = '';
         }
         if (timerTaskPrefix) timerTaskPrefix.style.display = 'none';
@@ -1420,7 +1462,9 @@ function updateLevelUI(previousTotalXp = null) {
 
     const currentRank = [...ranks].reverse().find(r => state.level >= r.min);
     rankEl.textContent = currentRank ? currentRank.name : 'Novice';
-    }function renderHistory(filter = 'today') {
+}
+
+function renderHistory(filter = 'today') {
     const list = document.getElementById('historyList');
     if (!list) return;
     
@@ -1551,11 +1595,12 @@ function updateLevelUI(previousTotalXp = null) {
 
 function filterSessions(sessions, filter) {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     
     if (filter === 'today') {
-        return sessions.filter(s => new Date(s.timestamp).getTime() >= todayStart);
+        const today = getLogicalDate(now);
+        return sessions.filter(s => getLogicalDate(new Date(s.timestamp)) === today);
     } else if (filter === 'week') {
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const weekAgo = todayStart - (7 * 24 * 60 * 60 * 1000);
         return sessions.filter(s => new Date(s.timestamp).getTime() >= weekAgo);
     }
@@ -1961,6 +2006,9 @@ function toggleTheme() {
 }
 
 function restoreTimerState() {
+    const msgEl = document.getElementById('timerMessage');
+    if (msgEl) msgEl.textContent = '';
+
     if (state.timerState.isRunning && state.timerState.targetEndTime) {
         const now = Date.now();
         state.timerState.remainingTime = Math.max(0, Math.ceil((state.timerState.targetEndTime - now) / 1000));
@@ -2051,19 +2099,23 @@ function updateCustomSelectUI() {
     const triggerText = document.querySelector('.trigger-text');
     const badge = document.getElementById('selectedCountBadge');
     if (!triggerText || !badge) return;
-    
+
     const count = state.selectedGoalIds.length;
-    
+
     if (count === 0) {
         triggerText.textContent = 'Select Goals...';
         badge.style.display = 'none';
+    } else if (count === 1) {
+        const task = state.tasks.find(t => t.id === state.selectedGoalIds[0]);
+        triggerText.textContent = task ? task.name : '1 Goal Selected';
+        badge.textContent = '1';
+        badge.style.display = 'inline-block';
     } else {
-        triggerText.textContent = `${count} Goal${count > 1 ? 's' : ''} Selected`;
+        triggerText.textContent = `${count} Goals Selected`;
         badge.textContent = count;
         badge.style.display = 'inline-block';
     }
 }
-
 function parseDuration(val) {
     val = val.toLowerCase().trim();
     if (!val) return 0;
