@@ -190,6 +190,15 @@ function loadData() {
             const timerState = JSON.parse(savedState);
             state.timerState = { ...state.timerState, ...timerState };
             if (!state.timerState.cycleStation) state.timerState.cycleStation = 1;
+        } else {
+            // No saved state, apply current mode's duration from settings
+            const mode = state.timerState.mode;
+            let duration = state.settings.workDuration;
+            if (mode === 'shortBreak') duration = state.settings.shortBreakDuration;
+            else if (mode === 'longBreak') duration = state.settings.longBreakDuration;
+            
+            state.timerState.totalTime = duration * 60;
+            state.timerState.remainingTime = duration * 60;
         }
     } catch (e) {
         console.error('Error loading data:', e);
@@ -892,9 +901,9 @@ function updateTimerDisplay() {
     document.title = `${formattedTime} - PomoFlow`;
     
     const modeLabels = {
-        work: 'Focus',
-        shortBreak: 'Short Break',
-        longBreak: 'Long Break'
+        work: '🧠 Focus',
+        shortBreak: '🏖️ Short Break',
+        longBreak: '🏖️ Long Break'
     };
     
     if (modeDisplay) modeDisplay.textContent = modeLabels[state.timerState.mode];
@@ -969,55 +978,60 @@ function updateTimerDisplay() {
                     const mAim = todayAim % 60;
                     const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
                     
-                    hudEl.innerHTML = `
-                        <progress-compact 
-                            value="${todayTime}" 
-                            max="${todayAim * 60}" 
-                            color="${task.color}" 
-                            label="${aimStr}">
-                        </progress-compact>
-                    `;
+                    const progressEl = hudEl.querySelector('progress-compact');
+                    if (progressEl) {
+                        // Update existing element attributes to avoid flicker
+                        progressEl.setAttribute('value', todayTime);
+                        progressEl.setAttribute('max', todayAim * 60);
+                        progressEl.setAttribute('label', aimStr);
+                    } else {
+                        hudEl.innerHTML = `
+                            <progress-compact 
+                                value="${todayTime}" 
+                                max="${todayAim * 60}" 
+                                color="${task.color}" 
+                                label="${aimStr}">
+                            </progress-compact>
+                        `;
+                    }
+                    
                     hudEl.onclick = (e) => {
                         e.stopPropagation();
-                        // Open Plan and select this task
                         openPlan();
                         if (state.timerState.activeTaskId) {
                             state.selectedGoalIds = [state.timerState.activeTaskId];
                             updateCustomSelectUI();
                             populateCustomGoalSelect();
                         }
-                        
-                        // Focus the duration input
                         const durInput = document.getElementById('aimDurationInput');
                         if (durInput) setTimeout(() => durInput.focus(), 300);
                     };
                 } else {
-                    hudEl.innerHTML = `
-                        <div class="set-aim-cta">
-                            <span class="set-aim-text">Set a target for today now.</span>
-                            <div class="info-popover-wrapper">
-                                <svg class="info-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                                <div class="info-popover">Daily Aims are specific focus targets for today. They help you stay intentional without changing your overall goal.</div>
+                    // Only update innerHTML if it's not already showing the CTA
+                    if (!hudEl.querySelector('.set-aim-cta')) {
+                        hudEl.innerHTML = `
+                            <div class="set-aim-cta">
+                                <span class="set-aim-text">Set a flexible deadline now.</span>
+                                <div class="info-popover-wrapper">
+                                    <svg class="info-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                    <div class="info-popover">You can set flexible deadlines to track your goals over days or weeks, keeping your energy aligned with your priorities.</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
+                    
                     hudEl.onclick = (e) => {
-                        // Prevent click if clicking the info icon/popover specifically
                         if (e.target.closest('.info-popover-wrapper')) {
                             e.stopPropagation();
                             return;
                         }
                         e.stopPropagation();
-                        
-                        // Open Plan and select this task
                         openPlan();
                         if (state.timerState.activeTaskId) {
                             state.selectedGoalIds = [state.timerState.activeTaskId];
                             updateCustomSelectUI();
                             populateCustomGoalSelect();
                         }
-                        
-                        // Focus the duration input for quick entry
                         const durInput = document.getElementById('aimDurationInput');
                         if (durInput) setTimeout(() => durInput.focus(), 300);
                     };
@@ -1916,18 +1930,22 @@ function notify(message, title = 'PomoFlow', type = 'info') {
 }
 
 function showToast(message, type = 'info') {
-    const t = document.getElementById('toast'); 
+    const t = document.getElementById('toast');
     if (!t) return;
-    
-    t.textContent = message;
+
+    t.innerHTML = `
+        <div class="toast-content">${message}</div>
+        <div class="toast-progress-container">
+            <div class="toast-progress"></div>
+        </div>
+    `;
     t.className = `toast show ${type}`;
-    
+
     if (t.timeout) clearTimeout(t.timeout);
     t.timeout = setTimeout(() => {
         t.classList.remove('show');
-    }, 4000);
+    }, 5000);
 }
-
 function playTone(freq, duration, delay) {
     if (!audioContext) return;
     const osc = audioContext.createOscillator();
@@ -2018,30 +2036,30 @@ function toggleTheme() {
 }
 
 function restoreTimerState() {
-    const msgEl = document.getElementById('timerMessage');
-    if (msgEl) msgEl.textContent = '';
-
     if (state.timerState.isRunning && state.timerState.targetEndTime) {
         const now = Date.now();
-        state.timerState.remainingTime = Math.max(0, Math.ceil((state.timerState.targetEndTime - now) / 1000));
-        
-        if (state.timerState.remainingTime > 0) {
+        const diff = state.timerState.targetEndTime - now;
+
+        if (diff > 0) {
+            // Still have time left, resume normally
+            state.timerState.remainingTime = Math.ceil(diff / 1000);
             initTimerWorker();
-            timerWorker.postMessage({ 
-                action: 'start', 
-                endTime: state.timerState.targetEndTime 
+            timerWorker.postMessage({
+                action: 'start',
+                endTime: state.timerState.targetEndTime
             });
-            startTimer();
+            updateTimerDisplay();
         } else {
+            // Time is up! 
             state.timerState.remainingTime = 0;
-            state.timerState.targetEndTime = null;
+            // No need to clear targetEndTime yet, handleSessionComplete will do it
             handleSessionComplete();
         }
     } else {
+        // Not running, just ensure display is correct
         updateTimerDisplay();
     }
 }
-
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

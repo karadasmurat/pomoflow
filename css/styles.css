@@ -3258,7 +3258,6 @@ button {
     transform: translateX(-50%) translateY(20px);
     background: var(--surface-elevated);
     color: var(--text-primary);
-    padding: 12px 24px;
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     z-index: 6000;
@@ -3269,8 +3268,39 @@ button {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border);
     display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 200px;
+}
+
+.toast-content {
+    padding: 12px 24px;
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
+}
+
+.toast-progress-container {
+    height: 3px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.toast-progress {
+    height: 100%;
+    background: var(--primary);
+    width: 100%;
+    transform-origin: left;
+}
+
+.toast.show .toast-progress {
+    animation: toast-progress 5s linear forwards;
+}
+
+@keyframes toast-progress {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
 }
 
 .toast.show {
@@ -3284,11 +3314,19 @@ button {
     color: var(--success);
 }
 
+.toast.success .toast-progress {
+    background: var(--success);
+}
+
 .toast.milestone {
     border-color: var(--warning);
     background: linear-gradient(145deg, var(--surface-elevated), #2d2410);
     color: var(--warning);
     font-weight: 700;
+}
+
+.toast.milestone .toast-progress {
+    background: var(--warning);
 }
 
 @keyframes toast-glow {
