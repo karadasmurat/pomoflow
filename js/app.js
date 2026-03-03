@@ -277,28 +277,31 @@ function openTasks() {
     const menuDropdown = document.getElementById('menuDropdown');
 
     // Close plan if open
-    if (planPanel) planPanel.classList.remove('open');
-    if (planOverlay) planOverlay.classList.remove('open');
+    closePlan();
     if (menuDropdown) menuDropdown.classList.remove('open');
-    
+
     if (taskPanel) taskPanel.classList.add('open');
     if (taskOverlay) taskOverlay.classList.add('open');
 }
 
-function openPlan() {
+function closeTasks() {
     const taskPanel = document.getElementById('taskPanel');
     const taskOverlay = document.getElementById('taskOverlay');
+    if (taskPanel) taskPanel.classList.remove('open');
+    if (taskOverlay) taskOverlay.classList.remove('open');
+}
+
+function openPlan() {
     const planPanel = document.getElementById('planPanel');
     const planOverlay = document.getElementById('planOverlay');
     const menuDropdown = document.getElementById('menuDropdown');
     const selectDropdown = document.getElementById('selectDropdown');
 
     // Close tasks if open
-    if (taskPanel) taskPanel.classList.remove('open');
-    if (taskOverlay) taskOverlay.classList.remove('open');
+    closeTasks();
     if (menuDropdown) menuDropdown.classList.remove('open');
     if (selectDropdown) selectDropdown.classList.remove('open');
-    
+
     state.selectedGoalIds = [];
     updateCustomSelectUI();
     populateCustomGoalSelect();
@@ -307,6 +310,12 @@ function openPlan() {
     if (planOverlay) planOverlay.classList.add('open');
 }
 
+function closePlan() {
+    const planPanel = document.getElementById('planPanel');
+    const planOverlay = document.getElementById('planOverlay');
+    if (planPanel) planPanel.classList.remove('open');
+    if (planOverlay) planOverlay.classList.remove('open');
+}
 function setupEventListeners() {
     const taskLink = document.getElementById('taskLink');
     const tasksNavBtn = document.getElementById('tasksNavBtn');
@@ -381,29 +390,25 @@ function setupEventListeners() {
 
     if (closeTaskPanel) {
         closeTaskPanel.addEventListener('click', () => {
-            taskPanel.classList.remove('open');
-            taskOverlay.classList.remove('open');
+            closeTasks();
         });
     }
 
     if (taskOverlay) {
         taskOverlay.addEventListener('click', () => {
-            taskPanel.classList.remove('open');
-            taskOverlay.classList.remove('open');
+            closeTasks();
         });
     }
 
     if (closePlanPanel) {
         closePlanPanel.addEventListener('click', () => {
-            planPanel.classList.remove('open');
-            planOverlay.classList.remove('open');
+            closePlan();
         });
     }
 
     if (planOverlay) {
         planOverlay.addEventListener('click', () => {
-            planPanel.classList.remove('open');
-            planOverlay.classList.remove('open');
+            closePlan();
         });
     }
 
@@ -621,16 +626,14 @@ function setupEventListeners() {
         } else if (e.key.toLowerCase() === 'g') {
             const taskPanel = document.getElementById('taskPanel');
             if (taskPanel.classList.contains('open')) {
-                taskPanel.classList.remove('open');
-                document.getElementById('taskOverlay').classList.remove('open');
+                closeTasks();
             } else {
                 openTasks();
             }
         } else if (e.key.toLowerCase() === 'p') {
             const planPanel = document.getElementById('planPanel');
             if (planPanel.classList.contains('open')) {
-                planPanel.classList.remove('open');
-                document.getElementById('planOverlay').classList.remove('open');
+                closePlan();
             } else {
                 openPlan();
             }
@@ -1262,8 +1265,18 @@ function renderTasks() {
                 startTimer();
             }
             renderTasks();
-            document.getElementById('taskPanel').classList.remove('open');
-            document.getElementById('taskOverlay').classList.remove('open');
+            closeTasks();
+        });
+
+        item.querySelector('.task-info').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (state.timerState.activeTaskId !== task.id) {
+                state.timerState.activeTaskId = task.id;
+                applyMode('work');
+                startTimer();
+                renderTasks();
+            }
+            closeTasks();
         });
 
         item.querySelector('.edit-btn').addEventListener('click', () => {
@@ -1741,14 +1754,13 @@ function openSettings() {
     
     const menuDropdown = document.getElementById('menuDropdown');
     if (menuDropdown) menuDropdown.classList.remove('open');
-    
+
     // Close other panels
-    document.getElementById('taskPanel').classList.remove('open');
-    document.getElementById('taskOverlay').classList.remove('open');
-    document.getElementById('planPanel').classList.remove('open');
-    document.getElementById('planOverlay').classList.remove('open');
-    
+    closeTasks();
+    closePlan();
+
     panel.classList.add('open');
+
     overlay.classList.add('open');
     
     // Highlight active avatar
