@@ -159,12 +159,18 @@ function loadData() {
             state.sessions = JSON.parse(sessions);
             state.sessions.forEach(s => {
                 if (!s.taskColor) s.taskColor = '#58a6ff';
+                if (!s.timestamp || isNaN(new Date(s.timestamp).getTime())) {
+                    s.timestamp = new Date().toISOString();
+                }
             });
         }
 
         const aims = localStorage.getItem(STORAGE_KEYS.AIMS);
         if (aims) {
             state.aims = JSON.parse(aims);
+            state.aims.forEach(a => {
+                if (!a.createdAt) a.createdAt = new Date().toISOString();
+            });
         } else if (tasks) {
             // Migration: Move existing dailyAimMinutes to today's aims
             const today = new Date().toISOString().split('T')[0];
@@ -229,11 +235,19 @@ function saveData() {
 }
 
 function getLogicalDate(date = new Date()) {
-    const timestamp = date instanceof Date ? date.getTime() : new Date(date).getTime();
-    // Shift the "logical day" by 4 hours. 
-    // This means 00:00 - 03:59 still counts as the previous day.
-    const shifted = new Date(timestamp - (4 * 60 * 60 * 1000));
-    return shifted.toISOString().split('T')[0];
+    try {
+        const d = (date instanceof Date) ? date : new Date(date);
+        if (isNaN(d.getTime())) {
+            // Fallback to now if invalid date provided
+            return new Date(Date.now() - (4 * 60 * 60 * 1000)).toISOString().split('T')[0];
+        }
+        // Shift the "logical day" by 4 hours. 
+        // This means 00:00 - 03:59 still counts as the previous day.
+        const shifted = new Date(d.getTime() - (4 * 60 * 60 * 1000));
+        return shifted.toISOString().split('T')[0];
+    } catch (e) {
+        return new Date(Date.now() - (4 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    }
 }
 
 function getActiveAimForGoal(goalId) {
