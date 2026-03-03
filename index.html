@@ -93,6 +93,16 @@
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                         </button>
                     </div>
+                    <div class="task-input-wrapper" style="margin-top: 8px;">
+                        <select id="taskCategorySelect" class="task-category-select">
+                            <option value="Uncategorized">Select Category...</option>
+                            <option value="Education & Personal Development">Education & Personal Development</option>
+                            <option value="Health & Wellness">Health & Wellness</option>
+                            <option value="Personal Life & Home">Personal Life & Home</option>
+                            <option value="Work & Career">Work & Career</option>
+                            <option value="Creative & Innovation">Creative & Innovation</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div id="taskSelectHeader" style="display: none;">
@@ -109,6 +119,30 @@
             </aside>
 
             <section class="panel timer-panel">
+                <div class="timer-share-wrapper">
+                    <div class="expand-group expand-down expand-vertical">
+                        <button class="expand-trigger share-btn" id="shareFocusBtn" title="Share your focus">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                            <span>Share</span>
+                        </button>
+                        <div class="expand-content share-card" id="shareMenu">
+                            <button class="action-icon-btn platform-x" onclick="handleShare('x')" title="Post to X">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 7.719L22.424 21h-6.656l-5.212-6.817L4.95 21H1.64l7.73-8.235L1.248 2.25h6.826l4.704 6.152 5.466-6.152zM17.083 19.02h1.833L7.084 4.126H5.117L17.083 19.02z"/></svg>
+                            </button>
+                            <button class="action-icon-btn platform-facebook" onclick="handleShare('facebook')" title="Share on Facebook">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.856.925-1.856 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            </button>
+                            <button class="action-icon-btn platform-pinterest" onclick="handleShare('pinterest')" title="Save to Pinterest">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.966 1.406-5.966s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283.956.515 1.736 1.458 1.736 1.75 0 3.1-1.846 3.1-4.508 0-2.357-1.693-4.006-4.113-4.006-2.803 0-4.448 2.103-4.448 4.274 0 .848.325 1.758.73 2.254.08.098.092.184.068.279-.074.31-.239 1.1-.272 1.232-.045.174-.149.211-.344.129-1.285-.597-2.087-2.472-2.087-3.979 0-3.237 2.352-6.21 6.779-6.21 3.558 0 6.324 2.535 6.324 5.934 0 3.536-2.23 6.382-5.325 6.382-1.04 0-2.018-.54-2.352-1.17l-.641 2.442c-.232.888-.86 2.003-1.282 2.698 1.072.33 2.213.509 3.393.509 6.621 0 11.988-5.367 11.988-11.987C23.991 5.367 18.624 0 12.017 0z"/></svg>
+                            </button>
+                            <div class="expand-divider"></div>
+                            <button class="action-icon-btn" onclick="handleShare('copy')" title="Copy status">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="notificationPrompt" class="notification-prompt" style="display: none;">
                     <span class="notification-prompt-text">Enable notifications to get alerted when sessions end</span>
                     <button class="notification-prompt-btn enable" id="enableNotifications">Enable</button>
@@ -150,7 +184,7 @@
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                                 </span>
                             </button>
-                        </div>
+                            </div>
                         <div id="goalProgressHUD" class="goal-progress-hud"></div>
                     </div>
                 </div>
@@ -305,6 +339,112 @@
         </footer>
     </div>
 
+    <aside class="panel profile-panel" id="profilePanel">
+        <div class="panel-header">
+            <span>Your Profile</span>
+            <button class="panel-close" id="closeProfile" aria-label="Close profile">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <div class="profile-content">
+            <div class="identity-section">
+                <div class="identity-slider" id="identitySlider">
+                    <!-- Current View -->
+                    <div class="identity-view active" id="currentIdentityView">
+                        <div class="persona-circle-wrapper">
+                            <div class="persona-circle" id="personaCircle">🦉</div>
+                            <button class="persona-edit-badge" id="editPersonaBtn" title="Change persona">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
+                            </button>
+                        </div>
+                        <div class="persona-info">
+                            <div class="persona-name-row">
+                                <span class="persona-mood-label" id="currentMoodLabel">Sage</span>
+                                <button class="share-btn" id="shareMoodBtn" title="Share your current mood">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                                    <span>Share</span>
+                                </button>
+                            </div>
+                            <div class="persona-tagline">Your focus companion</div>
+                        </div>
+                    </div>
+
+                    <!-- Selection Grid View -->
+                    <div class="identity-selection" id="personaSelectionView">
+                        <div class="selection-header">
+                            <button class="back-btn" id="cancelPersonaEdit">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                                <span>Back</span>
+                            </button>
+                            <span>Choose a Persona</span>
+                        </div>
+                        <div class="avatar-grid" id="avatarGrid">
+                            <!-- Animals -->
+                            <button class="avatar-option" data-avatar="🦉" title="Sage">
+                                <span class="avatar-emoji">🦉</span>
+                                <span class="avatar-mood">Sage</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🦊" title="Agile">
+                                <span class="avatar-emoji">🦊</span>
+                                <span class="avatar-mood">Agile</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🐼" title="Zen">
+                                <span class="avatar-emoji">🐼</span>
+                                <span class="avatar-mood">Zen</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🦁" title="Persistent">
+                                <span class="avatar-emoji">🦁</span>
+                                <span class="avatar-mood">Persistent</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🐯" title="Focused">
+                                <span class="avatar-emoji">🐯</span>
+                                <span class="avatar-mood">Focused</span>
+                            </button>
+                            <!-- Tech/Space -->
+                            <button class="avatar-option" data-avatar="🤖" title="Productive">
+                                <span class="avatar-emoji">🤖</span>
+                                <span class="avatar-mood">Productive</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🚀" title="Ambitious">
+                                <span class="avatar-emoji">🚀</span>
+                                <span class="avatar-mood">Ambitious</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="👾" title="Creative">
+                                <span class="avatar-emoji">👾</span>
+                                <span class="avatar-mood">Creative</span>
+                            </button>
+                            <!-- Zen/Focus -->
+                            <button class="avatar-option" data-avatar="🧘" title="Mindful">
+                                <span class="avatar-emoji">🧘</span>
+                                <span class="avatar-mood">Mindful</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🎯" title="Precise">
+                                <span class="avatar-emoji">🎯</span>
+                                <span class="avatar-mood">Precise</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="💎" title="Resilient">
+                                <span class="avatar-emoji">💎</span>
+                                <span class="avatar-mood">Resilient</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🔥" title="Energy">
+                                <span class="avatar-emoji">🔥</span>
+                                <span class="avatar-mood">Energy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Achievements</div>
+                <div class="achievements-grid" id="achievementsGrid">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </aside>
+
     <div class="modal-overlay" id="settingsOverlay"></div>
     <aside class="panel settings-panel" id="settingsPanel">
         <div class="panel-header">
@@ -314,110 +454,140 @@
             </button>
         </div>
 
+        <div class="settings-tabs" id="settingsTabs">
+            <button class="settings-tab active" data-tab="general" title="General Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span>General</span>
+            </button>
+            <button class="settings-tab" data-tab="sharing" title="Sharing Templates">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                <span>Sharing</span>
+            </button>
+            <button class="settings-tab" data-tab="data" title="Data Management">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
+                <span>Data</span>
+            </button>
+        </div>
+
         <div class="settings-content">
-            <div class="setting-group">
-                <div class="setting-label">Avatar Persona</div>
-                <div class="avatar-grid" id="avatarGrid">
-                    <!-- Animals -->
-                    <button class="avatar-option" data-avatar="🦉" title="Sage">🦉</button>
-                    <button class="avatar-option" data-avatar="🦊" title="Agile">🦊</button>
-                    <button class="avatar-option" data-avatar="🐼" title="Zen">🐼</button>
-                    <button class="avatar-option" data-avatar="🦁" title="Persistent">🦁</button>
-                    <button class="avatar-option" data-avatar="🐯" title="Focused">🐯</button>
-                    <!-- Tech/Space -->
-                    <button class="avatar-option" data-avatar="🤖" title="Productive">🤖</button>
-                    <button class="avatar-option" data-avatar="🚀" title="Ambitious">🚀</button>
-                    <button class="avatar-option" data-avatar="👾" title="Creative">👾</button>
-                    <!-- Zen/Focus -->
-                    <button class="avatar-option" data-avatar="🧘" title="Mindful">🧘</button>
-                    <button class="avatar-option" data-avatar="🎯" title="Precise">🎯</button>
-                    <button class="avatar-option" data-avatar="💎" title="Resilient">💎</button>
-                    <button class="avatar-option" data-avatar="🔥" title="High Energy">🔥</button>
+            <div class="settings-section active" id="tab-general">
+                <div class="setting-group">
+                    <label class="setting-label">
+                        <span>Work Duration (minutes)</span>
+                        <span class="setting-value" id="workDurationValue">25 min</span>
+                    </label>
+                    <input type="range" class="setting-slider" id="workDuration" min="1" max="60" value="25">
                 </div>
-            </div>
 
-            <div class="setting-group">
-                <label class="setting-label">
-                    <span>Work Duration (minutes)</span>
-                    <span class="setting-value" id="workDurationValue">25 min</span>
-                </label>
-                <input type="range" class="setting-slider" id="workDuration" min="1" max="60" value="25">
-            </div>
-
-            <div class="setting-group">
-                <label class="setting-label">
-                    <span>Short Break Duration (minutes)</span>
-                    <span class="setting-value" id="shortBreakDurationValue">5 min</span>
-                </label>
-                <input type="range" class="setting-slider" id="shortBreakDuration" min="1" max="30" value="5">
-            </div>
-
-            <div class="setting-group">
-                <label class="setting-label">
-                    <span>Long Break Duration (minutes)</span>
-                    <span class="setting-value" id="longBreakDurationValue">15 min</span>
-                </label>
-                <input type="range" class="setting-slider" id="longBreakDuration" min="1" max="60" value="15">
-            </div>
-
-            <div class="setting-group">
-                <label class="setting-label">
-                    <span>Sessions Before Long Break</span>
-                    <input type="number" class="setting-input" id="sessionsBeforeLongBreak" min="1" max="10" value="4">
-                </label>
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-row">
-                    <label class="setting-label">Auto-start Breaks</label>
-                    <div class="setting-toggle" id="autoStartBreaks" role="switch" aria-checked="false"></div>
+                <div class="setting-group">
+                    <label class="setting-label">
+                        <span>Short Break Duration (minutes)</span>
+                        <span class="setting-value" id="shortBreakDurationValue">5 min</span>
+                    </label>
+                    <input type="range" class="setting-slider" id="shortBreakDuration" min="1" max="30" value="5">
                 </div>
-            </div>
 
-            <div class="setting-group">
-                <div class="setting-row">
-                    <label class="setting-label">Auto-start Work Sessions</label>
-                    <div class="setting-toggle" id="autoStartWork" role="switch" aria-checked="false"></div>
+                <div class="setting-group">
+                    <label class="setting-label">
+                        <span>Long Break Duration (minutes)</span>
+                        <span class="setting-value" id="longBreakDurationValue">15 min</span>
+                    </label>
+                    <input type="range" class="setting-slider" id="longBreakDuration" min="1" max="60" value="15">
                 </div>
-            </div>
 
-            <div class="setting-group">
-                <label class="setting-label">
-                    <span>Sound Volume</span>
-                    <span class="setting-value" id="soundVolumeValue">70%</span>
-                </label>
-                <input type="range" class="setting-slider" id="soundVolume" min="0" max="100" value="70">
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-row">
-                    <label class="setting-label">12h Time Format</label>
-                    <div class="setting-toggle" id="timeFormat" role="switch" aria-checked="false"></div>
+                <div class="setting-group">
+                    <label class="setting-label">
+                        <span>Sessions Before Long Break</span>
+                        <input type="number" class="setting-input" id="sessionsBeforeLongBreak" min="1" max="10" value="4">
+                    </label>
                 </div>
-            </div>
 
-            <div class="setting-group">
-                <label class="setting-label">Notifications</label>
-                <div class="setting-row" style="gap: 12px; margin-top: 8px;">
-                    <button class="filter-btn" id="requestNotifyManual" style="flex: 1; justify-content: center;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5z"/></svg>
-                        Enable Push
-                    </button>
-                    <button class="filter-btn" id="testNotify" style="flex: 1; justify-content: center;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.58 4.08L6.15 2.65C3.75 4.48 2.17 7.3 2.03 10.5h2c.15-2.65 1.51-4.97 3.55-6.42zm12.39 6.42h2c-.15-3.2-1.73-6.02-4.12-7.85l-1.42 1.43c2.02 1.45 3.39 3.77 3.54 6.42zM18 11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5zm-6 11c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2z"/></svg>
-                        Test
-                    </button>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <label class="setting-label">Data Management</label>
-                <div class="data-buttons">
-                    <button class="btn btn-secondary" id="exportData">Export Data</button>
-                    <div class="import-wrapper">
-                        <input type="file" id="importFile" accept=".json" style="display: none;">
-                        <button class="btn btn-secondary" id="importData">Import Data</button>
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <label class="setting-label">Auto-start Breaks</label>
+                        <div class="setting-toggle" id="autoStartBreaks" role="switch" aria-checked="false"></div>
                     </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <label class="setting-label">Auto-start Work Sessions</label>
+                        <div class="setting-toggle" id="autoStartWork" role="switch" aria-checked="false"></div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <label class="setting-label">12h Time Format</label>
+                        <div class="setting-toggle" id="timeFormat" role="switch" aria-checked="false"></div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Notifications</label>
+                    <div class="setting-row" style="gap: 12px; margin-top: 8px;">
+                        <button class="filter-btn" id="requestNotifyManual" style="flex: 1; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5z"/></svg>
+                            Enable Push
+                        </button>
+                        <button class="filter-btn" id="testNotify" style="flex: 1; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.58 4.08L6.15 2.65C3.75 4.48 2.17 7.3 2.03 10.5h2c.15-2.65 1.51-4.97 3.55-6.42zm12.39 6.42h2c-.15-3.2-1.73-6.02-4.12-7.85l-1.42 1.43c2.02 1.45 3.39 3.77 3.54 6.42zM18 11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5zm-6 11c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2z"/></svg>
+                            Test
+                        </button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">
+                        <span>Sound Volume</span>
+                        <span class="setting-value" id="soundVolumeValue">70%</span>
+                    </label>
+                    <input type="range" class="setting-slider" id="soundVolume" min="0" max="100" value="70">
+                </div>
+            </div>
+
+            <div class="settings-section" id="tab-sharing">
+                <div class="setting-group">
+                    <div class="setting-label">Sharing Templates</div>
+                    <div class="template-help">Placeholders: {goal}, {duration}, {time}, {xp}</div>
+                    
+                    <div class="template-field">
+                        <label>Setting Intent</label>
+                        <textarea id="templateIntent" class="setting-textarea" rows="2" placeholder="Focusing on: {goal}..."></textarea>
+                    </div>
+                    
+                    <div class="template-field">
+                        <label>Session Complete</label>
+                        <textarea id="templateSession" class="setting-textarea" rows="2" placeholder="Session complete: {goal}..."></textarea>
+                    </div>
+                    
+                    <div class="template-field">
+                        <label>Goal Reached</label>
+                        <textarea id="templateMilestone" class="setting-textarea" rows="2" placeholder="Goal reached: {goal}..."></textarea>
+                    </div>
+
+                    <div class="template-field">
+                        <label>Current Mood</label>
+                        <textarea id="templateMood" class="setting-textarea" rows="4" placeholder="Current Mood: {avatar} {mood}..."></textarea>
+                    </div>
+                    </div>
+
+            </div>
+
+            <div class="settings-section" id="tab-data">
+                <div class="setting-group">
+                    <label class="setting-label">Data Management</label>
+                    <div class="data-buttons">
+                        <button class="btn btn-secondary" id="exportData">Export Data</button>
+                        <div class="import-wrapper">
+                            <input type="file" id="importFile" accept=".json" style="display: none;">
+                            <button class="btn btn-secondary" id="importData">Import Data</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" id="restoreDefaults" style="width: 100%; margin-top: 12px; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                        Restore Default Areas
+                    </button>
                 </div>
             </div>
         </div>
@@ -495,7 +665,19 @@
                     <input type="text" id="taskEditName" class="session-edit-input">
                 </div>
                 <div class="session-edit-field">
+                    <label>Category</label>
+                    <select id="taskEditCategory" class="session-edit-input">
+                        <option value="Uncategorized">Uncategorized</option>
+                        <option value="Education & Personal Development">Education & Personal Development</option>
+                        <option value="Health & Wellness">Health & Wellness</option>
+                        <option value="Personal Life & Home">Personal Life & Home</option>
+                        <option value="Work & Career">Work & Career</option>
+                        <option value="Creative & Innovation">Creative & Innovation</option>
+                    </select>
+                </div>
+                <div class="session-edit-field">
                     <label>Goal Color</label>
+
                     <div class="color-picker" id="taskEditColorPicker">
                         <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Primary Blue"></button>
                         <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8" aria-label="Sky Blue"></button>

@@ -11,6 +11,39 @@ const STORAGE_KEYS = {
 
 const CURRENT_VERSION = 1;
 
+const DEFAULT_TASKS = [
+    // Education & Personal Development
+    { name: "Course Work", category: "Education & Personal Development", color: "#a855f7" },
+    { name: "E-learning / Online Courses", category: "Education & Personal Development", color: "#a855f7" },
+    { name: "Exam Prep", category: "Education & Personal Development", color: "#a855f7" },
+    { name: "Certification", category: "Education & Personal Development", color: "#a855f7" },
+    { name: "Language Practice", category: "Education & Personal Development", color: "#a855f7" },
+    { name: "Reading", category: "Education & Personal Development", color: "#a855f7" },
+    
+    // Health & Wellness
+    { name: "Physical workout", category: "Health & Wellness", color: "#3fb950" },
+    { name: "Meditation", category: "Health & Wellness", color: "#3fb950" },
+    { name: "Yoga", category: "Health & Wellness", color: "#3fb950" },
+    
+    // Personal Life & Home
+    { name: "Cleaning & Organizing", category: "Personal Life & Home", color: "#f97316" },
+    { name: "Home Improvement & DIY", category: "Personal Life & Home", color: "#f97316" },
+    { name: "Gardening", category: "Personal Life & Home", color: "#f97316" },
+    { name: "Grocery Shopping & Cooking", category: "Personal Life & Home", color: "#f97316" },
+    { name: "Family Time", category: "Personal Life & Home", color: "#f97316" },
+    { name: "Pet Care", category: "Personal Life & Home", color: "#f97316" },
+    
+    // Work & Career
+    { name: "Meetings", category: "Work & Career", color: "#58a6ff" },
+    { name: "Client Work", category: "Work & Career", color: "#58a6ff" },
+    { name: "Email Management", category: "Work & Career", color: "#58a6ff" },
+    { name: "Coding", category: "Work & Career", color: "#58a6ff" },
+    
+    // Creative & Innovation
+    { name: "Content Creation", category: "Creative & Innovation", color: "#ec4899" },
+    { name: "Side Projects", category: "Creative & Innovation", color: "#ec4899" }
+];
+
 let state = {
     tasks: [],
     sessions: [],
@@ -23,7 +56,13 @@ let state = {
         autoStartBreaks: false,
         autoStartWork: false,
         soundVolume: 70,
-        use12Hour: false
+        use12Hour: false,
+        shareTemplates: {
+            intent: "🧠 Focusing on {goal} for {duration} mins. Back at {time}! 🚀 #PomoFlow #DeepWork",
+            session: "🎯 Session complete! Focused on {goal} for {duration} mins. Earned {xp} XP! 📈 #PomoFlow",
+            milestone: "🏆 Goal reached! Just hit my target for {goal}! {duration} minutes of deep work completed. 🎯 #PomoFlow #Intentionality",
+            mood: "Current Mood: {avatar} {mood}\nFocus level: 🎯🎯🎯🎯🎯\nDistractions: 🚫\nIn the zone!\n#flowstate #productivity"
+        }
     },
     currentTask: null,
     timerState: {
@@ -46,8 +85,21 @@ let state = {
     xp: 0,
     totalXp: 0,
     level: 1,
-    avatar: '🦉'
+    avatar: '🦉',
+    unlockedAchievements: [],
+    collapsedCategories: []
 };
+
+const ACHIEVEMENTS = [
+    { id: 'first_steps', name: 'First Steps', desc: 'Complete your first focus session', icon: '🌱', type: 'bronze' },
+    { id: 'habitual', name: 'Habitual', desc: '3-day focus streak', icon: '🔥', type: 'bronze' },
+    { id: 'deep_diver', name: 'Deep Diver', desc: '10 total hours focused', icon: '🌊', type: 'silver' },
+    { id: 'night_owl', name: 'Night Owl', desc: 'Complete a session between 12 AM - 4 AM', icon: '🦉', type: 'special', hidden: true },
+    { id: 'early_bird', name: 'Early Bird', desc: 'Start a session before 6 AM', icon: '🌅', type: 'special', hidden: true },
+    { id: 'socialite', name: 'Socialite', desc: 'Share your progress for the first time', icon: '📤', type: 'bronze' },
+    { id: 'architect', name: 'Architect', desc: 'Reach 10 unique focus targets', icon: '📐', type: 'silver' },
+    { id: 'unstoppable', name: 'Unstoppable', desc: '100 total hours focused', icon: '👑', type: 'gold' }
+];
 
 let timerWorker = null;
 let audioContext = null;
@@ -128,6 +180,7 @@ function init() {
     try { checkNotificationPrompt(); } catch(e) {}
     restoreTimerState();
     initTheme();
+    checkAchievements();
 }
 
 function loadData() {
@@ -144,14 +197,51 @@ function loadData() {
             state.totalXp = savedProfile.totalXp || 0;
             state.level = savedProfile.level || 1;
             state.avatar = savedProfile.avatar || '🦉';
+            state.unlockedAchievements = savedProfile.unlockedAchievements || [];
+            state.collapsedCategories = savedProfile.collapsedCategories;
+            
+            // If collapsedCategories is missing or null (new feature migration), collapse all by default
+            if (!state.collapsedCategories) {
+                state.collapsedCategories = [
+                    "Education & Personal Development",
+                    "Health & Wellness",
+                    "Personal Life & Home",
+                    "Work & Career",
+                    "Creative & Innovation",
+                    "Completed"
+                ];
+            }
+        } else {
+            // Initial setup for new profile
+            state.collapsedCategories = [
+                "Education & Personal Development",
+                "Health & Wellness",
+                "Personal Life & Home",
+                "Work & Career",
+                "Creative & Innovation",
+                "Completed"
+            ];
         }
 
         const tasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-        if (tasks) {
-            state.tasks = JSON.parse(tasks);
+        const parsedTasks = tasks ? JSON.parse(tasks) : null;
+
+        if (parsedTasks && parsedTasks.length > 0) {
+            state.tasks = parsedTasks;
             state.tasks.forEach(t => {
                 if (!t.color) t.color = '#58a6ff';
             });
+        } else {
+            // Initial setup or restored defaults
+            state.tasks = DEFAULT_TASKS.map((t, index) => ({
+                id: (Date.now() + index).toString(),
+                name: t.name,
+                category: t.category,
+                color: t.color,
+                completed: false,
+                createdAt: new Date().toISOString()
+            }));
+            saveData();
         }
 
         const sessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
@@ -189,7 +279,14 @@ function loadData() {
         }
 
         const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-        if (settings) state.settings = { ...state.settings, ...JSON.parse(settings) };
+        if (settings) {
+            const savedSettings = JSON.parse(settings);
+            state.settings = { 
+                ...state.settings, 
+                ...savedSettings,
+                shareTemplates: { ...state.settings.shareTemplates, ...(savedSettings.shareTemplates || {}) }
+            };
+        }
 
         const savedState = localStorage.getItem(STORAGE_KEYS.STATE);
         if (savedState) {
@@ -224,7 +321,9 @@ function saveData() {
             xp: state.xp,
             totalXp: state.totalXp,
             level: state.level,
-            avatar: state.avatar
+            avatar: state.avatar,
+            unlockedAchievements: state.unlockedAchievements,
+            collapsedCategories: state.collapsedCategories
         }));
     } catch (e) {
         console.error('Error saving data:', e);
@@ -251,11 +350,20 @@ function getLogicalDate(date = new Date()) {
 }
 
 function getActiveAimForGoal(goalId) {
-    // Find the most recent aim for this goal
+    // Find incomplete aims for this goal
     const aims = state.aims.filter(a => a.goalId === goalId);
     if (aims.length === 0) return null;
-    // Sort by createdAt descending to get the newest one
-    return aims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    
+    // An aim is active if its progress is less than 100%
+    const activeAims = aims.filter(aim => {
+        const spent = getTimeSpentOnAim(aim);
+        return spent < aim.targetMinutes * 60;
+    });
+    
+    if (activeAims.length === 0) return null;
+    
+    // Return the most recent active one
+    return activeAims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 }
 
 function getTodayAimForGoal(goalId) {
@@ -339,7 +447,87 @@ function closePlan() {
     if (planPanel) planPanel.classList.remove('open');
     if (planOverlay) planOverlay.classList.remove('open');
 }
+function resolveTemplate(template, data) {
+    let result = template;
+    const goalName = data.goal || 'focus session';
+    const duration = data.duration || '25';
+    const finishTime = data.time || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
+    const xp = data.xp || '0';
+    const avatar = data.avatar || state.avatar || '🦉';
+    const mood = data.mood || 'Focused';
+
+    result = result.replace(/{goal}/g, goalName);
+    result = result.replace(/{duration}/g, duration);
+    result = result.replace(/{time}/g, finishTime);
+    result = result.replace(/{xp}/g, xp);
+    result = result.replace(/{avatar}/g, avatar);
+    result = result.replace(/{mood}/g, mood);
+    
+    return result;
+}
+
+function handleShare(platform, context = 'intent', customData = {}) {
+    const activeTask = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+    
+    // Default data for active timer
+    const defaultData = {
+        goal: activeTask ? activeTask.name : '',
+        duration: Math.round(state.timerState.totalTime / 60),
+        time: new Date(Date.now() + state.timerState.remainingTime * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour }),
+        xp: Math.floor(state.timerState.totalTime / 60) * 10
+    };
+
+    const data = { ...defaultData, ...customData };
+    const template = state.settings.shareTemplates[context] || state.settings.shareTemplates.intent;
+    const message = resolveTemplate(template, data);
+
+    if (platform === 'x') {
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    } else if (platform === 'facebook') {
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    } else if (platform === 'pinterest') {
+        const url = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(window.location.href)}&description=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    } else if (platform === 'copy') {
+        navigator.clipboard.writeText(message).then(() => {
+            notify('Status copied to clipboard! 📋');
+        });
+    }
+    
+    // Close any open expandable groups
+    document.querySelectorAll('.expand-group.open').forEach(g => g.classList.remove('open'));
+}
+
+function setupExpandGroups() {
+    document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('.expand-trigger');
+        const openGroups = document.querySelectorAll('.expand-group.open');
+        
+        if (trigger) {
+            const group = trigger.closest('.expand-group');
+            if (group) {
+                e.stopPropagation();
+                // Close other open groups first
+                openGroups.forEach(g => {
+                    if (g !== group) g.classList.remove('open');
+                });
+                group.classList.toggle('open');
+                return;
+            }
+        }
+        
+        // Close all if clicking outside
+        if (openGroups.length > 0 && !e.target.closest('.expand-group')) {
+            openGroups.forEach(g => g.classList.remove('open'));
+        }
+    });
+}
+
 function setupEventListeners() {
+    setupExpandGroups();
+    
     const taskLink = document.getElementById('taskLink');
     const tasksNavBtn = document.getElementById('tasksNavBtn');
     const closeTaskPanel = document.getElementById('closeTaskPanel');
@@ -354,10 +542,38 @@ function setupEventListeners() {
 
     const menuBtn = document.getElementById('menuBtn');
     const menuDropdown = document.getElementById('menuDropdown');
+    const settingsTabs = document.querySelectorAll('.settings-tab');
+    const settingsSections = document.querySelectorAll('.settings-section');
+    const closeProfileBtn = document.getElementById('closeProfile');
+
+    if (closeProfileBtn) {
+        closeProfileBtn.addEventListener('click', closeProfile);
+    }
+
+    if (settingsTabs.length > 0) {
+        settingsTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                settingsTabs.forEach(t => t.classList.remove('active'));
+                settingsSections.forEach(s => s.classList.remove('active'));
+                
+                tab.classList.add('active');
+                const targetEl = document.getElementById(`tab-${targetTab}`);
+                if (targetEl) targetEl.classList.add('active');
+            });
+        });
+    }
 
     const headerAvatar = document.getElementById('headerAvatar');
     if (headerAvatar) {
-        headerAvatar.addEventListener('click', openSettings);
+        headerAvatar.removeEventListener('click', openSettings); // Remove old binding
+        headerAvatar.addEventListener('click', openProfile);
+    }
+
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openSettings);
     }
 
     if (menuBtn && menuDropdown) {
@@ -370,6 +586,20 @@ function setupEventListeners() {
             if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
                 menuDropdown.classList.remove('open');
             }
+        });
+    }
+
+    const shareMoodBtn = document.getElementById('shareMoodBtn');
+    
+    if (shareMoodBtn) {
+        shareMoodBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const activeOption = document.querySelector('.avatar-option.active');
+            const mood = activeOption ? activeOption.getAttribute('title') : 'Focused';
+            handleShare('x', 'mood', {
+                avatar: state.avatar,
+                mood: mood
+            });
         });
     }
 
@@ -542,7 +772,10 @@ function setupEventListeners() {
         closeSettings();
     });
     document.getElementById('settingsOverlay').addEventListener('click', (e) => {
-        if (e.target.id === 'settingsOverlay') closeSettings();
+        if (e.target.id === 'settingsOverlay') {
+            closeSettings();
+            closeProfile();
+        }
     });
 
     document.getElementById('exportData').addEventListener('click', exportData);
@@ -551,14 +784,60 @@ function setupEventListeners() {
         document.getElementById('importFile').click();
     });
 
+    const restoreBtn = document.getElementById('restoreDefaults');
+    if (restoreBtn) {
+        restoreBtn.addEventListener('click', async () => {
+            const confirmed = await confirmAction("This will add the 10 default focus areas to your list. Continue?");
+            if (confirmed) {
+                const newTasks = DEFAULT_TASKS.map((t, index) => ({
+                    id: (Date.now() + index).toString(),
+                    name: t.name,
+                    category: t.category,
+                    color: t.color,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                }));
+                state.tasks = [...state.tasks, ...newTasks];
+                saveData();
+                renderTasks();
+                notify("Default areas added! 🎯");
+            }
+        });
+    }
+
+    // Persona Slider Logic
+    const editPersonaBtn = document.getElementById('editPersonaBtn');
+    const cancelPersonaEdit = document.getElementById('cancelPersonaEdit');
+    const identitySlider = document.getElementById('identitySlider');
+
+    if (editPersonaBtn && identitySlider) {
+        editPersonaBtn.addEventListener('click', () => {
+            identitySlider.classList.add('editing');
+        });
+    }
+
+    if (cancelPersonaEdit && identitySlider) {
+        cancelPersonaEdit.addEventListener('click', () => {
+            identitySlider.classList.remove('editing');
+        });
+    }
+
     // Avatar Selection
     document.querySelectorAll('.avatar-option').forEach(opt => {
         opt.addEventListener('click', () => {
             state.avatar = opt.dataset.avatar;
             document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
+            
+            // Update visible name in settings
+            const personaName = document.getElementById('currentPersonaName');
+            if (personaName) personaName.textContent = opt.getAttribute('title');
+            
             saveData();
             updateLevelUI();
+
+            // Slide back to view mode
+            if (identitySlider) identitySlider.classList.remove('editing');
         });
     });
 
@@ -1107,12 +1386,15 @@ function updateTimerDisplay() {
 
 function addTask() {
     const input = document.getElementById('taskInput');
+    const categorySelect = document.getElementById('taskCategorySelect');
     const name = input.value.trim();
+    const category = categorySelect.value;
     
     if (name) {
         const task = {
             id: Date.now().toString(),
             name: name,
+            category: category,
             color: state.selectedTaskColor,
             completed: false,
             createdAt: new Date().toISOString(),
@@ -1122,6 +1404,7 @@ function addTask() {
         state.tasks.push(task);
         state.lastTaskId = task.id;
         input.value = '';
+        categorySelect.value = 'Uncategorized';
         saveData();
         renderTasks();
         
@@ -1177,10 +1460,18 @@ function renderTasks() {
     
     if (taskSelectHeader) taskSelectHeader.style.display = 'block';
     
-    const activeTasks = state.tasks.filter(t => !t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const activeTasks = state.tasks.filter(t => !t.completed);
     const completedTasks = state.tasks.filter(t => t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-        const renderTaskItem = (task) => {
+    // Group active tasks by category
+    const groupedTasks = activeTasks.reduce((groups, task) => {
+        const cat = task.category || 'Uncategorized';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(task);
+        return groups;
+    }, {});
+
+    const renderTaskItem = (task) => {
         const item = document.createElement('div');
         const isNewSlide = task.id === state.lastTaskId;
 
@@ -1326,16 +1617,99 @@ function renderTasks() {
         return item;
     };
 
-    activeTasks.forEach(task => list.appendChild(renderTaskItem(task)));
-    
+    // Define standard category order
+    const categoryOrder = [
+        "Education & Personal Development",
+        "Health & Wellness",
+        "Personal Life & Home",
+        "Work & Career",
+        "Creative & Innovation",
+        "Uncategorized"
+    ];
+
+    // Sort categories based on order
+    const sortedCategories = Object.keys(groupedTasks).sort((a, b) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    sortedCategories.forEach(cat => {
+        const isCollapsed = state.collapsedCategories.includes(cat);
+        const categoryGroup = document.createElement('div');
+        categoryGroup.className = `task-category-group ${isCollapsed ? 'category-collapsed' : ''}`;
+        
+        const header = document.createElement('div');
+        header.className = 'task-category-header';
+        header.innerHTML = `
+            <span>${cat}</span>
+            <svg class="category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+        `;
+        
+        header.addEventListener('click', () => {
+            const index = state.collapsedCategories.indexOf(cat);
+            if (index > -1) {
+                state.collapsedCategories.splice(index, 1);
+                categoryGroup.classList.remove('category-collapsed');
+            } else {
+                state.collapsedCategories.push(cat);
+                categoryGroup.classList.add('category-collapsed');
+            }
+            saveData();
+        });
+
+        const content = document.createElement('div');
+        content.className = 'task-category-content';
+
+        groupedTasks[cat].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(task => {
+            content.appendChild(renderTaskItem(task));
+        });
+
+        categoryGroup.appendChild(header);
+        categoryGroup.appendChild(content);
+        list.appendChild(categoryGroup);
+    });
+
     if (completedTasks.length > 0) {
-        const completedHeader = document.createElement('div');
-        completedHeader.className = 'task-section-header';
-        completedHeader.textContent = 'Check off time';
-        list.appendChild(completedHeader);
-        completedTasks.forEach(task => list.appendChild(renderTaskItem(task)));
+        const cat = 'Completed';
+        const isCollapsed = state.collapsedCategories.includes(cat);
+        const categoryGroup = document.createElement('div');
+        categoryGroup.className = `task-category-group ${isCollapsed ? 'category-collapsed' : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'task-category-header';
+        header.innerHTML = `
+            <span>${cat}</span>
+            <svg class="category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+        `;
+
+        header.addEventListener('click', () => {
+            const index = state.collapsedCategories.indexOf(cat);
+            if (index > -1) {
+                state.collapsedCategories.splice(index, 1);
+                categoryGroup.classList.remove('category-collapsed');
+            } else {
+                state.collapsedCategories.push(cat);
+                categoryGroup.classList.add('category-collapsed');
+            }
+            saveData();
+        });
+
+        const content = document.createElement('div');
+        content.className = 'task-category-content';
+        
+        completedTasks.forEach(task => {
+            content.appendChild(renderTaskItem(task));
+        });
+
+        categoryGroup.appendChild(header);
+        categoryGroup.appendChild(content);
+        list.appendChild(categoryGroup);
     }
-    
+
     state.lastTaskId = null;
 }
 
@@ -1425,6 +1799,7 @@ function saveSession() {
     saveData();
     renderTasks();
     renderHistory(currentFilter);
+    checkAchievements();
 }
 
 function addXP(amount, isBonus = false) {
@@ -1492,6 +1867,15 @@ function updateLevelUI(previousTotalXp = null) {
 
     if (levelContainer) levelContainer.title = `Level ${state.level}`;
     if (headerAvatar) headerAvatar.textContent = state.avatar || '🦉';
+
+    // Update Profile Panel circular display
+    const personaCircle = document.getElementById('personaCircle');
+    const currentMoodLabel = document.getElementById('currentMoodLabel');
+    if (personaCircle) personaCircle.textContent = state.avatar || '🦉';
+    if (currentMoodLabel) {
+        const activeOption = document.querySelector(`.avatar-option[data-avatar="${state.avatar}"]`);
+        if (activeOption) currentMoodLabel.textContent = activeOption.getAttribute('title');
+    }
 
     const ranks = [        { min: 1, name: 'Novice' },
         { min: 5, name: 'Focused' },
@@ -1775,6 +2159,102 @@ function formatTimestamp(date) {
     });
 }
 
+function openProfile() {
+    const profilePanel = document.getElementById('profilePanel');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+    if (!profilePanel || !settingsOverlay) return;
+
+    // Close other panels
+    closeTasks();
+    closePlan();
+    document.getElementById('settingsPanel').classList.remove('open');
+
+    renderAchievements();
+    profilePanel.classList.add('open');
+    settingsOverlay.classList.add('open');
+}
+
+function closeProfile() {
+    const profilePanel = document.getElementById('profilePanel');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+    if (profilePanel) profilePanel.classList.remove('open');
+    if (settingsOverlay) settingsOverlay.classList.remove('open');
+}
+
+function renderAchievements() {
+    const grid = document.getElementById('achievementsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    ACHIEVEMENTS.forEach(achievement => {
+        const unlocked = state.unlockedAchievements.find(ua => ua.id === achievement.id);
+        const badge = document.createElement('div');
+        
+        let icon = achievement.icon;
+        let name = achievement.name;
+        let desc = achievement.desc;
+        
+        if (!unlocked && achievement.hidden) {
+            icon = '❓';
+            name = 'Secret';
+            desc = 'Keep focusing to discover...';
+        }
+
+        badge.className = `achievement-badge ${unlocked ? 'unlocked' : 'locked'} ${!unlocked && achievement.hidden ? 'hidden' : ''}`;
+        
+        badge.innerHTML = `
+            <div class="badge-icon">${icon}</div>
+            <div class="badge-name">${name}</div>
+            <div class="badge-desc">${desc}</div>
+            ${unlocked ? `<div class="badge-date">${new Date(unlocked.date).toLocaleDateString('en-US', {month:'short', day:'numeric'})}</div>` : ''}
+        `;
+        
+        grid.appendChild(badge);
+    });
+}
+
+function checkAchievements() {
+    const newUnlocks = [];
+    const totalFocusMinutes = state.sessions.reduce((acc, s) => acc + s.duration, 0) / 60;
+    const totalAimsReached = state.aims.filter(aim => getTimeSpentOnAim(aim) >= aim.targetMinutes * 60).length;
+    const currentStreak = parseInt(document.getElementById('currentStreak')?.textContent) || 0;
+
+    const tryUnlock = (id, condition) => {
+        if (!state.unlockedAchievements.find(ua => ua.id === id) && condition) {
+            const achievement = ACHIEVEMENTS.find(a => a.id === id);
+            const unlock = { id, date: new Date().toISOString() };
+            state.unlockedAchievements.push(unlock);
+            newUnlocks.push(achievement);
+            
+            // Big XP Bonus
+            let bonus = 100;
+            if (achievement.type === 'silver') bonus = 250;
+            if (achievement.type === 'gold') bonus = 500;
+            if (achievement.type === 'special') bonus = 300;
+            addXP(bonus, true);
+        }
+    };
+
+    tryUnlock('first_steps', state.sessions.length >= 1);
+    tryUnlock('habitual', currentStreak >= 3);
+    tryUnlock('deep_diver', totalFocusMinutes >= 600);
+    tryUnlock('unstoppable', totalFocusMinutes >= 6000);
+    tryUnlock('architect', totalAimsReached >= 10);
+    
+    // Hidden ones
+    const now = new Date();
+    const hour = now.getHours();
+    tryUnlock('night_owl', hour >= 0 && hour < 4 && state.timerState.isRunning === false); // Triggered after session end
+    tryUnlock('early_bird', hour >= 4 && hour < 7 && state.timerState.isRunning === false);
+
+    if (newUnlocks.length > 0) {
+        saveData();
+        newUnlocks.forEach(ach => {
+            notify(`Achievement Unlocked: ${ach.name}! 🏆`, 'PomoFlow', 'milestone');
+        });
+    }
+}
+
 function openSettings() {
     const panel = document.getElementById('settingsPanel');
     const overlay = document.getElementById('settingsOverlay');
@@ -1787,16 +2267,22 @@ function openSettings() {
     closeTasks();
     closePlan();
 
+    // Reset tabs to general
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'general'));
+    document.querySelectorAll('.settings-section').forEach(s => s.classList.toggle('active', s.id === 'tab-general'));
+
     panel.classList.add('open');
 
     overlay.classList.add('open');
     
-    // Highlight active avatar
-    document.querySelectorAll('.avatar-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.avatar === state.avatar);
-    });
-    
+    // Load sharing templates
+    document.getElementById('templateIntent').value = state.settings.shareTemplates.intent;
+    document.getElementById('templateSession').value = state.settings.shareTemplates.session;
+    document.getElementById('templateMilestone').value = state.settings.shareTemplates.milestone;
+    document.getElementById('templateMood').value = state.settings.shareTemplates.mood;
+
     document.getElementById('workDuration').value = state.settings.workDuration;
+
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('shortBreakDurationValue').textContent = `${state.settings.shortBreakDuration} min`;
@@ -1822,6 +2308,13 @@ function closeSettings() {
     state.settings.autoStartWork = document.getElementById('autoStartWork').classList.contains('active');
     state.settings.use12Hour = document.getElementById('timeFormat').classList.contains('active');
     state.settings.soundVolume = parseInt(document.getElementById('soundVolume').value);
+    
+    // Save templates
+    state.settings.shareTemplates.intent = document.getElementById('templateIntent').value;
+    state.settings.shareTemplates.session = document.getElementById('templateSession').value;
+    state.settings.shareTemplates.milestone = document.getElementById('templateMilestone').value;
+    state.settings.shareTemplates.mood = document.getElementById('templateMood').value;
+
     saveData();
     if (!state.timerState.isRunning) applyMode(state.timerState.mode);
     updateDateTime();
@@ -1873,6 +2366,7 @@ function openTaskEditModal(task) {
     editingTaskId = task.id;
     state.editTaskColor = task.color;
     document.getElementById('taskEditName').value = task.name;
+    document.getElementById('taskEditCategory').value = task.category || 'Uncategorized';
     document.getElementById('taskEditColorPicker').querySelectorAll('.color-dot').forEach(dot => {
         dot.classList.toggle('active', dot.dataset.color === task.color);
     });
@@ -1886,16 +2380,17 @@ function closeTaskEditModal() {
 
 function saveTaskFromModal() {
     const name = document.getElementById('taskEditName').value.trim();
+    const category = document.getElementById('taskEditCategory').value;
     if (!name) return;
     const task = state.tasks.find(t => t.id === editingTaskId);
     if (task) {
-        task.name = name; 
+        task.name = name;
+        task.category = category;
         task.color = state.editTaskColor;
         state.sessions.forEach(s => { if (s.taskId === task.id) { s.taskName = task.name; s.taskColor = task.color; } });
         saveData(); renderTasks(); renderHistory(currentFilter); updateTimerDisplay(); closeTaskEditModal();
     }
 }
-
 function checkNotificationPrompt() {
     if (Notification.permission === 'default' && localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT) !== 'denied') {
         const prompt = document.getElementById('notificationPrompt');
@@ -2347,12 +2842,30 @@ function renderPlan() {
         item.className = `plan-aim-item ${reached ? 'reached' : ''} ${isExpired && !reached ? 'expired' : ''}`;
         item.dataset.goalId = aim.goalId;
 
-        item.innerHTML = `
-            <div class="plan-aim-menu">
+        let actionBtnHtml = '';
+        if (reached) {
+            actionBtnHtml = `
+                <button class="share-milestone-btn" title="Share milestone">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                    <span>Share</span>
+                </button>
+                <button class="go-again-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    <span>Go Again!</span>
+                </button>
+            `;
+        } else {
+            actionBtnHtml = `
                 <button class="edit-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
                     <span>Edit</span>
                 </button>
+            `;
+        }
+
+        item.innerHTML = `
+            <div class="plan-aim-menu">
+                ${actionBtnHtml}
                 <button class="danger delete-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     <span>Delete</span>
@@ -2372,7 +2885,7 @@ function renderPlan() {
                             label="${aimStr}">
                         </progress-compact>
                         <div class="aim-meta">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5z"/></svg>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.58 8 8-3.58 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5z"/></svg>
                             <span class="aim-duration-label">${aimStr}</span>
                         </div>
                         <div class="aim-deadline-badge ${isExpired ? 'expired' : ''}">${deadlineLabel}</div>
@@ -2425,11 +2938,84 @@ function renderPlan() {
             wrapper.style.transform = isOpen ? 'translateX(-120px)' : 'translateX(0)';
         });
 
-        item.querySelector('.edit-btn').addEventListener('click', () => {
-            editAim(aim.id);
-            item.classList.remove('menu-open');
-            wrapper.style.transform = 'translateX(0)';
-        });
+        const editBtn = item.querySelector('.edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                editAim(aim.id);
+                item.classList.remove('menu-open');
+                wrapper.style.transform = 'translateX(0)';
+            });
+        }
+
+        const goAgainBtn = item.querySelector('.go-again-btn');
+        if (goAgainBtn) {
+            goAgainBtn.addEventListener('click', () => {
+                // Template Workflow
+                state.selectedGoalIds = [aim.goalId];
+                updateCustomSelectUI();
+                populateCustomGoalSelect();
+                
+                const durationInput = document.getElementById('aimDurationInput');
+                if (durationInput) {
+                    const h = Math.floor(aim.targetMinutes / 60);
+                    const m = aim.targetMinutes % 60;
+                    durationInput.value = h > 0 ? `${h}:${m.toString().padStart(2, '0')}` : `${m}`;
+                }
+
+                const deadlineSelect = document.getElementById('aimDeadlineSelect');
+                if (deadlineSelect) {
+                    // Inherit deadline if it's in the future
+                    if (aim.deadline && aim.deadline >= getLogicalDate()) {
+                        // Check if it's one of the standard options
+                        const today = getLogicalDate();
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        const tomorrow = getLogicalDate(d);
+                        
+                        if (aim.deadline === today) {
+                            deadlineSelect.value = 'today';
+                        } else if (aim.deadline === tomorrow) {
+                            deadlineSelect.value = 'tomorrow';
+                        } else {
+                            // Custom date
+                            deadlineSelect.value = 'custom';
+                            const customInput = document.getElementById('aimCustomDate');
+                            if (customInput) {
+                                customInput.value = aim.deadline;
+                                customInput.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        deadlineSelect.value = 'infinite';
+                    }
+                }
+
+                // Scroll to top of drawer
+                const planPanel = document.getElementById('planPanel');
+                if (planPanel) planPanel.scrollTo({ top: 0, behavior: 'smooth' });
+
+                item.classList.remove('menu-open');
+                wrapper.style.transform = 'translateX(0)';
+                
+                // Visual feedback on the Add button
+                const addBtn = document.getElementById('addAimBtn');
+                if (addBtn) {
+                    addBtn.classList.add('pulse-highlight');
+                    setTimeout(() => addBtn.classList.remove('pulse-highlight'), 2000);
+                }
+            });
+        }
+
+        const shareMilestoneBtn = item.querySelector('.share-milestone-btn');
+        if (shareMilestoneBtn) {
+            shareMilestoneBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleShare('x', 'milestone', {
+                    goal: name,
+                    duration: aim.targetMinutes
+                });
+            });
+        }
 
         item.querySelector('.delete-btn').addEventListener('click', () => {
             removeAim(aim.id);

@@ -198,6 +198,43 @@
             color: var(--text-primary);
         }
 
+        .mood-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .mood-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mood-card span {
+            font-size: 24px;
+        }
+
+        .mood-card label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mood-card:hover {
+            border-color: var(--primary);
+            background: var(--surface-elevated);
+            transform: translateY(-2px);
+        }
+
         .philosophy-banner {
             background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
             padding: 48px;
@@ -350,6 +387,22 @@
                     <h3>Analyze and Adapt</h3>
                     <p>Review your breakdown. With 4 AM rollovers, your night sessions stay with the day they started.</p>
                 </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Choose your Persona</h2>
+            <p>PomoFlow isn't just a tool; it's a companion. Choose an avatar that matches your current mindset or the specific energy you need for your goals.</p>
+            <div class="mood-gallery">
+                <div class="mood-card"><span>🦉</span><label>Sage</label></div>
+                <div class="mood-card"><span>🦊</span><label>Agile</label></div>
+                <div class="mood-card"><span>🐼</span><label>Zen</label></div>
+                <div class="mood-card"><span>🦁</span><label>Persistent</label></div>
+                <div class="mood-card"><span>🤖</span><label>Productive</label></div>
+                <div class="mood-card"><span>🚀</span><label>Ambitious</label></div>
+                <div class="mood-card"><span>🧘</span><label>Mindful</label></div>
+                <div class="mood-card"><span>🎯</span><label>Precise</label></div>
+                <div class="mood-card"><span>💎</span><label>Resilient</label></div>
             </div>
         </section>
 
