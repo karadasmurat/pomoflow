@@ -38,13 +38,13 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
                     </button>
                     <div class="menu-dropdown" id="menuDropdown">
+                        <button class="menu-item" id="focusAreasNavBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                            <span>Focus Areas</span>
+                        </button>
                         <button class="menu-item" id="planNavBtn">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
                             <span>Focus Plan</span>
-                        </button>
-                        <button class="menu-item" id="tasksNavBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-                            <span>Goals</span>
                         </button>
                         <button class="menu-item" id="settingsBtn">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -60,61 +60,70 @@
         </header>
 
         <main class="main-content">
-            <div class="task-overlay" id="taskOverlay"></div>
-            <aside class="panel task-panel" id="taskPanel">
+            <div class="focus-area-overlay" id="focusAreaOverlay"></div>
+            <aside class="panel focus-area-panel" id="focusAreaPanel">
                 <div class="panel-header">
-                    <span>Goals</span>
-                    <button class="panel-close" id="closeTaskPanel" aria-label="Close goals">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                    </button>
-                </div>
-                
-                <div class="task-section-header">Create New Goal</div>
-                <div class="task-input-container">
-                    <div class="task-input-wrapper">
-                        <div class="inline-color-wrapper">
-                            <button type="button" class="selected-color-btn" id="inlineColorBtn" aria-label="Choose color">
-                                <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
-                                <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                            </button>
-                            <div class="color-dropdown" id="inlineColorDropdown">
-                                <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Primary Blue"></button>
-                                <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8" aria-label="Sky Blue"></button>
-                                <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1" aria-label="Indigo"></button>
-                                <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7" aria-label="Violet"></button>
-                                <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899" aria-label="Pink"></button>
-                                <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316" aria-label="Vivid Orange"></button>
-                                <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24" aria-label="Bright Yellow"></button>
-                                <button type="button" class="color-dot" data-color="#64748b" style="background: #64748b" aria-label="Slate"></button>
-                            </div>
-                        </div>
-                        <input type="text" class="task-input" id="taskInput" placeholder="Enter Goal Title...">
-                        <button type="button" class="btn-add" id="addTaskBtn" aria-label="Add goal">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <span>Focus Areas</span>
+                    <div class="panel-header-actions">
+                        <button class="header-toggle-btn" id="toggleFocusAreaCreate" aria-label="Add new focus area" style="margin-right: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </button>
+                        <button class="panel-close" id="closeFocusAreaPanel" aria-label="Close focus areas">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                         </button>
                     </div>
-                    <div class="task-input-wrapper" style="margin-top: 8px;">
-                        <select id="taskCategorySelect" class="task-category-select">
-                            <option value="Uncategorized">Select Category...</option>
-                            <option value="Education & Personal Development">Education & Personal Development</option>
-                            <option value="Health & Wellness">Health & Wellness</option>
-                            <option value="Personal Life & Home">Personal Life & Home</option>
-                            <option value="Work & Career">Work & Career</option>
-                            <option value="Creative & Innovation">Creative & Innovation</option>
-                        </select>
-                    </div>
                 </div>
-
-                <div id="taskSelectHeader" style="display: none;">
-                    <div class="task-section-header">Select a Goal</div>
-                    <div class="task-hint" id="taskHint">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                        Click play to track time on a goal
+                
+                <div class="panel-section-list">
+                    <div class="panel-section-create-wrapper" id="focusAreaCreateWrapper">
+                        <div class="panel-section-create">
+                            <div class="focus-area-input-container">
+                                <div class="focus-area-input-wrapper">
+                                    <div class="inline-color-wrapper">
+                                        <button type="button" class="selected-color-btn" id="inlineColorBtn" aria-label="Choose color">
+                                            <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
+                                            <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                                        </button>
+                                        <div class="color-dropdown" id="inlineColorDropdown">
+                                            <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Primary Blue"></button>
+                                            <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8" aria-label="Sky Blue"></button>
+                                            <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1" aria-label="Indigo"></button>
+                                            <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7" aria-label="Violet"></button>
+                                            <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899" aria-label="Pink"></button>
+                                            <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316" aria-label="Vivid Orange"></button>
+                                            <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24" aria-label="Bright Yellow"></button>
+                                            <button type="button" class="color-dot" data-color="#64748b" style="background: #64748b" aria-label="Slate"></button>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="focus-area-input" id="focusAreaInput" placeholder="Enter Focus Area Title...">
+                                </div>
+                                <div class="focus-area-input-wrapper">
+                                    <select id="focusAreaCategorySelect" class="focus-area-category-select">
+                                        <option value="Uncategorized">Select Category...</option>
+                                        <option value="Education & Personal Development">Education & Personal Development</option>
+                                        <option value="Health & Wellness">Health & Wellness</option>
+                                        <option value="Personal Life & Home">Personal Life & Home</option>
+                                        <option value="Work & Career">Work & Career</option>
+                                        <option value="Creative & Innovation">Creative & Innovation</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn-add" id="addFocusAreaBtn" aria-label="Add focus area">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="task-list-container">
-                    <div class="task-list" id="taskList"></div>
+                    <div id="focusAreaSelectHeader" style="display: none;">
+                        <div class="focus-area-hint" id="focusAreaHint">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            Click play to track time on a focus area
+                        </div>
+                    </div>
+
+                    <div class="focus-area-list-container">
+                        <div class="focus-area-list" id="focusAreaList"></div>
+                    </div>
                 </div>
             </aside>
 
@@ -166,26 +175,26 @@
                 </div>
                 <div aria-live="polite" id="timerAnnouncer"></div>
 
-                <div class="timer-task-display">
-                    <div class="timer-task-container">
-                        <div class="timer-task-main-row">
-                            <span class="task-question" id="taskQuestion">What are you focusing on?</span>
-                            <button class="timer-task-link" id="taskLink">
-                                <span class="timer-task-prefix" id="timerTaskPrefix" style="display: none;">Focusing on:</span>
-                                <span id="timerTask">
-                                    <span class="task-add-icon">
+                <div class="timer-focus-area-display">
+                    <div class="timer-focus-area-container">
+                        <div class="timer-focus-area-main-row">
+                            <span class="focus-area-question" id="focusAreaQuestion">What are you focusing on?</span>
+                            <button class="timer-focus-area-link" id="focusAreaLink">
+                                <span class="timer-focus-area-prefix" id="focusAreaPrefix" style="display: none;">Focusing on:</span>
+                                <span id="focusAreaText">
+                                    <span class="focus-area-add-icon">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                                         </svg>
                                     </span>
-                                    <span class="task-placeholder-text">Goal</span>
+                                    <span class="focus-area-placeholder-text">Focus Area</span>
                                 </span>
-                                <span class="task-clear-icon" id="clearTask" style="display: none;">
+                                <span class="focus-area-clear-icon" id="clearFocusArea" style="display: none;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                                 </span>
                             </button>
                             </div>
-                        <div id="goalProgressHUD" class="goal-progress-hud"></div>
+                        <div id="focusAreaProgressHUD" class="focus-area-progress-hud"></div>
                     </div>
                 </div>
 
@@ -220,7 +229,7 @@
                 </div>
 
                 <div class="keyboard-hint">
-                    <kbd>Space</kbd> Start/Pause &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>N</kbd> Skip &nbsp; <kbd>G</kbd> Goals &nbsp; <kbd>P</kbd> Plan &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes
+                    <kbd>Space</kbd> Start/Pause &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>N</kbd> Skip &nbsp; <kbd>G</kbd> Focus Areas &nbsp; <kbd>P</kbd> Plan &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes
                 </div>
             </section>
 
@@ -243,7 +252,7 @@
                 <div class="history-content-grid">
                     <div class="history-analytics-col">
                         <div class="history-list-header">
-                            <div class="history-list-title">Top Goals</div>
+                            <div class="history-list-title">Top Focus Areas</div>
                         </div>
                         <div class="history-chart" id="historyChart"></div>
                     </div>
@@ -266,9 +275,8 @@
             <div class="panel-header">
                 <span>Focus Plan</span>
                 <div class="panel-header-actions">
-                    <button id="clearAimsBtn" class="clear-all-btn" aria-label="Clear active aims">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                        <span>Clear Active</span>
+                    <button class="header-toggle-btn" id="togglePlanCreate" aria-label="Set new focus aim" style="margin-right: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                     </button>
                     <button class="panel-close" id="closePlanPanel" aria-label="Close daily plan">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -276,57 +284,63 @@
                 </div>
             </div>
 
-            <div class="task-section-header">Set a Focus Aim</div>
-            <div class="aim-input-container">
-                <div class="aim-input-row">
-                    <div class="custom-select" id="customGoalSelect">
-                        <button type="button" class="select-trigger" id="selectTrigger">
-                            <span class="trigger-text">Select Goals...</span>
-                            <span class="selected-count-badge" id="selectedCountBadge" style="display: none;">0</span>
-                            <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                        </button>
-                        <div class="select-dropdown" id="selectDropdown">
-                            <div class="select-search-wrapper">
-                                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                                <input type="text" id="goalSearchInput" class="select-search-input" placeholder="Search goals...">
+            <div class="panel-section-list">
+                <div class="panel-section-create-wrapper" id="planCreateWrapper">
+                    <div class="panel-section-create">
+                        <div class="aim-input-container">
+                            <div class="aim-input-row">
+                                <div class="custom-select" id="customFocusAreaSelect">
+                                    <button type="button" class="select-trigger" id="selectTrigger">
+                                        <span class="trigger-text">Select Focus Areas...</span>
+                                        <span class="selected-count-badge" id="selectedCountBadge" style="display: none;">0</span>
+                                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                                    </button>
+                                    <div class="select-dropdown" id="selectDropdown">
+                                        <div class="select-search-wrapper">
+                                            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                            <input type="text" id="focusAreaSearchInput" class="select-search-input" placeholder="Search focus areas...">
+                                        </div>
+                                        <div class="select-options" id="selectOptions">
+                                            <!-- Options will be populated by JS -->
+                                        </div>
+                                        <div class="select-no-results" id="selectNoResults" style="display: none;">No results found</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="select-options" id="selectOptions">
-                                <!-- Options will be populated by JS -->
+                            <div class="aim-options-row">
+                                <div class="aim-option-group">
+                                    <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="min or h:mm" maxlength="8">
+                                    <span class="aim-divider"></span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                                    <select id="aimDeadlineSelect" class="aim-deadline-select">
+                                        <option value="infinite">Until Done</option>
+                                        <option value="today">Today</option>
+                                        <option value="tomorrow">Tomorrow</option>
+                                        <option value="week">End of Week</option>
+                                        <option value="custom">Pick Date...</option>
+                                    </select>
+                                    <input type="date" id="aimCustomDate" class="aim-custom-date" style="display: none;">
+                                </div>
                             </div>
-                            <div class="select-no-results" id="selectNoResults" style="display: none;">No results found</div>
+                            <button type="button" class="btn-add" id="addAimBtn" aria-label="Save focus aim">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="aim-options-row">
-                    <div class="aim-option-group">
-                        <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="min or h:mm" maxlength="8">
-                        <span class="aim-divider"></span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
-                        <select id="aimDeadlineSelect" class="aim-deadline-select">
-                            <option value="infinite">Until Done</option>
-                            <option value="today">Today</option>
-                            <option value="tomorrow">Tomorrow</option>
-                            <option value="week">End of Week</option>
-                            <option value="custom">Pick Date...</option>
-                        </select>
-                        <input type="date" id="aimCustomDate" class="aim-custom-date" style="display: none;">
+
+                <div class="plan-sections">
+                    <div class="plan-section">
+                        <!-- Today list -->
+                        <div id="todayPlanList" class="plan-list"></div>
+                    </div>
+
+                    <div class="plan-section">
+                        <div class="focus-area-section-header">Reached Targets</div>
+                        <div id="pastPlanList" class="plan-list past"></div>
                     </div>
                 </div>
-                <button type="button" class="btn-add" id="addAimBtn" aria-label="Save focus aim">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-                </button>
             </div>
-<div class="plan-sections">
-    <div class="plan-section">
-        <div class="task-section-header">Active Aims</div>
-        <div id="todayPlanList" class="plan-list"></div>
-    </div>
-
-    <div class="plan-section">
-        <div class="task-section-header">Completed Aims</div>
-        <div id="pastPlanList" class="plan-list past"></div>
-    </div>
-</div>
         </aside>
 
         <footer class="app-footer">
@@ -472,26 +486,32 @@
         <div class="settings-content">
             <div class="settings-section active" id="tab-general">
                 <div class="setting-group">
-                    <label class="setting-label">
-                        <span>Work Duration (minutes)</span>
-                        <span class="setting-value" id="workDurationValue">25 min</span>
-                    </label>
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Work Duration</span>
+                            <span class="setting-value" id="workDurationValue">25 min</span>
+                        </div>
+                    </div>
                     <input type="range" class="setting-slider" id="workDuration" min="1" max="60" value="25">
                 </div>
 
                 <div class="setting-group">
-                    <label class="setting-label">
-                        <span>Short Break Duration (minutes)</span>
-                        <span class="setting-value" id="shortBreakDurationValue">5 min</span>
-                    </label>
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Short Break</span>
+                            <span class="setting-value" id="shortBreakDurationValue">5 min</span>
+                        </div>
+                    </div>
                     <input type="range" class="setting-slider" id="shortBreakDuration" min="1" max="30" value="5">
                 </div>
 
                 <div class="setting-group">
-                    <label class="setting-label">
-                        <span>Long Break Duration (minutes)</span>
-                        <span class="setting-value" id="longBreakDurationValue">15 min</span>
-                    </label>
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Long Break</span>
+                            <span class="setting-value" id="longBreakDurationValue">15 min</span>
+                        </div>
+                    </div>
                     <input type="range" class="setting-slider" id="longBreakDuration" min="1" max="60" value="15">
                 </div>
 
@@ -538,10 +558,12 @@
                 </div>
 
                 <div class="setting-group">
-                    <label class="setting-label">
-                        <span>Sound Volume</span>
-                        <span class="setting-value" id="soundVolumeValue">70%</span>
-                    </label>
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Sound Volume</span>
+                            <span class="setting-value" id="soundVolumeValue">70%</span>
+                        </div>
+                    </div>
                     <input type="range" class="setting-slider" id="soundVolume" min="0" max="100" value="70">
                 </div>
             </div>
@@ -549,21 +571,21 @@
             <div class="settings-section" id="tab-sharing">
                 <div class="setting-group">
                     <div class="setting-label">Sharing Templates</div>
-                    <div class="template-help">Placeholders: {goal}, {duration}, {time}, {xp}</div>
+                    <div class="template-help">Placeholders: {focusArea}, {duration}, {time}, {xp}</div>
                     
                     <div class="template-field">
                         <label>Setting Intent</label>
-                        <textarea id="templateIntent" class="setting-textarea" rows="2" placeholder="Focusing on: {goal}..."></textarea>
+                        <textarea id="templateIntent" class="setting-textarea" rows="2" placeholder="Focusing on: {focusArea}..."></textarea>
                     </div>
                     
                     <div class="template-field">
                         <label>Session Complete</label>
-                        <textarea id="templateSession" class="setting-textarea" rows="2" placeholder="Session complete: {goal}..."></textarea>
+                        <textarea id="templateSession" class="setting-textarea" rows="2" placeholder="Session complete: {focusArea}..."></textarea>
                     </div>
                     
                     <div class="template-field">
-                        <label>Goal Reached</label>
-                        <textarea id="templateMilestone" class="setting-textarea" rows="2" placeholder="Goal reached: {goal}..."></textarea>
+                        <label>Focus Area Reached</label>
+                        <textarea id="templateMilestone" class="setting-textarea" rows="2" placeholder="Focus area target reached: {focusArea}..."></textarea>
                     </div>
 
                     <div class="template-field">
@@ -636,8 +658,8 @@
             </div>
             <div class="session-edit-content">
                 <div class="session-edit-field">
-                    <label>Goal Name</label>
-                    <div id="sessionEditTaskName" class="session-edit-taskname"></div>
+                    <label>Focus Area Name</label>
+                    <div id="sessionEditFocusAreaName" class="session-edit-focus-area-name"></div>
                 </div>
                 <div class="session-edit-field">
                     <label>Duration (minutes)</label>
@@ -651,22 +673,22 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="taskEditModal">
+    <div class="modal-overlay" id="focusAreaEditModal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">Edit Goal</h2>
-                <button class="modal-close" id="closeTaskEdit">
+                <h2 class="modal-title">Edit Focus Area</h2>
+                <button class="modal-close" id="closeFocusAreaEdit">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
             <div class="session-edit-content">
                 <div class="session-edit-field">
-                    <label>Goal Name</label>
-                    <input type="text" id="taskEditName" class="session-edit-input">
+                    <label>Focus Area Name</label>
+                    <input type="text" id="focusAreaEditName" class="session-edit-input">
                 </div>
                 <div class="session-edit-field">
                     <label>Category</label>
-                    <select id="taskEditCategory" class="session-edit-input">
+                    <select id="focusAreaEditCategory" class="session-edit-input">
                         <option value="Uncategorized">Uncategorized</option>
                         <option value="Education & Personal Development">Education & Personal Development</option>
                         <option value="Health & Wellness">Health & Wellness</option>
@@ -676,9 +698,8 @@
                     </select>
                 </div>
                 <div class="session-edit-field">
-                    <label>Goal Color</label>
-
-                    <div class="color-picker" id="taskEditColorPicker">
+                    <label>Focus Area Color</label>
+                    <div class="color-picker" id="focusAreaEditColorPicker">
                         <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Primary Blue"></button>
                         <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8" aria-label="Sky Blue"></button>
                         <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1" aria-label="Indigo"></button>
@@ -691,14 +712,16 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelTaskEdit">Cancel</button>
-                <button class="btn btn-primary" id="saveTaskEdit">Save</button>
+                <button class="btn btn-secondary" id="cancelFocusAreaEdit">Cancel</button>
+                <button class="btn btn-primary" id="saveFocusAreaEdit">Save</button>
             </div>
         </div>
     </div>
 
+
     <script src="js/components/progress-pill.js"></script>
     <script src="js/components/progress-compact.js"></script>
+    <script src="js/components/sliding-card.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

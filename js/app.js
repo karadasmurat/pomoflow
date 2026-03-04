@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
 
 const CURRENT_VERSION = 1;
 
-const DEFAULT_TASKS = [
+const DEFAULT_FOCUS_AREAS = [
     // Education & Personal Development
     { name: "Course Work", category: "Education & Personal Development", color: "#a855f7" },
     { name: "E-learning / Online Courses", category: "Education & Personal Development", color: "#a855f7" },
@@ -58,9 +58,9 @@ let state = {
         soundVolume: 70,
         use12Hour: false,
         shareTemplates: {
-            intent: "🧠 Focusing on {goal} for {duration} mins. Back at {time}! 🚀 #PomoFlow #DeepWork",
-            session: "🎯 Session complete! Focused on {goal} for {duration} mins. Earned {xp} XP! 📈 #PomoFlow",
-            milestone: "🏆 Goal reached! Just hit my target for {goal}! {duration} minutes of deep work completed. 🎯 #PomoFlow #Intentionality",
+            intent: "🧠 Focusing on {focusArea} for {duration} mins. Back at {time}! 🚀 #PomoFlow #DeepWork",
+            session: "🎯 Session complete! Focused on {focusArea} for {duration} mins. Earned {xp} XP! 📈 #PomoFlow",
+            milestone: "🏆 Focus Area target reached! Just hit my target for {focusArea}! {duration} minutes of deep work completed. 🎯 #PomoFlow #Intentionality",
             mood: "Current Mood: {avatar} {mood}\nFocus level: 🎯🎯🎯🎯🎯\nDistractions: 🚫\nIn the zone!\n#flowstate #productivity"
         }
     },
@@ -81,13 +81,14 @@ let state = {
     lastTaskId: null,
     selectedTaskColor: '#58a6ff',
     editTaskColor: '#58a6ff',
-    selectedGoalIds: [],
+    selectedFocusAreaIds: [],
     xp: 0,
     totalXp: 0,
     level: 1,
     avatar: '🦉',
     unlockedAchievements: [],
-    collapsedCategories: []
+    collapsedCategories: [],
+    activeCategoryIndex: 0
 };
 
 const ACHIEVEMENTS = [
@@ -103,6 +104,8 @@ const ACHIEVEMENTS = [
 
 let timerWorker = null;
 let audioContext = null;
+let editingSessionId = null;
+let editingTaskId = null;
 
 function initTimerWorker() {
     if (timerWorker) return;
@@ -157,18 +160,76 @@ function initTimerWorker() {
         console.error('Worker Error:', err);
     };
 }
+
+function toggleTimer() {
+    if (state.timerState.isRunning) pauseTimer();
+    else startTimer();
+}
+
+function startTimer() {
+    if (!audioContext) {
+        try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch (e) { console.warn('AudioContext failed', e); }
+    }
+    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+
+    // Clear any messages when starting
+    const msgEl = document.getElementById('timerMessage');
+    if (msgEl) msgEl.innerHTML = '';
+
+    state.timerState.isRunning = true;
+
+    state.timerState.startTime = Date.now();
+    state.timerState.targetEndTime = Date.now() + (state.timerState.remainingTime * 1000);
+    initTimerWorker();
+    timerWorker.postMessage({ action: 'start', endTime: state.timerState.targetEndTime });
+    updateTimerDisplay();
+    saveData();
+}
+
+function pauseTimer() {
+    state.timerState.isRunning = false;
+    state.timerState.targetEndTime = null;
+    if (timerWorker) timerWorker.postMessage({ action: 'stop' });
+    updateTimerDisplay();
+    saveData();
+}
+
+function resetTimer() {
+    pauseTimer();
+    applyMode(state.timerState.mode);
+}
+
+function applyMode(mode) {
+    state.timerState.mode = mode;
+    let duration = state.settings.workDuration;
+    if (mode === 'shortBreak') duration = state.settings.shortBreakDuration;
+    else if (mode === 'longBreak') duration = state.settings.longBreakDuration;
+    
+    state.timerState.totalTime = duration * 60;
+    state.timerState.remainingTime = duration * 60;
+    updateTimerDisplay();
+    saveData();
+}
+
+function switchMode(mode) {
+    pauseTimer();
+    applyMode(mode);
+}
+
 let currentFilter = 'today';
 let showAllHistory = false;
 
 function init() {
     loadData();
     setupEventListeners();
-    renderTasks();
+    renderFocusAreas();
     renderHistory('today');
     renderPlan();
     updateLevelUI();
 
-    const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');    if (todayBtn) {
+    const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');
+    if (todayBtn) {
         document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
         todayBtn.classList.add('active');
     }
@@ -199,8 +260,8 @@ function loadData() {
             state.avatar = savedProfile.avatar || '🦉';
             state.unlockedAchievements = savedProfile.unlockedAchievements || [];
             state.collapsedCategories = savedProfile.collapsedCategories;
+            state.activeCategoryIndex = savedProfile.activeCategoryIndex !== undefined ? savedProfile.activeCategoryIndex : 0;
             
-            // If collapsedCategories is missing or null (new feature migration), collapse all by default
             if (!state.collapsedCategories) {
                 state.collapsedCategories = [
                     "Education & Personal Development",
@@ -212,7 +273,6 @@ function loadData() {
                 ];
             }
         } else {
-            // Initial setup for new profile
             state.collapsedCategories = [
                 "Education & Personal Development",
                 "Health & Wellness",
@@ -232,8 +292,7 @@ function loadData() {
                 if (!t.color) t.color = '#58a6ff';
             });
         } else {
-            // Initial setup or restored defaults
-            state.tasks = DEFAULT_TASKS.map((t, index) => ({
+            state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
                 id: (Date.now() + index).toString(),
                 name: t.name,
                 category: t.category,
@@ -261,21 +320,6 @@ function loadData() {
             state.aims.forEach(a => {
                 if (!a.createdAt) a.createdAt = new Date().toISOString();
             });
-        } else if (tasks) {
-            // Migration: Move existing dailyAimMinutes to today's aims
-            const today = new Date().toISOString().split('T')[0];
-            state.tasks.forEach(t => {
-                if (t.dailyAimMinutes > 0) {
-                    state.aims.push({
-                        id: Date.now().toString() + '-' + t.id,
-                        goalId: t.id,
-                        date: today,
-                        targetMinutes: t.dailyAimMinutes
-                    });
-                    delete t.dailyAimMinutes;
-                }
-            });
-            saveData();
         }
 
         const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -294,7 +338,6 @@ function loadData() {
             state.timerState = { ...state.timerState, ...timerState };
             if (!state.timerState.cycleStation) state.timerState.cycleStation = 1;
         } else {
-            // No saved state, apply current mode's duration from settings
             const mode = state.timerState.mode;
             let duration = state.settings.workDuration;
             if (mode === 'shortBreak') duration = state.settings.shortBreakDuration;
@@ -323,13 +366,11 @@ function saveData() {
             level: state.level,
             avatar: state.avatar,
             unlockedAchievements: state.unlockedAchievements,
-            collapsedCategories: state.collapsedCategories
+            collapsedCategories: state.collapsedCategories,
+            activeCategoryIndex: state.activeCategoryIndex
         }));
     } catch (e) {
         console.error('Error saving data:', e);
-        if (e.name === 'QuotaExceededError') {
-            alert('Storage is full. Consider clearing old session history.');
-        }
     }
 }
 
@@ -337,11 +378,8 @@ function getLogicalDate(date = new Date()) {
     try {
         const d = (date instanceof Date) ? date : new Date(date);
         if (isNaN(d.getTime())) {
-            // Fallback to now if invalid date provided
             return new Date(Date.now() - (4 * 60 * 60 * 1000)).toISOString().split('T')[0];
         }
-        // Shift the "logical day" by 4 hours. 
-        // This means 00:00 - 03:59 still counts as the previous day.
         const shifted = new Date(d.getTime() - (4 * 60 * 60 * 1000));
         return shifted.toISOString().split('T')[0];
     } catch (e) {
@@ -349,77 +387,46 @@ function getLogicalDate(date = new Date()) {
     }
 }
 
-function getActiveAimForGoal(goalId) {
-    // Find incomplete aims for this goal
-    const aims = state.aims.filter(a => a.goalId === goalId);
+function getActiveAimForFocusArea(focusAreaId) {
+    const aims = state.aims.filter(a => a.focusAreaId === focusAreaId);
     if (aims.length === 0) return null;
-    
-    // An aim is active if its progress is less than 100%
+
     const activeAims = aims.filter(aim => {
         const spent = getTimeSpentOnAim(aim);
         return spent < aim.targetMinutes * 60;
     });
-    
+
     if (activeAims.length === 0) return null;
-    
-    // Return the most recent active one
     return activeAims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 }
 
-function getTodayAimForGoal(goalId) {
-    const aim = getActiveAimForGoal(goalId);
-    return aim ? aim.targetMinutes : 0;
-}
-
-function setTodayAimForGoal(goalId, minutes) {
-    const existingAim = getActiveAimForGoal(goalId);
-    
-    if (minutes <= 0) {
-        if (existingAim) {
-            state.aims = state.aims.filter(a => a.id !== existingAim.id);
-        }
-    } else {
-        if (existingAim) {
-            existingAim.targetMinutes = minutes;
-        } else {
-            state.aims.push({
-                id: Date.now().toString(),
-                goalId: goalId,
-                targetMinutes: minutes,
-                createdAt: new Date().toISOString()
-            });
-        }
-    }
-    saveData();
-}
-
 function getTimeSpentOnAim(aim) {
+
     if (!aim) return 0;
     return state.sessions
-        .filter(s => s.taskId === aim.goalId && new Date(s.timestamp) >= new Date(aim.createdAt))
+        .filter(s => s.taskId === aim.focusAreaId && new Date(s.timestamp) >= new Date(aim.createdAt))
         .reduce((acc, s) => acc + s.duration, 0);
 }
 
-function openTasks() {
-    const taskPanel = document.getElementById('taskPanel');
-    const taskOverlay = document.getElementById('taskOverlay');
+function openFocusAreas() {
+    const focusAreaPanel = document.getElementById('focusAreaPanel');
+    const focusAreaOverlay = document.getElementById('focusAreaOverlay');
     const planPanel = document.getElementById('planPanel');
     const planOverlay = document.getElementById('planOverlay');
     const menuDropdown = document.getElementById('menuDropdown');
 
-    // Close plan if open
     closePlan();
     if (menuDropdown) menuDropdown.classList.remove('open');
 
-    if (taskPanel) taskPanel.classList.add('open');
-    if (taskOverlay) taskOverlay.classList.add('open');
+    if (focusAreaPanel) focusAreaPanel.classList.add('open');
+    if (focusAreaOverlay) focusAreaOverlay.classList.add('open');
 }
 
-function closeTasks() {
-    const taskPanel = document.getElementById('taskPanel');
-    const taskOverlay = document.getElementById('taskOverlay');
-    if (taskPanel) taskPanel.classList.remove('open');
-    if (taskOverlay) taskOverlay.classList.remove('open');
+function closeFocusAreas() {
+    const focusAreaPanel = document.getElementById('focusAreaPanel');
+    const focusAreaOverlay = document.getElementById('focusAreaOverlay');
+    if (focusAreaPanel) focusAreaPanel.classList.remove('open');
+    if (focusAreaOverlay) focusAreaOverlay.classList.remove('open');
 }
 
 function openPlan() {
@@ -428,14 +435,13 @@ function openPlan() {
     const menuDropdown = document.getElementById('menuDropdown');
     const selectDropdown = document.getElementById('selectDropdown');
 
-    // Close tasks if open
-    closeTasks();
+    closeFocusAreas();
     if (menuDropdown) menuDropdown.classList.remove('open');
     if (selectDropdown) selectDropdown.classList.remove('open');
 
-    state.selectedGoalIds = [];
+    state.selectedFocusAreaIds = [];
     updateCustomSelectUI();
-    populateCustomGoalSelect();
+    populateCustomFocusAreaSelect();
     renderPlan();
     if (planPanel) planPanel.classList.add('open');
     if (planOverlay) planOverlay.classList.add('open');
@@ -447,16 +453,17 @@ function closePlan() {
     if (planPanel) planPanel.classList.remove('open');
     if (planOverlay) planOverlay.classList.remove('open');
 }
+
 function resolveTemplate(template, data) {
     let result = template;
-    const goalName = data.goal || 'focus session';
+    const focusAreaName = data.focusArea || 'focus session';
     const duration = data.duration || '25';
     const finishTime = data.time || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
     const xp = data.xp || '0';
     const avatar = data.avatar || state.avatar || '🦉';
     const mood = data.mood || 'Focused';
 
-    result = result.replace(/{goal}/g, goalName);
+    result = result.replace(/{focusArea}/g, focusAreaName);
     result = result.replace(/{duration}/g, duration);
     result = result.replace(/{time}/g, finishTime);
     result = result.replace(/{xp}/g, xp);
@@ -469,9 +476,8 @@ function resolveTemplate(template, data) {
 function handleShare(platform, context = 'intent', customData = {}) {
     const activeTask = state.tasks.find(t => t.id === state.timerState.activeTaskId);
     
-    // Default data for active timer
     const defaultData = {
-        goal: activeTask ? activeTask.name : '',
+        focusArea: activeTask ? activeTask.name : '',
         duration: Math.round(state.timerState.totalTime / 60),
         time: new Date(Date.now() + state.timerState.remainingTime * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour }),
         xp: Math.floor(state.timerState.totalTime / 60) * 10
@@ -496,7 +502,6 @@ function handleShare(platform, context = 'intent', customData = {}) {
         });
     }
     
-    // Close any open expandable groups
     document.querySelectorAll('.expand-group.open').forEach(g => g.classList.remove('open'));
 }
 
@@ -509,7 +514,6 @@ function setupExpandGroups() {
             const group = trigger.closest('.expand-group');
             if (group) {
                 e.stopPropagation();
-                // Close other open groups first
                 openGroups.forEach(g => {
                     if (g !== group) g.classList.remove('open');
                 });
@@ -518,7 +522,6 @@ function setupExpandGroups() {
             }
         }
         
-        // Close all if clicking outside
         if (openGroups.length > 0 && !e.target.closest('.expand-group')) {
             openGroups.forEach(g => g.classList.remove('open'));
         }
@@ -526,270 +529,273 @@ function setupExpandGroups() {
 }
 
 function setupEventListeners() {
-    setupExpandGroups();
+    try { setupExpandGroups(); } catch (e) { console.error(e); }
     
-    const taskLink = document.getElementById('taskLink');
-    const tasksNavBtn = document.getElementById('tasksNavBtn');
-    const closeTaskPanel = document.getElementById('closeTaskPanel');
-    const taskOverlay = document.getElementById('taskOverlay');
-    const taskPanel = document.getElementById('taskPanel');
+    const elements = {
+        focusAreaLink: 'focusAreaLink',
+        focusAreasNavBtn: 'focusAreasNavBtn',
+        closeFocusAreaPanel: 'closeFocusAreaPanel',
+        focusAreaOverlay: 'focusAreaOverlay',
+        planNavBtn: 'planNavBtn',
+        closePlanPanel: 'closePlanPanel',
+        planOverlay: 'planOverlay',
+        menuBtn: 'menuBtn',
+        menuDropdown: 'menuDropdown',
+        headerAvatar: 'headerAvatar',
+        settingsBtn: 'settingsBtn',
+        closeProfileBtn: 'closeProfile',
+        toggleFocusAreaCreate: 'toggleFocusAreaCreate',
+        focusAreaCreateWrapper: 'focusAreaCreateWrapper',
+        togglePlanCreate: 'togglePlanCreate',
+        planCreateWrapper: 'planCreateWrapper',
+        focusAreaInput: 'focusAreaInput',
+        addFocusAreaBtn: 'addFocusAreaBtn',
+        addAimBtn: 'addAimBtn',
+        aimDurationInput: 'aimDurationInput',
+        focusAreaCategorySelect: 'focusAreaCategorySelect',
+        aimDeadlineSelect: 'aimDeadlineSelect',
+        aimCustomDate: 'aimCustomDate',
+        selectTrigger: 'selectTrigger',
+        focusAreaSearchInput: 'focusAreaSearchInput',
+        inlineColorBtn: 'inlineColorBtn',
+        selectedColorCircle: 'selectedColorCircle',
+        inlineColorDropdown: 'inlineColorDropdown',
+        focusAreaEditColorPicker: 'focusAreaEditColorPicker',
+        startPauseBtn: 'startPauseBtn',
+        resetBtn: 'resetBtn',
+        skipBtn: 'skipBtn',
+        clearHistoryBtn: 'clearHistoryBtn',
+        themeToggle: 'themeToggle',
+        closeSettings: 'closeSettings',
+        saveSettings: 'saveSettings',
+        settingsOverlay: 'settingsOverlay',
+        exportData: 'exportData',
+        importFile: 'importFile',
+        importData: 'importData',
+        restoreDefaults: 'restoreDefaults',
+        editPersonaBtn: 'editPersonaBtn',
+        cancelPersonaEdit: 'cancelPersonaEdit',
+        identitySlider: 'identitySlider',
+        closeImport: 'closeImport',
+        importReplace: 'importReplace',
+        importMerge: 'importMerge',
+        importModal: 'importModal',
+        closeSessionEdit: 'closeSessionEdit',
+        cancelSessionEdit: 'cancelSessionEdit',
+        saveSessionEdit: 'saveSessionEdit',
+        sessionEditModal: 'sessionEditModal',
+        sessionEditDuration: 'sessionEditDuration',
+        closeFocusAreaEdit: 'closeFocusAreaEdit',
+        cancelFocusAreaEdit: 'cancelFocusAreaEdit',
+        saveFocusAreaEdit: 'saveFocusAreaEdit',
+        focusAreaEditModal: 'focusAreaEditModal',
+        focusAreaEditName: 'focusAreaEditName',
+        confirmCancel: 'confirmCancel',
+        confirmOk: 'confirmOk',
+        confirmModal: 'confirmModal',
+        clearFocusArea: 'clearFocusArea'
+    };
 
-    const planNavBtn = document.getElementById('planNavBtn');
-    const closePlanPanel = document.getElementById('closePlanPanel');
-    const planOverlay = document.getElementById('planOverlay');
-    const planPanel = document.getElementById('planPanel');
-    const clearAimsBtn = document.getElementById('clearAimsBtn');
+    const el = {};
+    Object.keys(elements).forEach(key => {
+        el[elements[key]] = document.getElementById(elements[key]);
+    });
 
-    const menuBtn = document.getElementById('menuBtn');
-    const menuDropdown = document.getElementById('menuDropdown');
-    const settingsTabs = document.querySelectorAll('.settings-tab');
-    const settingsSections = document.querySelectorAll('.settings-section');
-    const closeProfileBtn = document.getElementById('closeProfile');
-
-    if (closeProfileBtn) {
-        closeProfileBtn.addEventListener('click', closeProfile);
-    }
-
-    if (settingsTabs.length > 0) {
-        settingsTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const targetTab = tab.dataset.tab;
-                
-                settingsTabs.forEach(t => t.classList.remove('active'));
-                settingsSections.forEach(s => s.classList.remove('active'));
-                
-                tab.classList.add('active');
-                const targetEl = document.getElementById(`tab-${targetTab}`);
-                if (targetEl) targetEl.classList.add('active');
-            });
-        });
-    }
-
-    const headerAvatar = document.getElementById('headerAvatar');
-    if (headerAvatar) {
-        headerAvatar.removeEventListener('click', openSettings); // Remove old binding
-        headerAvatar.addEventListener('click', openProfile);
-    }
-
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', openSettings);
-    }
-
-    if (menuBtn && menuDropdown) {
-        menuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            menuDropdown.classList.toggle('open');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
-                menuDropdown.classList.remove('open');
-            }
-        });
-    }
-
-    const shareMoodBtn = document.getElementById('shareMoodBtn');
-    
-    if (shareMoodBtn) {
-        shareMoodBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const activeOption = document.querySelector('.avatar-option.active');
-            const mood = activeOption ? activeOption.getAttribute('title') : 'Focused';
-            handleShare('x', 'mood', {
-                avatar: state.avatar,
-                mood: mood
-            });
-        });
-    }
-
-    if (taskLink) taskLink.addEventListener('click', openTasks);
-    if (tasksNavBtn) tasksNavBtn.addEventListener('click', openTasks);
-    if (planNavBtn) planNavBtn.addEventListener('click', openPlan);
-
-    // Custom Select Event Listeners
-    const selectTrigger = document.getElementById('selectTrigger');
-    if (selectTrigger) {
-        selectTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const dropdown = document.getElementById('selectDropdown');
-            const searchInput = document.getElementById('goalSearchInput');
-            if (dropdown) {
-                dropdown.classList.toggle('open');
-                if (dropdown.classList.contains('open') && searchInput) {
-                    searchInput.value = '';
-                    populateCustomGoalSelect();
-                    searchInput.focus();
-                }
-            }
-        });
-    }
-
-    const goalSearchInput = document.getElementById('goalSearchInput');
-    if (goalSearchInput) {
-        goalSearchInput.addEventListener('input', (e) => {
-            populateCustomGoalSelect(e.target.value);
-        });
-        goalSearchInput.addEventListener('click', (e) => e.stopPropagation());
-    }
-
+    // --- Unified Global Click Handler ---
     document.addEventListener('click', (e) => {
-        const dropdown = document.getElementById('selectDropdown');
-        const customSelect = document.getElementById('customGoalSelect');
-        if (dropdown && !customSelect.contains(e.target)) {
-            dropdown.classList.remove('open');
+        // 1. Hamburger
+        if (el.menuBtn && el.menuDropdown) {
+            if (el.menuBtn.contains(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                el.menuDropdown.classList.toggle('open');
+            } else if (!el.menuDropdown.contains(e.target)) {
+                el.menuDropdown.classList.remove('open');
+            }
+        }
+
+        // 2. Focus Area Search / Custom Select
+        const customSelect = document.getElementById('customFocusAreaSelect');
+        const selectDropdown = document.getElementById('selectDropdown');
+        if (customSelect && selectDropdown) {
+            if (customSelect.contains(e.target)) {
+                // Toggle is handled by el.selectTrigger.onclick
+            } else {
+                selectDropdown.classList.remove('open');
+            }
+        }
+
+        // 3. Inline Color Dropdown
+        if (el.inlineColorBtn && el.inlineColorDropdown) {
+            if (el.inlineColorBtn.contains(e.target)) {
+                // Toggle is handled by el.inlineColorBtn.onclick
+            } else {
+                el.inlineColorDropdown.classList.remove('open');
+            }
+        }
+
+        // 4. Expand Groups (Share menus, etc)
+        const trigger = e.target.closest('.expand-trigger');
+        if (!trigger && !e.target.closest('.expand-group')) {
+            document.querySelectorAll('.expand-group.open').forEach(g => g.classList.remove('open'));
         }
     });
 
-    if (closeTaskPanel) {
-        closeTaskPanel.addEventListener('click', () => {
-            closeTasks();
-        });
-    }
+    if (el.focusAreaLink) el.focusAreaLink.onclick = openFocusAreas;
+    if (el.focusAreasNavBtn) el.focusAreasNavBtn.onclick = openFocusAreas;
+    if (el.planNavBtn) el.planNavBtn.onclick = openPlan;
+    if (el.closeFocusAreaPanel) el.closeFocusAreaPanel.onclick = closeFocusAreas;
+    if (el.focusAreaOverlay) el.focusAreaOverlay.onclick = closeFocusAreas;
+    if (el.closePlanPanel) el.closePlanPanel.onclick = closePlan;
+    if (el.planOverlay) el.planOverlay.onclick = closePlan;
+    if (el.headerAvatar) el.headerAvatar.onclick = openProfile;
+    if (el.settingsBtn) el.settingsBtn.onclick = openSettings;
+    if (el.closeProfileBtn) el.closeProfileBtn.onclick = closeProfile;
 
-    if (taskOverlay) {
-        taskOverlay.addEventListener('click', () => {
-            closeTasks();
-        });
-    }
-
-    if (closePlanPanel) {
-        closePlanPanel.addEventListener('click', () => {
-            closePlan();
-        });
-    }
-
-    if (planOverlay) {
-        planOverlay.addEventListener('click', () => {
-            closePlan();
-        });
-    }
-
-    if (clearAimsBtn) clearAimsBtn.addEventListener('click', clearAims);
-
-    document.getElementById('taskInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addTask();
-    });
-    
-    document.getElementById('addTaskBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        addTask();
+    // Settings Tabs
+    const settingsTabs = document.querySelectorAll('.settings-tab');
+    const settingsSections = document.querySelectorAll('.settings-section');
+    settingsTabs.forEach(tab => {
+        tab.onclick = () => {
+            const targetTab = tab.dataset.tab;
+            settingsTabs.forEach(t => t.classList.remove('active'));
+            settingsSections.forEach(s => s.classList.remove('active'));
+            tab.classList.add('active');
+            const targetEl = document.getElementById(`tab-${targetTab}`);
+            if (targetEl) targetEl.classList.add('active');
+        };
     });
 
-    document.getElementById('addAimBtn').addEventListener('click', addAim);
-    document.getElementById('aimDurationInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addAim();
-    });
-
-    const deadlineSelect = document.getElementById('aimDeadlineSelect');
-    const customDateInput = document.getElementById('aimCustomDate');
-    if (deadlineSelect && customDateInput) {
-        deadlineSelect.addEventListener('change', () => {
-            customDateInput.style.display = deadlineSelect.value === 'custom' ? 'inline-block' : 'none';
-        });
-    }
-
-    const inlineColorBtn = document.getElementById('inlineColorBtn');
-    const selectedColorCircle = document.getElementById('selectedColorCircle');
-    const inlineColorDropdown = document.getElementById('inlineColorDropdown');
-    
-    if (inlineColorBtn && inlineColorDropdown) {
-        inlineColorBtn.addEventListener('click', (e) => {
+    // Toggles
+    if (el.toggleFocusAreaCreate && el.focusAreaCreateWrapper) {
+        el.toggleFocusAreaCreate.onclick = (e) => {
             e.stopPropagation();
-            inlineColorDropdown.classList.toggle('open');
-        });
+            const isOpen = el.focusAreaCreateWrapper.classList.toggle('open');
+            el.toggleFocusAreaCreate.classList.toggle('active', isOpen);
+            if (isOpen && el.focusAreaInput) setTimeout(() => el.focusAreaInput.focus(), 100);
+        };
+    }
 
-        inlineColorDropdown.querySelectorAll('.color-dot').forEach(dot => {
-            dot.addEventListener('click', (e) => {
+    if (el.togglePlanCreate && el.planCreateWrapper) {
+        el.togglePlanCreate.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = el.planCreateWrapper.classList.toggle('open');
+            el.togglePlanCreate.classList.toggle('active', isOpen);
+            if (isOpen && el.aimDurationInput) setTimeout(() => el.aimDurationInput.focus(), 100);
+        };
+    }
+
+    if (el.focusAreaInput) {
+        el.focusAreaInput.onkeypress = (e) => { if (e.key === 'Enter') addFocusArea(); };
+    }
+    if (el.addFocusAreaBtn) {
+        el.addFocusAreaBtn.onclick = (e) => { e.preventDefault(); addFocusArea(); };
+    }
+    if (el.addAimBtn) el.addAimBtn.onclick = addAim;
+    if (el.aimDurationInput) {
+        el.aimDurationInput.onkeypress = (e) => { if (e.key === 'Enter') addAim(); };
+    }
+
+    if (el.focusAreaCategorySelect) {
+        el.focusAreaCategorySelect.onchange = () => {
+            el.focusAreaCategorySelect.classList.toggle('has-value', el.focusAreaCategorySelect.value !== 'Uncategorized');
+        };
+    }
+
+    if (el.aimDeadlineSelect && el.aimCustomDate) {
+        el.aimDeadlineSelect.onchange = () => {
+            el.aimCustomDate.style.display = el.aimDeadlineSelect.value === 'custom' ? 'inline-block' : 'none';
+        };
+    }
+
+    if (el.selectTrigger) {
+        el.selectTrigger.onclick = (e) => {
+            e.stopPropagation();
+            const selectDropdown = document.getElementById('selectDropdown');
+            const searchInput = document.getElementById('focusAreaSearchInput');
+            if (selectDropdown) {
+                const isOpen = selectDropdown.classList.toggle('open');
+                if (isOpen && searchInput) {
+                    searchInput.value = '';
+                    populateCustomFocusAreaSelect();
+                    searchInput.focus();
+                }
+            }
+        };
+    }
+
+    if (el.focusAreaSearchInput) {
+        el.focusAreaSearchInput.oninput = (e) => {
+            populateCustomFocusAreaSelect(e.target.value);
+        };
+        el.focusAreaSearchInput.onclick = (e) => e.stopPropagation();
+    }
+
+    // Color Dropdown
+    if (el.inlineColorBtn && el.inlineColorDropdown) {
+        el.inlineColorBtn.onclick = (e) => {
+            e.stopPropagation();
+            el.inlineColorDropdown.classList.toggle('open');
+        };
+
+        el.inlineColorDropdown.querySelectorAll('.color-dot').forEach(dot => {
+            dot.onclick = (e) => {
                 e.stopPropagation();
                 const color = dot.dataset.color;
                 state.selectedTaskColor = color;
-                if (selectedColorCircle) selectedColorCircle.style.background = color;
-                inlineColorDropdown.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                if (el.selectedColorCircle) el.selectedColorCircle.style.background = color;
+                el.inlineColorDropdown.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
                 dot.classList.add('active');
-                inlineColorDropdown.classList.remove('open');
-            });
-        });
-
-        document.addEventListener('click', () => {
-            inlineColorDropdown.classList.remove('open');
+                el.inlineColorDropdown.classList.remove('open');
+            };
         });
     }
 
-    const editColorPicker = document.getElementById('taskEditColorPicker');
-    if (editColorPicker) {
-        editColorPicker.querySelectorAll('.color-dot').forEach(dot => {
-            dot.addEventListener('click', () => {
-                editColorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-                dot.classList.add('active');
-                state.editTaskColor = dot.dataset.color;
-            });
-        });
-    }
-    
-    document.getElementById('startPauseBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleTimer();
-    });
-    
-    document.getElementById('resetBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        resetTimer();
-    });
-    document.getElementById('skipBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        skipSession();
-    });
-    document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+    // Timer Controls
+    if (el.startPauseBtn) el.startPauseBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); toggleTimer(); };
+    if (el.resetBtn) el.resetBtn.onclick = (e) => { e.preventDefault(); resetTimer(); };
+    if (el.skipBtn) el.skipBtn.onclick = (e) => { e.preventDefault(); skipSession(); };
+    if (el.clearHistoryBtn) el.clearHistoryBtn.onclick = clearHistory;
 
     document.querySelectorAll('.mode-tab').forEach(tab => {
-        tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+        tab.onclick = () => switchMode(tab.dataset.mode);
     });
 
     document.querySelectorAll('.history-filters .filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
             document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentFilter = btn.dataset.filter;
             renderHistory(currentFilter);
-        });
+        };
     });
 
     const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
     if (showAllBtn) {
-        showAllBtn.addEventListener('click', () => {
+        showAllBtn.onclick = () => {
             showAllHistory = !showAllHistory;
             renderHistory(currentFilter);
-        });
+        };
     }
 
-    document.getElementById('settingsBtn').addEventListener('click', openSettings);
-    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-    document.getElementById('closeSettings').addEventListener('click', closeSettings);
-    document.getElementById('saveSettings').addEventListener('click', () => {
-        notify('Settings saved');
-        closeSettings();
-    });
-    document.getElementById('settingsOverlay').addEventListener('click', (e) => {
-        if (e.target.id === 'settingsOverlay') {
-            closeSettings();
-            closeProfile();
-        }
-    });
+    if (el.themeToggle) el.themeToggle.onclick = toggleTheme;
+    if (el.closeSettings) el.closeSettings.onclick = closeSettings;
+    if (el.saveSettings) el.saveSettings.onclick = () => { notify('Settings saved'); closeSettings(); };
+    if (el.settingsOverlay) {
+        el.settingsOverlay.onclick = (e) => {
+            if (e.target.id === 'settingsOverlay') { closeSettings(); closeProfile(); }
+        };
+    }
 
-    document.getElementById('exportData').addEventListener('click', exportData);
-    document.getElementById('importFile').addEventListener('change', handleImportFile);
-    document.getElementById('importData').addEventListener('click', () => {
-        document.getElementById('importFile').click();
-    });
+    if (el.exportData) el.exportData.onclick = exportData;
+    if (el.importFile) el.importFile.onchange = handleImportFile;
+    if (el.importData && el.importFile) el.importData.onclick = () => el.importFile.click();
 
-    const restoreBtn = document.getElementById('restoreDefaults');
-    if (restoreBtn) {
-        restoreBtn.addEventListener('click', async () => {
-            const confirmed = await confirmAction("This will add the 10 default focus areas to your list. Continue?");
+    if (el.restoreDefaults) {
+        el.restoreDefaults.onclick = async () => {
+            const confirmed = await confirmAction("Add default focus areas?");
             if (confirmed) {
-                const newTasks = DEFAULT_TASKS.map((t, index) => ({
+                const newTasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
                     id: (Date.now() + index).toString(),
                     name: t.name,
                     category: t.category,
@@ -798,444 +804,208 @@ function setupEventListeners() {
                     createdAt: new Date().toISOString()
                 }));
                 state.tasks = [...state.tasks, ...newTasks];
-                saveData();
-                renderTasks();
-                notify("Default areas added! 🎯");
+                saveData(); renderFocusAreas(); notify("Default areas added! 🎯");
             }
-        });
+        };
     }
 
-    // Persona Slider Logic
-    const editPersonaBtn = document.getElementById('editPersonaBtn');
-    const cancelPersonaEdit = document.getElementById('cancelPersonaEdit');
-    const identitySlider = document.getElementById('identitySlider');
+    if (el.editPersonaBtn && el.identitySlider) el.editPersonaBtn.onclick = () => el.identitySlider.classList.add('editing');
+    if (el.cancelPersonaEdit && el.identitySlider) el.cancelPersonaEdit.onclick = () => el.identitySlider.classList.remove('editing');
 
-    if (editPersonaBtn && identitySlider) {
-        editPersonaBtn.addEventListener('click', () => {
-            identitySlider.classList.add('editing');
-        });
-    }
-
-    if (cancelPersonaEdit && identitySlider) {
-        cancelPersonaEdit.addEventListener('click', () => {
-            identitySlider.classList.remove('editing');
-        });
-    }
-
-    // Avatar Selection
     document.querySelectorAll('.avatar-option').forEach(opt => {
-        opt.addEventListener('click', () => {
+        opt.onclick = () => {
             state.avatar = opt.dataset.avatar;
             document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
-            
-            // Update visible name in settings
-            const personaName = document.getElementById('currentPersonaName');
-            if (personaName) personaName.textContent = opt.getAttribute('title');
-            
-            saveData();
-            updateLevelUI();
-
-            // Slide back to view mode
-            if (identitySlider) identitySlider.classList.remove('editing');
-        });
+            saveData(); updateLevelUI();
+            if (el.identitySlider) el.identitySlider.classList.remove('editing');
+        };
     });
 
-    document.getElementById('closeImport').addEventListener('click', closeImportModal);
-    document.getElementById('importReplace').addEventListener('click', () => performImport('replace'));
-    document.getElementById('importMerge').addEventListener('click', () => performImport('merge'));
-    document.getElementById('importModal').addEventListener('click', (e) => {
-        if (e.target.id === 'importModal') closeImportModal();
-    });
+    if (el.closeImport) el.closeImport.onclick = closeImportModal;
+    if (el.importReplace) el.importReplace.onclick = () => performImport('replace');
+    if (el.importMerge) el.importMerge.onclick = () => performImport('merge');
+    if (el.importModal) el.importModal.onclick = (e) => { if (e.target.id === 'importModal') closeImportModal(); };
 
-    document.getElementById('closeSessionEdit').addEventListener('click', closeSessionEditModal);
-    document.getElementById('cancelSessionEdit').addEventListener('click', closeSessionEditModal);
-    document.getElementById('saveSessionEdit').addEventListener('click', saveSessionFromModal);
-    document.getElementById('sessionEditModal').addEventListener('click', (e) => {
-        if (e.target.id === 'sessionEditModal') closeSessionEditModal();
-    });
-    document.getElementById('sessionEditDuration').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') saveSessionFromModal();
-        if (e.key === 'Escape') closeSessionEditModal();
-    });
+    if (el.closeSessionEdit) el.closeSessionEdit.onclick = closeSessionEditModal;
+    if (el.cancelSessionEdit) el.cancelSessionEdit.onclick = closeSessionEditModal;
+    if (el.saveSessionEdit) el.saveSessionEdit.onclick = saveSessionFromModal;
+    if (el.sessionEditModal) el.sessionEditModal.onclick = (e) => { if (e.target.id === 'sessionEditModal') closeSessionEditModal(); };
+    if (el.sessionEditDuration) {
+        el.sessionEditDuration.onkeydown = (e) => {
+            if (e.key === 'Enter') saveSessionFromModal();
+            if (e.key === 'Escape') closeSessionEditModal();
+        };
+    }
 
-    document.getElementById('closeTaskEdit').addEventListener('click', closeTaskEditModal);
-    document.getElementById('cancelTaskEdit').addEventListener('click', closeTaskEditModal);
-    document.getElementById('saveTaskEdit').addEventListener('click', saveTaskFromModal);
-    document.getElementById('taskEditModal').addEventListener('click', (e) => {
-        if (e.target.id === 'taskEditModal') closeTaskEditModal();
-    });
-    document.getElementById('taskEditName').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') saveTaskFromModal();
-        if (e.key === 'Escape') closeTaskEditModal();
-    });
+    if (el.closeFocusAreaEdit) el.closeFocusAreaEdit.onclick = closeFocusAreaEditModal;
+    if (el.cancelFocusAreaEdit) el.cancelFocusAreaEdit.onclick = closeFocusAreaEditModal;
+    if (el.saveFocusAreaEdit) el.saveFocusAreaEdit.onclick = saveFocusAreaFromModal;
+    if (el.focusAreaEditModal) el.focusAreaEditModal.onclick = (e) => { if (e.target.id === 'focusAreaEditModal') closeFocusAreaEditModal(); };
+    if (el.focusAreaEditName) {
+        el.focusAreaEditName.onkeydown = (e) => {
+            if (e.key === 'Enter') saveFocusAreaFromModal();
+            if (e.key === 'Escape') closeFocusAreaEditModal();
+        };
+    }
 
-    document.getElementById('confirmCancel').addEventListener('click', () => {
-        closeConfirmModal();
-    });
-    document.getElementById('confirmOk').addEventListener('click', () => {
-        document.getElementById('confirmModal').classList.remove('open');
-        if (confirmResolve) {
-            confirmResolve(true);
-            confirmResolve = null;
-        }
-    });
-    document.getElementById('confirmModal').addEventListener('click', (e) => {
-        if (e.target.id === 'confirmModal') closeConfirmModal();
-    });
+    if (el.confirmCancel) el.confirmCancel.onclick = closeConfirmModal;
+    if (el.confirmOk) {
+        el.confirmOk.onclick = () => {
+            el.confirmModal.classList.remove('open');
+            if (confirmResolve) { confirmResolve(true); confirmResolve = null; }
+        };
+    }
+    if (el.confirmModal) el.confirmModal.onclick = (e) => { if (e.target.id === 'confirmModal') closeConfirmModal(); };
 
-    document.getElementById('clearTask').addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent opening the task panel
-        if (state.timerState.isRunning) {
-             confirmAction('Clearing the goal will reset the timer. Continue?').then(confirmed => {
-                if (confirmed) {
-                    state.timerState.activeTaskId = null;
-                    resetTimer();
-                }
-            });
-        } else {
-            state.timerState.activeTaskId = null;
-            updateTimerDisplay();
-        }
-    });
-
-    document.getElementById('enableNotifications').addEventListener('click', () => {
-        requestNotificationPermission();
-    });
-    document.getElementById('denyNotifications').addEventListener('click', () => {
-        state.notificationPermission = 'denied';
-        localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'denied');
-        const prompt = document.getElementById('notificationPrompt');
-        if (prompt) prompt.style.display = 'none';
-    });
-    document.getElementById('requestNotifyManual').addEventListener('click', () => {
-        requestNotificationPermission();
-    });
-    document.getElementById('testNotify').addEventListener('click', () => {
-        notify('This is a test notification! It works.', 'PomoFlow Test', 'milestone');
-    });
+    if (el.clearFocusArea) {
+        el.clearFocusArea.onclick = (e) => {
+            e.stopPropagation();
+            if (state.timerState.isRunning) {
+                 confirmAction('Clearing the focus area will reset the timer. Continue?').then(confirmed => {
+                    if (confirmed) { state.timerState.activeTaskId = null; resetTimer(); }
+                });
+            } else { state.timerState.activeTaskId = null; updateTimerDisplay(); }
+        };
+    }
 
     document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         if (e.code === 'Space') {
-            e.preventDefault();
-            toggleTimer();
+            e.preventDefault(); toggleTimer();
         } else if (e.key.toLowerCase() === 'r') {
             resetTimer();
         } else if (e.key.toLowerCase() === 'n') {
             skipSession();
         } else if (e.key.toLowerCase() === 'g') {
-            const taskPanel = document.getElementById('taskPanel');
-            if (taskPanel.classList.contains('open')) {
-                closeTasks();
-            } else {
-                openTasks();
-            }
+            const panel = document.getElementById('focusAreaPanel');
+            if (panel && panel.classList.contains('open')) closeFocusAreas(); else openFocusAreas();
         } else if (e.key.toLowerCase() === 'p') {
-            const planPanel = document.getElementById('planPanel');
-            if (planPanel.classList.contains('open')) {
-                closePlan();
-            } else {
-                openPlan();
-            }
-        } else if (e.key === '1') {
-            switchMode('work');
-        } else if (e.key === '2') {
-            switchMode('shortBreak');
-        } else if (e.key === '3') {
-            switchMode('longBreak');
-        }
+            const panel = document.getElementById('planPanel');
+            if (panel && panel.classList.contains('open')) closePlan(); else openPlan();
+        } else if (e.key === '1') switchMode('work');
+        else if (e.key === '2') switchMode('shortBreak');
+        else if (e.key === '3') switchMode('longBreak');
     });
 
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            restoreTimerState();
-        }
+        if (document.visibilityState === 'visible') restoreTimerState();
     });
 }
 
-function switchMode(mode) {
-    if (state.timerState.mode === mode) return;
-    
-    if (state.timerState.isRunning) {
-        confirmAction('Switching modes will reset the current timer. Continue?').then(confirmed => {
-            if (confirmed) {
-                const msgEl = document.getElementById('timerMessage');
-                if (msgEl) msgEl.textContent = '';
-                applyMode(mode);
-            }
-        });
-    } else {
-        const msgEl = document.getElementById('timerMessage');
-        if (msgEl) msgEl.textContent = '';
-        applyMode(mode);
-    }
-}
-
-function applyMode(mode) {
-    state.timerState.mode = mode;
-    state.timerState.isRunning = false;
-    state.timerState.targetEndTime = null;
-    
-    if (mode === 'work') {
-        state.timerState.totalTime = state.settings.workDuration * 60;
-    } else if (mode === 'shortBreak') {
-        state.timerState.totalTime = state.settings.shortBreakDuration * 60;
-    } else if (mode === 'longBreak') {
-        state.timerState.totalTime = state.settings.longBreakDuration * 60;
-    }
-    
-    state.timerState.remainingTime = state.timerState.totalTime;
-    
-    if (timerWorker) {
-        timerWorker.postMessage({ action: 'stop' });
-    }
-    
-    updateTimerDisplay();
-    saveData();
-}
-
-function toggleTimer() {
-    if (state.timerState.isRunning) {
-        pauseTimer();
-    } else {
-        startTimer();
-    }
-}
-
-function startTimer() {
-    if (state.timerState.isRunning) return;
-    
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } else if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-
-    const msgEl = document.getElementById('timerMessage');
-    if (msgEl) msgEl.textContent = '';
-
-    state.timerState.isRunning = true;
-    state.timerState.startTime = state.timerState.startTime || Date.now();
-    state.timerState.targetEndTime = Date.now() + (state.timerState.remainingTime * 1000);
-    
-    updateTimerDisplay();
-    
-    initTimerWorker();
-    if (timerWorker) {
-        timerWorker.postMessage({ 
-            action: 'start', 
-            endTime: state.timerState.targetEndTime 
-        });
-    }
-}
-
-function pauseTimer() {
-    state.timerState.isRunning = false;
-    state.timerState.targetEndTime = null;
-    if (timerWorker) {
-        timerWorker.postMessage({ action: 'stop' });
-    }
-    updateTimerDisplay();
-    saveData();
-}
-
-function resetTimer() {
-    pauseTimer();
-    state.timerState.startTime = null;
-    const msgEl = document.getElementById('timerMessage');
-    if (msgEl) msgEl.textContent = '';
-    applyMode(state.timerState.mode);
-    renderHistory(currentFilter);
-}
-
 function skipSession() {
-    const wasRunning = state.timerState.isRunning || (state.timerState.startTime !== null);
-    if (!wasRunning) {
-        const msgEl = document.getElementById('timerMessage');
-        if (msgEl) msgEl.textContent = '';
-        
-        // Just move to next mode without guidance message
-        let nextMode;
-        if (state.timerState.mode === 'work') {
-            if (state.timerState.cycleStation >= state.settings.sessionsBeforeLongBreak) {
-                nextMode = 'longBreak';
-            } else {
-                nextMode = 'shortBreak';
-            }
-        } else {
-            nextMode = 'work';
-            if (state.timerState.mode === 'longBreak') {
-                state.timerState.cycleStation = 1;
-            } else {
-                state.timerState.cycleStation++;
-            }
-        }
-        applyMode(nextMode);
-    } else {
-        handleSessionComplete(true);
-    }
+    handleSessionComplete(true);
 }
 
 function handleSessionComplete(skipped = false) {
     pauseTimer();
     state.timerState.startTime = null;
+    const currentMode = state.timerState.mode;
+    const wasWork = currentMode === 'work';
     
-    const wasWork = state.timerState.mode === 'work';
-    
+    // Determine next mode based on current station
     let nextMode;
     if (wasWork) {
+        // Just finished a Focus session. The station remains the same for the following break.
         if (state.timerState.cycleStation >= state.settings.sessionsBeforeLongBreak) {
             nextMode = 'longBreak';
         } else {
             nextMode = 'shortBreak';
         }
     } else {
+        // Just finished a break session.
         nextMode = 'work';
+        // Now increment the station for the NEW focus session.
+        if (currentMode === 'longBreak') {
+            state.timerState.cycleStation = 1;
+        } else {
+            state.timerState.cycleStation++;
+        }
     }
 
     const msgEl = document.getElementById('timerMessage');
     if (msgEl) {
-        const finishTime = new Date().toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: state.settings.use12Hour 
-        });
-        
-        const statusMsg = skipped 
-            ? `Skipped ${wasWork ? 'Focus' : 'Break'}` 
-            : `Finished ${wasWork ? 'Focus' : 'Break'} at ${finishTime}`;
-            
-        if (wasWork) {
-            const breakType = nextMode === 'longBreak' ? 'long break' : 'break';
-            msgEl.innerHTML = `<span class="msg-status">${statusMsg}</span><span class="msg-action">Let's start a ${breakType}!</span>`;
-        } else {
-            msgEl.innerHTML = `<span class="msg-status">${statusMsg}</span><span class="msg-action">Let's start focusing!</span>`;
-        }
+        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
+        const status = skipped ? `Skipped ${wasWork ? 'Focus Area' : 'Break'}` : `Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}`;
+        msgEl.innerHTML = `<span class="msg-status">${status}</span><span class="msg-action">Let's start a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}!</span>`;
     }
     
     if (wasWork && !skipped) {
         state.timerState.sessionCount++;
         saveSession();
         updateStats();
-        
-        // Timer Pulse Animation
-        const timerContainer = document.querySelector('.timer-container');
-        if (timerContainer) {
-            timerContainer.classList.add('timer-pulse');
-            setTimeout(() => timerContainer.classList.remove('timer-pulse'), 600);
+        const container = document.querySelector('.timer-container');
+        if (container) {
+            container.classList.add('timer-pulse');
+            setTimeout(() => container.classList.remove('timer-pulse'), 600);
         }
-
         playTone(440, 0.1, 0);
         setTimeout(() => playTone(880, 0.2, 0.1), 100);
-        const duration = state.settings.workDuration * 60;
-        const xpGained = Math.floor(duration / 60) * 10;
-        setTimeout(() => {
-            notify(`Focus session complete! +${xpGained} XP earned 🚀`, 'PomoFlow');
-        }, 500);
+        const xp = Math.floor(state.settings.workDuration) * 10;
+        setTimeout(() => notify(`Focus Area session complete! +${xp} XP earned 🚀`), 500);
     } else if (!wasWork && !skipped) {
-        // Timer Pulse Animation
-        const timerContainer = document.querySelector('.timer-container');
-        if (timerContainer) {
-            timerContainer.classList.add('timer-pulse');
-            setTimeout(() => timerContainer.classList.remove('timer-pulse'), 600);
+        const container = document.querySelector('.timer-container');
+        if (container) {
+            container.classList.add('timer-pulse');
+            setTimeout(() => container.classList.remove('timer-pulse'), 600);
         }
-
         playTone(880, 0.1, 0);
         setTimeout(() => playTone(440, 0.2, 0.1), 100);
-        setTimeout(() => {
-            notify('Break is over! Ready to get back to work?', 'PomoFlow');
-        }, 500);
+        setTimeout(() => notify('Break is over! Ready to focus?'), 500);
     }
+    
+    // Internal applyMode to avoid side effects
+    state.timerState.mode = nextMode;
+    let duration = state.settings.workDuration;
+    if (nextMode === 'shortBreak') duration = state.settings.shortBreakDuration;
+    else if (nextMode === 'longBreak') duration = state.settings.longBreakDuration;
+    
+    state.timerState.totalTime = duration * 60;
+    state.timerState.remainingTime = duration * 60;
+    updateTimerDisplay();
+    saveData();
 
-    if (!wasWork && !skipped) {
-        if (state.timerState.mode === 'longBreak') {
-            state.timerState.cycleStation = 1;
-        } else {
-            state.timerState.cycleStation++;
-        }
-    }
-    
-    applyMode(nextMode);
     renderHistory(currentFilter);
-    
-    const autoStart = (nextMode === 'work' && state.settings.autoStartWork) || 
-                      (nextMode !== 'work' && state.settings.autoStartBreaks);
-                      
-    if (autoStart) {
-        // Delay auto-start slightly to let sounds/animation breathe
-        setTimeout(startTimer, 1500);
-    }
+    if ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks)) setTimeout(startTimer, 1500);
 }
 
 function updateTimerDisplay() {
-    const timeDisplay = document.getElementById('timerTime');
-    const modeDisplay = document.getElementById('timerMode');
+    const timeEl = document.getElementById('timerTime');
+    const modeEl = document.getElementById('timerMode');
     const startPauseText = document.getElementById('startPauseText');
     const playIcon = document.getElementById('playIcon');
     const timerProgress = document.getElementById('timerProgress');
-    const timerTaskDisplay = document.getElementById('timerTask');
-    const timerTaskPrefix = document.getElementById('timerTaskPrefix');
-    const sessionProgress = document.getElementById('sessionProgress');
-    const timerMessage = document.getElementById('timerMessage');
-    const timerDisplay = document.querySelector('.timer-display');
-    const clearTaskBtn = document.getElementById('clearTask');
-    const taskQuestion = document.getElementById('taskQuestion');
+    const textEl = document.getElementById('focusAreaText');
+    const prefixEl = document.getElementById('focusAreaPrefix');
     
-    const hasMsg = timerMessage && timerMessage.textContent.trim() !== '';
-    // ... rest of time formatting ...
+    // Calculate mins and secs from remaining time
+    const remaining = Math.max(0, state.timerState.remainingTime);
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
     
-    const minutes = hasMsg ? 0 : Math.floor(Math.max(0, state.timerState.remainingTime) / 60);
-    const seconds = hasMsg ? 0 : Math.max(0, state.timerState.remainingTime) % 60;
-    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    if (timeEl) timeEl.textContent = timeStr;
+    document.title = `${timeStr} - PomoFlow`;
     
-    if (timeDisplay) timeDisplay.textContent = formattedTime;
-    document.title = `${formattedTime} - PomoFlow`;
-    
-    const modeLabels = {
-        work: '🧠 Focus',
-        shortBreak: '🏖️ Short Break',
-        longBreak: '🏖️ Long Break'
-    };
-    
-    if (modeDisplay) modeDisplay.textContent = modeLabels[state.timerState.mode];
-    
-    if (timerDisplay && timerMessage) {
-        if (hasMsg) {
-            timerDisplay.classList.add('has-message');
-        } else {
-            timerDisplay.classList.remove('has-message');
-        }
-    }
-
+    if (modeEl) modeEl.textContent = state.timerState.mode === 'work' ? '🧠 Focus' : '🏖️ Break';
     const currentStationIndex = (state.timerState.cycleStation || 1) - 1;
-    
+    const sessionProgress = document.getElementById('sessionProgress');
     if (sessionProgress) {
         const dotCount = state.settings.sessionsBeforeLongBreak;
-        const currentDots = sessionProgress.querySelectorAll('.progress-step');
-        
-        if (currentDots.length !== dotCount) {
+        if (sessionProgress.querySelectorAll('.progress-step').length !== dotCount) {
             sessionProgress.innerHTML = '';
             for (let i = 0; i < dotCount; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'progress-step';
-                dot.dataset.step = i + 1;
                 sessionProgress.appendChild(dot);
             }
         }
-
-        const steps = sessionProgress.querySelectorAll('.progress-step');
-        steps.forEach((step, index) => {
+        sessionProgress.querySelectorAll('.progress-step').forEach((step, index) => {
             step.classList.remove('active', 'completed');
-            if (index === currentStationIndex) {
-                step.classList.add('active');
-            } else if (index < currentStationIndex) {
-                step.classList.add('completed');
-            }
+            if (index === currentStationIndex) step.classList.add('active');
+            else if (index < currentStationIndex) step.classList.add('completed');
         });
     }
-    
     if (state.timerState.isRunning) {
         if (startPauseText) startPauseText.textContent = 'Pause';
         if (playIcon) playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
@@ -1245,180 +1015,98 @@ function updateTimerDisplay() {
         if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
         document.body.classList.remove('timer-running');
     }
-    
-    const startPauseBtn = document.getElementById('startPauseBtn');
-    const taskLink = document.getElementById('taskLink');
-    const hudEl = document.getElementById('goalProgressHUD');
-    
+    const hudEl = document.getElementById('focusAreaProgressHUD');
+    const clearBtn = document.getElementById('clearFocusArea');
     if (state.timerState.activeTaskId) {
         const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
         if (task) {
-            if (timerTaskDisplay) {
-                timerTaskDisplay.textContent = task.name;
-                timerTaskDisplay.style.color = task.color;
+            if (textEl) { 
+                textEl.textContent = task.name; 
+                textEl.style.color = task.color; 
+                textEl.title = task.name;
             }
-            if (taskQuestion) taskQuestion.textContent = 'Focusing on:';
-            if (timerTaskPrefix) timerTaskPrefix.style.display = 'none';
-            if (taskLink) taskLink.classList.add('has-task');
-            if (clearTaskBtn) clearTaskBtn.style.display = 'flex';
-            
-            const todayAim = getTodayAimForGoal(task.id);
+            if (prefixEl) prefixEl.style.display = 'none';
+            if (clearBtn) clearBtn.style.display = 'flex';
+            const activeAim = getActiveAimForFocusArea(task.id);
             if (hudEl) {
                 hudEl.style.display = 'block';
-                if (todayAim > 0) {
-                    const todayTime = getTodayTimeForTask(task.id);
-                    const hAim = Math.floor(todayAim / 60);
-                    const mAim = todayAim % 60;
-                    const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
-                    
-                    const progressEl = hudEl.querySelector('progress-compact');
-                    if (progressEl) {
-                        // Update existing element attributes to avoid flicker
-                        progressEl.setAttribute('value', todayTime);
-                        progressEl.setAttribute('max', todayAim * 60);
-                        progressEl.setAttribute('label', aimStr);
-                    } else {
-                        hudEl.innerHTML = `
-                            <progress-compact 
-                                value="${todayTime}" 
-                                max="${todayAim * 60}" 
-                                color="${task.color}" 
-                                label="${aimStr}">
-                            </progress-compact>
-                        `;
-                    }
-                    
-                    hudEl.onclick = (e) => {
-                        e.stopPropagation();
-                        openPlan();
-                        if (state.timerState.activeTaskId) {
-                            state.selectedGoalIds = [state.timerState.activeTaskId];
-                            updateCustomSelectUI();
-                            populateCustomGoalSelect();
-                        }
-                        const durInput = document.getElementById('aimDurationInput');
-                        if (durInput) setTimeout(() => durInput.focus(), 300);
-                    };
+                if (activeAim) {
+                    const spent = getTimeSpentOnAim(activeAim);
+                    const targetMins = activeAim.targetMinutes;
+                    const h = Math.floor(targetMins / 60);
+                    const m = targetMins % 60;
+                    const aimStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                    hudEl.innerHTML = `<progress-compact value="${spent}" max="${targetMins * 60}" color="${task.color}" label="${aimStr}"></progress-compact>`;
                 } else {
-                    // Only update innerHTML if it's not already showing the CTA
-                    if (!hudEl.querySelector('.set-aim-cta')) {
-                        hudEl.innerHTML = `
-                            <div class="set-aim-cta">
-                                <span class="set-aim-text">Set a flexible deadline now.</span>
-                                <div class="info-popover-wrapper">
-                                    <svg class="info-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                                    <div class="info-popover">You can set flexible deadlines to track your goals over days or weeks, keeping your energy aligned with your priorities.</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    
-                    hudEl.onclick = (e) => {
-                        if (e.target.closest('.info-popover-wrapper')) {
-                            e.stopPropagation();
-                            return;
-                        }
-                        e.stopPropagation();
-                        openPlan();
-                        if (state.timerState.activeTaskId) {
-                            state.selectedGoalIds = [state.timerState.activeTaskId];
-                            updateCustomSelectUI();
-                            populateCustomGoalSelect();
-                        }
-                        const durInput = document.getElementById('aimDurationInput');
-                        if (durInput) setTimeout(() => durInput.focus(), 300);
-                    };
+                    if (!hudEl.querySelector('.set-aim-cta')) hudEl.innerHTML = `<div class="set-aim-cta"><span class="set-aim-text">Set a focus aim.</span></div>`;
                 }
-            }
-            
-            if (startPauseBtn) {
-                startPauseBtn.style.color = task.color;
-                const icon = startPauseBtn.querySelector('svg');
-                if (icon) icon.style.fill = task.color;
+                hudEl.onclick = () => {
+                    openPlan();
+                    state.selectedFocusAreaIds = [task.id];
+                    updateCustomSelectUI();
+                    populateCustomFocusAreaSelect();
+                };
             }
         }
     } else {
-        if (taskQuestion) taskQuestion.textContent = 'What are you focusing on?';
-        if (timerTaskDisplay) {
-            timerTaskDisplay.innerHTML = `
-                <span class="task-add-icon">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                </span>
-                <span class="task-placeholder-text">Goal</span>
-            `;
-            timerTaskDisplay.style.color = '';
+        if (textEl) {
+            textEl.innerHTML = '<span class="focus-area-add-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span><span class="focus-area-placeholder-text">Focus Area</span>';
+            textEl.style.color = '';
+            textEl.title = '';
         }
-        if (timerTaskPrefix) timerTaskPrefix.style.display = 'none';
-        if (taskLink) taskLink.classList.remove('has-task');
         if (hudEl) hudEl.style.display = 'none';
-        if (clearTaskBtn) clearTaskBtn.style.display = 'none';
-        
-        if (startPauseBtn) {
-            startPauseBtn.style.color = '';
-            const icon = startPauseBtn.querySelector('svg');
-            if (icon) icon.style.fill = '';
-        }
+        if (clearBtn) clearBtn.style.display = 'none';
     }
-    
     const percent = (state.timerState.remainingTime / state.timerState.totalTime);
     const offset = 282.7 * (1 - percent);
+    const isBreak = state.timerState.mode !== 'work';
+    const modeClass = isBreak ? (state.timerState.mode === 'longBreak' ? 'long-break' : 'break') : 'work';
+    const sessionColor = isBreak ? 'var(--success)' : 'var(--danger)';
+
     if (timerProgress) {
         timerProgress.style.strokeDashoffset = offset;
-        timerProgress.className = 'timer-ring-progress';
-        if (state.timerState.mode === 'work') timerProgress.classList.add('work');
-        if (state.timerState.mode === 'shortBreak') timerProgress.classList.add('break');
-        if (state.timerState.mode === 'longBreak') timerProgress.classList.add('long-break');
+        timerProgress.style.stroke = sessionColor;
+        timerProgress.className = `timer-ring-progress ${modeClass}`;
     }
-
-    if (state.timerState.activeTaskId) {
-        const taskRing = document.getElementById(`taskRing-${state.timerState.activeTaskId}`);
-        if (taskRing) {
-            taskRing.style.strokeDashoffset = offset;
-            taskRing.className = 'task-ring-progress';
-            if (state.timerState.mode === 'work') taskRing.classList.add('work');
-            if (state.timerState.mode === 'shortBreak') taskRing.classList.add('break');
-            if (state.timerState.mode === 'longBreak') taskRing.classList.add('long-break');
-        }
-    }
+    
+    // Update all focus area small rings to match the current mode and its color
+    document.querySelectorAll('.focus-area-ring-progress').forEach(ring => {
+        ring.style.stroke = sessionColor;
+        ring.className = `focus-area-ring-progress ${modeClass}`;
+    });
 }
 
-function addTask() {
-    const input = document.getElementById('taskInput');
-    const categorySelect = document.getElementById('taskCategorySelect');
+function addFocusArea() {
+    const input = document.getElementById('focusAreaInput');
+    const catSelect = document.getElementById('focusAreaCategorySelect');
     const name = input.value.trim();
-    const category = categorySelect.value;
-    
+    const cat = catSelect.value;
     if (name) {
-        const task = {
-            id: Date.now().toString(),
-            name: name,
-            category: category,
-            color: state.selectedTaskColor,
-            completed: false,
-            createdAt: new Date().toISOString(),
-            totalTime: 0
-        };
-        
+        const task = { id: Date.now().toString(), name, category: cat, color: state.selectedTaskColor, completed: false, createdAt: new Date().toISOString(), totalTime: 0 };
         state.tasks.push(task);
         state.lastTaskId = task.id;
         input.value = '';
-        categorySelect.value = 'Uncategorized';
-        saveData();
-        renderTasks();
+        catSelect.value = 'Uncategorized';
+        catSelect.classList.remove('has-value');
         
-        const btn = document.getElementById('addTaskBtn');
-        if (btn) {
-            btn.style.background = 'var(--success)';
-            setTimeout(() => btn.style.background = '', 500);
+        // Auto-collapse
+        const wrapper = document.getElementById('focusAreaCreateWrapper');
+        const btn = document.getElementById('toggleFocusAreaCreate');
+        if (wrapper && btn) {
+            wrapper.classList.remove('open');
+            btn.classList.remove('active');
+        }
+
+        saveData();
+        renderFocusAreas();
+        const addBtn = document.getElementById('addFocusAreaBtn');
+        if (addBtn) {
+            addBtn.style.background = 'var(--success)';
+            setTimeout(() => addBtn.style.background = '', 500);
         }
     } else {
-        const wrapper = document.querySelector('.task-input-wrapper');
-        if (wrapper) {
-            wrapper.classList.add('shake');
-            setTimeout(() => wrapper.classList.remove('shake'), 400);
-        }
+        const w = document.querySelector('.focus-area-input-wrapper');
+        if (w) { w.classList.add('shake'); setTimeout(() => w.classList.remove('shake'), 400); }
     }
 }
 
@@ -1428,427 +1116,214 @@ function formatDurationHM(seconds) {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
-function getTodayTimeForTask(taskId) {
+function getTodayTimeForFocusArea(id) {
     const today = getLogicalDate();
-    return state.sessions
-        .filter(s => s.taskId === taskId && getLogicalDate(new Date(s.timestamp)) === today)
-        .reduce((acc, s) => acc + s.duration, 0);
+    return state.sessions.filter(s => s.taskId === id && getLogicalDate(new Date(s.timestamp)) === today).reduce((acc, s) => acc + s.duration, 0);
 }
 
-function getTotalTimeForTask(taskId) {
-    return state.sessions
-        .filter(s => s.taskId === taskId)
-        .reduce((acc, s) => acc + s.duration, 0);
+function getTotalTimeForFocusArea(id) {
+    return state.sessions.filter(s => s.taskId === id).reduce((acc, s) => acc + s.duration, 0);
 }
 
-function renderTasks() {
-    const list = document.getElementById('taskList');
-    const taskSelectHeader = document.getElementById('taskSelectHeader');
+function renderFocusAreas() {
+    const list = document.getElementById('focusAreaList');
     if (!list) return;
     list.innerHTML = '';
-    
+    state.tasks.forEach(t => {
+        if (!t.category) t.category = 'Uncategorized';
+        if (!t.color) t.color = '#58a6ff';
+        if (t.completed === undefined) t.completed = false;
+    });
     if (state.tasks.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                <p>No goals yet. Add one above to start focusing.</p>
-            </div>
-        `;
-        if (taskSelectHeader) taskSelectHeader.style.display = 'none';
+        list.innerHTML = '<div class="empty-state"><p>No focus areas yet. Add one above!</p></div>';
         return;
     }
-    
-    if (taskSelectHeader) taskSelectHeader.style.display = 'block';
-    
-    const activeTasks = state.tasks.filter(t => !t.completed);
-    const completedTasks = state.tasks.filter(t => t.completed).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    // Group active tasks by category
-    const groupedTasks = activeTasks.reduce((groups, task) => {
-        const cat = task.category || 'Uncategorized';
-        if (!groups[cat]) groups[cat] = [];
-        groups[cat].push(task);
-        return groups;
+
+    const active = state.tasks.filter(t => !t.completed);
+    const completed = state.tasks.filter(t => t.completed);
+    const grouped = active.reduce((acc, t) => {
+        const c = t.category || 'Uncategorized';
+        if (!acc[c]) acc[c] = [];
+        acc[c].push(t);
+        return acc;
     }, {});
 
-    const renderTaskItem = (task) => {
-        const item = document.createElement('div');
-        const isNewSlide = task.id === state.lastTaskId;
+    const icons = { "Education & Personal Development": "🎓", "Health & Wellness": "💪", "Personal Life & Home": "🏠", "Work & Career": "💼", "Creative & Innovation": "🎨", "Completed": "✅", "Uncategorized": "📁" };
+    const order = ["Education & Personal Development", "Health & Wellness", "Personal Life & Home", "Work & Career", "Creative & Innovation", "Uncategorized"];
+    const activeCats = Object.keys(grouped).sort((a, b) => {
+        const ia = order.indexOf(a), ib = order.indexOf(b);
+        return (ia !== -1 && ib !== -1) ? ia - ib : (ia !== -1 ? -1 : (ib !== -1 ? 1 : a.localeCompare(b)));
+    });
 
-        const createdAt = new Date(task.createdAt);
-        const now = new Date();
-        const isRecentlyCreated = (now - createdAt) < (24 * 60 * 60 * 1000);
-        const newBadge = isRecentlyCreated && !task.completed ? '<span class="new-badge">NEW</span>' : '';
+    const categories = [...activeCats];
+    if (completed.length > 0) categories.push('Completed');
 
-        const todaySeconds = getTodayTimeForTask(task.id);
-        const totalSeconds = getTotalTimeForTask(task.id);
-        
-        item.className = `task-item ${isNewSlide ? 'slide-in' : ''} ${task.completed ? 'completed' : ''} ${state.timerState.activeTaskId === task.id ? 'active' : ''}`;
+    // Ensure index is valid
+    if (state.activeCategoryIndex >= categories.length) state.activeCategoryIndex = 0;
 
-        const todayStr = formatDurationHM(todaySeconds);
-        const totalStr = formatDurationHM(totalSeconds);
+    const renderItem = (task) => {
+        const item = document.createElement('sliding-card');
+        const today = getTodayTimeForFocusArea(task.id);
+        const total = getTotalTimeForFocusArea(task.id);
+
+        item.setAttribute('menu-width', '150px');
+        if (state.timerState.activeTaskId === task.id) item.setAttribute('active', '');
+
+        const clockIcon = '<svg viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.7;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
+        const editIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+        const doneIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+        const deleteIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+        const isBreak = state.timerState.mode !== 'work';
+        const modeClass = isBreak ? (state.timerState.mode === 'longBreak' ? 'long-break' : 'break') : 'work';
+        const sessionColor = isBreak ? 'var(--success)' : 'var(--danger)';
 
         item.innerHTML = `
-            <div class="task-menu">
-                <button class="edit-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
-                    <span>Edit</span>
-                </button>
-                <button class="completed-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
-                    <span>${task.completed ? 'Undo' : 'Done'}</span>
-                </button>
-                <button class="danger delete-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Delete</span>
-                </button>
-            </div>
-            <div class="task-slide-wrapper">
-                <button class="task-play-btn" style="color: ${task.color}">
-                    <svg class="task-ring" viewBox="0 0 100 100">
-                        <circle class="task-ring-bg" cx="50" cy="50" r="45"/>
-                        <circle class="task-ring-progress" id="taskRing-${task.id}" cx="50" cy="50" r="45" 
-                                stroke-dasharray="282.7" stroke-dashoffset="${state.timerState.activeTaskId === task.id ? 282.7 * (1 - (state.timerState.remainingTime / state.timerState.totalTime)) : 0}"/>
-                    </svg>
-                    <svg class="task-icon" viewBox="0 0 24 24"><path d="${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'}"/></svg>
-                </button>
-                <div class="task-info">
-                    <div class="task-name">
-                        <span class="task-text" style="color: ${task.color}">${escapeHtml(task.name)}</span>
-                        ${newBadge}
-                    </div>
-                    <div class="task-stats-row">
-                        <div class="task-stat-item">
-                            <span class="stat-label">Today</span>
-                            <span class="stat-value">${todayStr}</span>
-                        </div>
-                        <div class="task-stat-item">
-                            <span class="stat-label">Total</span>
-                            <span class="stat-value">${totalStr}</span>
-                        </div>
-                    </div>
+            <button slot="menu" class="edit-btn">${editIcon}<span>Edit</span></button>
+            <button slot="menu" class="completed-btn">${doneIcon}<span>${task.completed ? 'Undo' : 'Done'}</span></button>
+            <button slot="menu" class="danger delete-btn">${deleteIcon}<span>Delete</span></button>
+            <button slot="indicator" class="focus-area-play-btn" style="color: ${task.color}">
+                <svg class="focus-area-ring" viewBox="0 0 100 100">
+                    <circle class="focus-area-ring-bg" cx="50" cy="50" r="45"></circle>
+                    <circle class="focus-area-ring-progress ${modeClass}" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7" id="focusAreaRing-${task.id}" style="stroke: ${sessionColor}"></circle>
+                </svg>
+                ${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? '⏸' : '▶'}
+            </button>
+            <div class="focus-area-info">
+                <div class="focus-area-name" style="color: ${task.color}" title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</div>
+                <div class="focus-area-stats-row">
+                    <span>${clockIcon}Today: ${formatDurationHM(today)}</span>
+                    <span class="stats-divider">|</span>
+                    <span>${clockIcon}Total: ${formatDurationHM(total)}</span>
                 </div>
-                <button class="task-more">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                </button>
             </div>
         `;
 
-        let startX = 0;
-        let currentTranslate = 0;
-        let isSliding = false;
-        const wrapper = item.querySelector('.task-slide-wrapper');
-        
-        wrapper.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isSliding = true;
-            wrapper.style.transition = 'none';
-        }, {passive: true});
-        
-        wrapper.addEventListener('touchmove', (e) => {
-            if (!isSliding) return;
-            const diff = e.touches[0].clientX - startX;
-            if (diff < 0) {
-                currentTranslate = Math.max(diff, -160);
-                wrapper.style.transform = `translateX(${currentTranslate}px)`;
-            }
-        }, {passive: true});
-        
-        wrapper.addEventListener('touchend', () => {
-            isSliding = false;
-            wrapper.style.transition = 'transform 0.2s ease';
-            if (currentTranslate < -80) {
-                item.classList.add('menu-open');
-                wrapper.style.transform = 'translateX(-160px)';
-            } else {
-                item.classList.remove('menu-open');
-                wrapper.style.transform = 'translateX(0)';
-            }
-            currentTranslate = 0;
-        });
-
-        item.querySelector('.task-more').addEventListener('click', (e) => {
+        item.querySelector('.focus-area-play-btn').addEventListener('click', (e) => {
             e.stopPropagation();
-            const isOpen = item.classList.toggle('menu-open');
-            wrapper.style.transition = 'transform 0.2s ease';
-            wrapper.style.transform = isOpen ? 'translateX(-160px)' : 'translateX(0)';
+            if (state.timerState.activeTaskId === task.id) toggleTimer();
+            else { state.timerState.activeTaskId = task.id; applyMode('work'); startTimer(); }
+            renderFocusAreas(); closeFocusAreas();
         });
-
-        item.querySelector('.task-play-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (state.timerState.activeTaskId === task.id) {
-                toggleTimer();
-            } else {
-                state.timerState.activeTaskId = task.id;
-                applyMode('work');
-                startTimer();
-            }
-            renderTasks();
-            closeTasks();
-        });
-
-        item.querySelector('.task-info').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (state.timerState.activeTaskId !== task.id) {
-                state.timerState.activeTaskId = task.id;
-                applyMode('work');
-                startTimer();
-                renderTasks();
-            }
-            closeTasks();
-        });
-
-        item.querySelector('.edit-btn').addEventListener('click', () => {
-            openTaskEditModal(task);
-            item.classList.remove('menu-open');
-            wrapper.style.transform = 'translateX(0)';
-        });
-
-        item.querySelector('.completed-btn').addEventListener('click', () => {
-            toggleTaskComplete(task.id);
-            item.classList.remove('menu-open');
-            wrapper.style.transform = 'translateX(0)';
-        });
-
-        item.querySelector('.delete-btn').addEventListener('click', () => {
-            deleteTask(task.id);
-        });
-
+        item.querySelector('.edit-btn').addEventListener('click', () => { item.isOpen = false; openFocusAreaEditModal(task); });
+        item.querySelector('.completed-btn').addEventListener('click', () => { item.isOpen = false; toggleFocusAreaComplete(task.id); });
+        item.querySelector('.delete-btn').addEventListener('click', () => { item.isOpen = false; deleteFocusArea(task.id); });
         return item;
     };
 
-    // Define standard category order
-    const categoryOrder = [
-        "Education & Personal Development",
-        "Health & Wellness",
-        "Personal Life & Home",
-        "Work & Career",
-        "Creative & Innovation",
-        "Uncategorized"
-    ];
-
-    // Sort categories based on order
-    const sortedCategories = Object.keys(groupedTasks).sort((a, b) => {
-        const indexA = categoryOrder.indexOf(a);
-        const indexB = categoryOrder.indexOf(b);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.localeCompare(b);
-    });
-
-    sortedCategories.forEach(cat => {
-        const isCollapsed = state.collapsedCategories.includes(cat);
-        const categoryGroup = document.createElement('div');
-        categoryGroup.className = `task-category-group ${isCollapsed ? 'category-collapsed' : ''}`;
+    categories.forEach((cat, idx) => {
+        const isActive = idx === state.activeCategoryIndex;
+        const group = document.createElement('div');
+        group.className = `focus-area-category-group ${isActive ? 'active' : 'collapsed'}`;
         
         const header = document.createElement('div');
-        header.className = 'task-category-header';
+        header.className = `focus-area-category-header ${isActive ? 'active' : ''}`;
         header.innerHTML = `
-            <span>${cat}</span>
-            <svg class="category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+            <div class="category-title-wrapper">
+                <span class="category-icon">${icons[cat] || '📁'}</span>
+                <span>${cat}</span>
+            </div>
+            <svg class="category-chevron" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+            </svg>
         `;
         
-        header.addEventListener('click', () => {
-            const index = state.collapsedCategories.indexOf(cat);
-            if (index > -1) {
-                state.collapsedCategories.splice(index, 1);
-                categoryGroup.classList.remove('category-collapsed');
+        header.onclick = () => {
+            if (state.activeCategoryIndex === idx) {
+                state.activeCategoryIndex = -1; // Toggle off
             } else {
-                state.collapsedCategories.push(cat);
-                categoryGroup.classList.add('category-collapsed');
+                state.activeCategoryIndex = idx;
             }
-            saveData();
-        });
+            saveData(); renderFocusAreas();
+        };
 
+        group.appendChild(header);
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'focus-area-category-wrapper';
+        
         const content = document.createElement('div');
-        content.className = 'task-category-content';
+        content.className = 'focus-area-category-content';
+        
+        if (isActive) {
+            const tasksToShow = cat === 'Completed' ? completed : grouped[cat];
+            if (tasksToShow) tasksToShow.forEach(t => content.appendChild(renderItem(t)));
+        }
 
-        groupedTasks[cat].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(task => {
-            content.appendChild(renderTaskItem(task));
-        });
-
-        categoryGroup.appendChild(header);
-        categoryGroup.appendChild(content);
-        list.appendChild(categoryGroup);
+        contentWrapper.appendChild(content);
+        group.appendChild(contentWrapper);
+        list.appendChild(group);
     });
-
-    if (completedTasks.length > 0) {
-        const cat = 'Completed';
-        const isCollapsed = state.collapsedCategories.includes(cat);
-        const categoryGroup = document.createElement('div');
-        categoryGroup.className = `task-category-group ${isCollapsed ? 'category-collapsed' : ''}`;
-
-        const header = document.createElement('div');
-        header.className = 'task-category-header';
-        header.innerHTML = `
-            <span>${cat}</span>
-            <svg class="category-chevron" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-        `;
-
-        header.addEventListener('click', () => {
-            const index = state.collapsedCategories.indexOf(cat);
-            if (index > -1) {
-                state.collapsedCategories.splice(index, 1);
-                categoryGroup.classList.remove('category-collapsed');
-            } else {
-                state.collapsedCategories.push(cat);
-                categoryGroup.classList.add('category-collapsed');
-            }
-            saveData();
-        });
-
-        const content = document.createElement('div');
-        content.className = 'task-category-content';
-        
-        completedTasks.forEach(task => {
-            content.appendChild(renderTaskItem(task));
-        });
-
-        categoryGroup.appendChild(header);
-        categoryGroup.appendChild(content);
-        list.appendChild(categoryGroup);
-    }
-
-    state.lastTaskId = null;
 }
 
-function toggleTaskComplete(id) {
-    const task = state.tasks.find(t => t.id === id);
-    if (task) {
-        task.completed = !task.completed;
-        if (task.completed && state.timerState.activeTaskId === id) {
+function toggleFocusAreaComplete(id) {
+    const t = state.tasks.find(x => x.id === id);
+    if (t) {
+        t.completed = !t.completed;
+        if (t.completed && state.timerState.activeTaskId === id) {
             state.timerState.activeTaskId = null;
             if (state.timerState.isRunning) pauseTimer();
         }
-        saveData();
-        renderTasks();
+        saveData(); renderFocusAreas();
     }
 }
 
-function deleteTask(id) {
-    confirmAction('Are you sure you want to delete this goal?').then(confirmed => {
-        if (confirmed) {
-            state.tasks = state.tasks.filter(t => t.id !== id);
+function deleteFocusArea(id) {
+    confirmAction('Delete this focus area?').then(conf => {
+        if (conf) {
+            state.tasks = state.tasks.filter(x => x.id !== id);
             if (state.timerState.activeTaskId === id) {
                 state.timerState.activeTaskId = null;
                 if (state.timerState.isRunning) pauseTimer();
             }
-            saveData();
-            renderTasks();
+            saveData(); renderFocusAreas();
         }
     });
 }
 
 function saveSession() {
-    const session = {
-        id: Date.now().toString(),
-        taskId: state.timerState.activeTaskId,
-        taskName: 'Unknown Goal',
-        taskColor: '#58a6ff',
-        duration: state.settings.workDuration * 60,
-        timestamp: new Date().toISOString()
-    };
-
+    const session = { id: Date.now().toString(), taskId: state.timerState.activeTaskId, taskName: 'Unknown Focus Area', taskColor: '#58a6ff', duration: state.settings.workDuration * 60, timestamp: new Date().toISOString() };
     if (state.timerState.activeTaskId) {
-        const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
-        if (task) {
-            task.totalTime += session.duration;
-            session.taskName = task.name;
-            session.taskColor = task.color;
-
-            // Check for Aim Completion Bonus
-            const aim = getActiveAimForGoal(task.id);
-            if (aim && !aim.completedBonusAwarded) {
-                const spentSeconds = getTimeSpentOnAim(aim);
-                const targetSeconds = aim.targetMinutes * 60;
-
-                if (spentSeconds >= targetSeconds) {
-                    aim.completedBonusAwarded = true;
-                    const bonusAmount = 500;
-                    addXP(bonusAmount, true);
-
-                    // Visual feedback for bonus
-                    setTimeout(() => {
-                        const items = document.querySelectorAll('.plan-aim-item');
-                        items.forEach(item => {
-                            if (item.dataset.goalId === task.id) {
-                                const bonusFloat = document.createElement('div');
-                                bonusFloat.className = 'xp-float-bonus';
-                                bonusFloat.textContent = `🎯 +${bonusAmount} XP BONUS`;
-                                item.appendChild(bonusFloat);
-                                setTimeout(() => bonusFloat.remove(), 2000);
-                            }
-                        });
-                    }, 500);
-
-                    notify(`Milestone Reached: +${bonusAmount} XP Bonus!`, 'PomoFlow', 'milestone');
-                }
+        const t = state.tasks.find(x => x.id === state.timerState.activeTaskId);
+        if (t) {
+            t.totalTime += session.duration;
+            session.taskName = t.name;
+            session.taskColor = t.color;
+            const aim = getActiveAimForFocusArea(t.id);
+            if (aim && !aim.completedBonusAwarded && getTimeSpentOnAim(aim) >= aim.targetMinutes * 60) {
+                aim.completedBonusAwarded = true;
+                addXP(500, true);
+                notify(`Milestone: +500 XP!`, 'PomoFlow', 'milestone');
             }
         }
     }
-    
     state.sessions.push(session);
-
-    // Award standard XP: 10 XP per minute focused
-    const xpGained = Math.floor(session.duration / 60) * 10;
-    if (xpGained > 0) {
-        addXP(xpGained);
-    }
-
-    saveData();
-    renderTasks();
-    renderHistory(currentFilter);
-    checkAchievements();
+    const xp = Math.floor(session.duration / 60) * 10;
+    if (xp > 0) addXP(xp);
+    saveData(); renderFocusAreas(); renderHistory(currentFilter); checkAchievements();
 }
 
-function addXP(amount, isBonus = false) {
-    const oldTotalXp = state.totalXp;
-    state.xp += amount;
-    state.totalXp += amount;
-
-    // XP Float Animation
-    const xpDisplay = document.querySelector('.level-xp-display');
-    if (xpDisplay && !isBonus) {
-        const float = document.createElement('span');
-        float.className = 'xp-float';
-        float.textContent = `+${amount} XP`;
-        xpDisplay.appendChild(float);
-        setTimeout(() => float.remove(), 1500);
+function addXP(amt, bonus = false) {
+    const old = state.totalXp;
+    state.xp += amt;
+    state.totalXp += amt;
+    const el = document.querySelector('.level-xp-display');
+    if (el && !bonus) {
+        const f = document.createElement('span');
+        f.className = 'xp-float';
+        f.textContent = `+${amt} XP`;
+        el.appendChild(f);
+        setTimeout(() => f.remove(), 1500);
     }
-
-    const xpToLevel = state.level * 1000;
-    if (state.xp >= xpToLevel) {
-        state.xp -= xpToLevel;
+    if (state.xp >= state.level * 1000) {
+        state.xp -= state.level * 1000;
         state.level++;
-        notify(`LEVEL UP! You are now Level ${state.level}`, 'PomoFlow', 'milestone');
-
-        // Avatar Victory Animation
-        const avatar = document.getElementById('headerAvatar');
-        if (avatar) {
-            avatar.classList.add('avatar-victory');
-            setTimeout(() => avatar.classList.remove('avatar-victory'), 800);
-        }
-
-        // Success sound
-        playTone(523.25, 0.1, 0); // C5
-        setTimeout(() => playTone(659.25, 0.1, 0.1), 100); // E5
-        setTimeout(() => playTone(783.99, 0.2, 0.2), 200); // G5
+        notify(`LEVEL UP! Level ${state.level}`, 'PomoFlow', 'milestone');
+        const av = document.getElementById('headerAvatar');
+        if (av) { av.classList.add('avatar-victory'); setTimeout(() => av.classList.remove('avatar-victory'), 800); }
+        playTone(523.25, 0.1, 0);
     }
-
-    updateLevelUI(oldTotalXp);
-}
-function animateValue(obj, start, end, duration) {
-    let startTimestamp = null;
-    const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.textContent = Math.floor(progress * (end - start) + start).toLocaleString();
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        }
-    };
-    window.requestAnimationFrame(step);
+    updateLevelUI(old);
 }
 
 function updateLevelUI(previousTotalXp = null) {
@@ -1856,195 +1331,101 @@ function updateLevelUI(previousTotalXp = null) {
     const rankEl = document.getElementById('userRank');
     const headerAvatar = document.getElementById('headerAvatar');
     const levelContainer = document.getElementById('levelContainer');
-
     if (!xpEl || !rankEl) return;
-
-    if (previousTotalXp !== null && previousTotalXp !== state.totalXp) {
-        animateValue(xpEl, previousTotalXp, state.totalXp, 500);
-    } else {
-        xpEl.textContent = state.totalXp.toLocaleString();
-    }
-
+    if (previousTotalXp !== null && previousTotalXp !== state.totalXp) animateValue(xpEl, previousTotalXp, state.totalXp, 500);
+    else xpEl.textContent = state.totalXp.toLocaleString();
     if (levelContainer) levelContainer.title = `Level ${state.level}`;
     if (headerAvatar) headerAvatar.textContent = state.avatar || '🦉';
-
-    // Update Profile Panel circular display
     const personaCircle = document.getElementById('personaCircle');
     const currentMoodLabel = document.getElementById('currentMoodLabel');
     if (personaCircle) personaCircle.textContent = state.avatar || '🦉';
     if (currentMoodLabel) {
-        const activeOption = document.querySelector(`.avatar-option[data-avatar="${state.avatar}"]`);
-        if (activeOption) currentMoodLabel.textContent = activeOption.getAttribute('title');
+        const opt = document.querySelector(`.avatar-option[data-avatar="${state.avatar}"]`);
+        if (opt) currentMoodLabel.textContent = opt.getAttribute('title');
     }
-
-    const ranks = [        { min: 1, name: 'Novice' },
-        { min: 5, name: 'Focused' },
-        { min: 10, name: 'Deep Worker' },
-        { min: 20, name: 'Flow State' },
-        { min: 35, name: 'Master' },
-        { min: 50, name: 'Zen Architect' }
-    ];
-
+    const ranks = [{ min: 1, name: 'Novice' }, { min: 5, name: 'Focused' }, { min: 10, name: 'Deep Worker' }, { min: 20, name: 'Flow State' }, { min: 35, name: 'Master' }, { min: 50, name: 'Zen Architect' }];
     const currentRank = [...ranks].reverse().find(r => state.level >= r.min);
     rankEl.textContent = currentRank ? currentRank.name : 'Novice';
+}
+
+function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.textContent = Math.floor(progress * (end - start) + start).toLocaleString();
+        if (progress < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
 }
 
 function renderHistory(filter = 'today') {
     const list = document.getElementById('historyList');
     if (!list) return;
-    
-    // Header HTML
-    const headerHTML = `
-        <div class="history-header-grid sticky-header">
-            <div class="history-header-indicator"></div>
-            <div class="history-header-info">
-                <div>GOAL</div>
-                <div>DURATION</div>
-                <div>CHECKED OFF AT</div>
-            </div>
-            <div class="history-header-more"></div>
-        </div>
-    `;
-
+    const headerHTML = `<div class="history-header-grid sticky-header"><div class="history-header-indicator"></div><div class="history-header-info"><div>FOCUS AREA</div><div>DURATION</div><div>CHECKED OFF AT</div></div><div class="history-header-more"></div></div>`;
     let sessions = filterSessions(state.sessions, filter);
-    
     if (sessions.length === 0) {
         list.innerHTML = headerHTML + '<div class="empty-state"><p>No sessions found for this period.</p></div>';
         renderChart([]);
         return;
     }
-    
     sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     renderChart(sessions);
-    
-    // Clear list but start with header
     list.innerHTML = headerHTML;
-    
     const displaySessions = showAllHistory ? sessions : sessions.slice(0, 4);
-
     displaySessions.forEach(session => {
-        const item = document.createElement('div');
-        item.className = 'history-item slide-in';
-
+        const item = document.createElement('sliding-card');
+        item.setAttribute('menu-width', '100px');
         const timeStr = formatTimestamp(new Date(session.timestamp));
         const durationMin = Math.round(session.duration / 60);
+        
+        const editIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+        const deleteIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
 
         item.innerHTML = `
-            <div class="history-menu">
-                <button class="edit-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
-                    <span>Edit</span>
-                </button>
-                <button class="danger delete-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Delete</span>
-                </button>
-            </div>
-            <div class="history-slide-wrapper">
-                <div class="history-type-indicator" style="background: ${session.taskColor || '#58a6ff'}"></div>
-                <div class="history-info">
-                    <div class="history-task">${escapeHtml(session.taskName)}</div>
-                    <div class="history-duration">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                        ${durationMin} min
-                    </div>
-                    <div class="history-time">${timeStr}</div>
-                </div>
-                <button class="history-more">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                </button>
+            <button slot="menu" class="edit-btn">${editIcon}<span>Edit</span></button>
+            <button slot="menu" class="danger delete-btn">${deleteIcon}<span>Delete</span></button>
+            <div slot="indicator" class="history-type-indicator" style="background: ${session.taskColor || '#58a6ff'}"></div>
+            <div class="history-info">
+                <div class="history-focus-area" title="${escapeHtml(session.taskName)}">${escapeHtml(session.taskName)}</div>
+                <div class="history-duration">${durationMin} min</div>
+                <div class="history-time">${timeStr}</div>
             </div>
         `;
-
-        let startX = 0;
-        let currentTranslate = 0;
-        let isSliding = false;
-        const wrapper = item.querySelector('.history-slide-wrapper');
-
-        wrapper.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isSliding = true;
-            wrapper.style.transition = 'none';
-        }, {passive: true});
-
-        wrapper.addEventListener('touchmove', (e) => {
-            if (!isSliding) return;
-            const diff = e.touches[0].clientX - startX;
-            if (diff < 0) {
-                currentTranslate = Math.max(diff, -120);
-                wrapper.style.transform = `translateX(${currentTranslate}px)`;
-            }
-        }, {passive: true});
-
-        wrapper.addEventListener('touchend', () => {
-            isSliding = false;
-            wrapper.style.transition = 'transform 0.2s ease';
-            if (currentTranslate < -60) {
-                item.classList.add('menu-open');
-                wrapper.style.transform = 'translateX(-120px)';
-            } else {
-                item.classList.remove('menu-open');
-                wrapper.style.transform = 'translateX(0)';
-            }
-            currentTranslate = 0;
-        });
-
-        item.querySelector('.history-more').addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isOpen = item.classList.toggle('menu-open');
-            wrapper.style.transition = 'transform 0.2s ease';
-            wrapper.style.transform = isOpen ? 'translateX(-120px)' : 'translateX(0)';
-        });
-
-        item.querySelector('.edit-btn').addEventListener('click', () => {
-            openSessionEditModal(session);
-            item.classList.remove('menu-open');
-            wrapper.style.transform = 'translateX(0)';
-        });
-
-        item.querySelector('.delete-btn').addEventListener('click', () => {
-            deleteSession(session.id);
-        });
-
+        
+        item.querySelector('.edit-btn').addEventListener('click', () => { item.isOpen = false; openSessionEditModal(session); });
+        item.querySelector('.delete-btn').addEventListener('click', () => { item.isOpen = false; deleteSession(session.id); });
         list.appendChild(item);
     });
-
     const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
     if (showAllBtn) {
-        const filterIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39A.998.998 0 0 0 20.95 4H3.04a.998.998 0 0 0-.79 1.61z"/></svg>`;
-        showAllBtn.innerHTML = showAllHistory ? 
-            `${filterIcon} Show Less` : 
-            `${filterIcon} Show All`;
         showAllBtn.style.display = sessions.length > 4 ? 'flex' : 'none';
-    }}
+        showAllBtn.innerHTML = showAllHistory ? 'Show Less' : 'Show All';
+    }
+}
 
 function filterSessions(sessions, filter) {
     const now = new Date();
-    
     if (filter === 'today') {
         const today = getLogicalDate(now);
         return sessions.filter(s => getLogicalDate(new Date(s.timestamp)) === today);
     } else if (filter === 'week') {
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const weekAgo = todayStart - (7 * 24 * 60 * 60 * 1000);
+        const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - (7 * 24 * 60 * 60 * 1000);
         return sessions.filter(s => new Date(s.timestamp).getTime() >= weekAgo);
     }
     return sessions;
 }
 
 function deleteSession(id) {
-    confirmAction('Delete this session record?').then(confirmed => {
-        if (confirmed) {
-            const session = state.sessions.find(s => s.id === id);
-            if (session && session.taskId) {
-                const task = state.tasks.find(t => t.id === session.taskId);
-                if (task) task.totalTime = Math.max(0, task.totalTime - session.duration);
+    confirmAction('Delete session record?').then(conf => {
+        if (conf) {
+            const s = state.sessions.find(x => x.id === id);
+            if (s && s.taskId) {
+                const t = state.tasks.find(x => x.id === s.taskId);
+                if (t) t.totalTime = Math.max(0, t.totalTime - s.duration);
             }
-            state.sessions = state.sessions.filter(s => s.id !== id);
-            saveData();
-            renderTasks();
-            renderHistory(currentFilter);
-            updateStats();
+            state.sessions = state.sessions.filter(x => x.id !== id);
+            saveData(); renderFocusAreas(); renderHistory(currentFilter); updateStats();
         }
     });
 }
@@ -2052,15 +1433,13 @@ function deleteSession(id) {
 function updateStats() {
     const today = getLogicalDate();
     const todaySessions = state.sessions.filter(s => getLogicalDate(new Date(s.timestamp)) === today);
-    const totalSeconds = todaySessions.reduce((acc, s) => acc + s.duration, 0);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    
-    const todayFocusTime = document.getElementById('todayFocusTime');
-    if (todayFocusTime) todayFocusTime.textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-    const todaySessionsEl = document.getElementById('todaySessions');
-    if (todaySessionsEl) todaySessionsEl.textContent = todaySessions.length;
-    
+    const totalSecs = todaySessions.reduce((acc, s) => acc + s.duration, 0);
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const todayTimeEl = document.getElementById('todayFocusTime');
+    if (todayTimeEl) todayTimeEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    const todaySessEl = document.getElementById('todaySessions');
+    if (todaySessEl) todaySessEl.textContent = todaySessions.length;
     const streak = calculateStreak(state.sessions);
     const streakEl = document.getElementById('currentStreak');
     if (streakEl) streakEl.textContent = streak > 0 ? `${streak} days` : '--';
@@ -2068,15 +1447,9 @@ function updateStats() {
 
 function calculateStreak(sessions) {
     if (sessions.length === 0) return 0;
-    // Map sessions to logical dates to preserve streak for late-night workers
-    const dates = [...new Set(sessions.map(s => getLogicalDate(new Date(s.timestamp))))]
-        .map(d => new Date(d))
-        .sort((a, b) => b - a);
-    let streak = 0;
-    let currentDateStr = getLogicalDate();
-    let currentDate = new Date(currentDateStr);
-    
-    if (Math.floor((currentDate - dates[0]) / 86400000) > 1) return 0;
+    const dates = [...new Set(sessions.map(s => getLogicalDate(new Date(s.timestamp))))].map(d => new Date(d)).sort((a, b) => b - a);
+    let streak = 0; let cur = new Date(getLogicalDate());
+    if (Math.floor((cur - dates[0]) / 86400000) > 1) return 0;
     for (let i = 0; i < dates.length; i++) {
         if (i === 0) { streak = 1; continue; }
         if (Math.floor((dates[i-1] - dates[i]) / 86400000) === 1) streak++;
@@ -2088,90 +1461,64 @@ function calculateStreak(sessions) {
 function renderChart(sessions) {
     const container = document.getElementById('historyChart');
     if (!container) return;
-    container.innerHTML = '';
-    if (sessions.length === 0) return;
-    
-    const taskData = {};
+    container.innerHTML = ''; if (sessions.length === 0) return;
+    const data = {};
     sessions.forEach(s => {
-        if (!taskData[s.taskName]) taskData[s.taskName] = { time: 0, color: s.taskColor || '#58a6ff' };
-        taskData[s.taskName].time += s.duration;
+        if (!data[s.taskName]) data[s.taskName] = { time: 0, color: s.taskColor || '#58a6ff' };
+        data[s.taskName].time += s.duration;
     });
-    
-    const topTasks = Object.entries(taskData).sort((a, b) => b[1].time - a[1].time).slice(0, 5);
-    const totalTime = sessions.reduce((acc, s) => acc + s.duration, 0);
-    const chartSize = 140;
-    const center = chartSize / 2;
-    const radius = 60;
-    let currentAngle = 0;
-    
+    const top = Object.entries(data).sort((a, b) => b[1].time - a[1].time).slice(0, 5);
+    const total = sessions.reduce((acc, s) => acc + s.duration, 0);
+    const chartSize = 140; const center = chartSize / 2; const radius = 60; let curAngle = 0;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', `0 0 ${chartSize} ${chartSize}`);
     svg.classList.add('pie-chart');
-    
-    topTasks.forEach(([name, data]) => {
-        const sliceAngle = (data.time / totalTime) * 360;
-        if (sliceAngle >= 359.9) {
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', center); circle.setAttribute('cy', center);
-            circle.setAttribute('r', radius); circle.setAttribute('fill', data.color);
-            svg.appendChild(circle); return;
+    top.forEach(([name, d]) => {
+        const slice = (d.time / total) * 360;
+        if (slice >= 359.9) {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', center); c.setAttribute('cy', center); c.setAttribute('r', radius); c.setAttribute('fill', d.color);
+            svg.appendChild(c); return;
         }
-        const x1 = center + radius * Math.cos(Math.PI * (currentAngle - 90) / 180);
-        const y1 = center + radius * Math.sin(Math.PI * (currentAngle - 90) / 180);
-        currentAngle += sliceAngle;
-        const x2 = center + radius * Math.cos(Math.PI * (currentAngle - 90) / 180);
-        const y2 = center + radius * Math.sin(Math.PI * (currentAngle - 90) / 180);
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
-        path.setAttribute('fill', data.color); svg.appendChild(path);
+        const x1 = center + radius * Math.cos(Math.PI * (curAngle - 90) / 180);
+        const y1 = center + radius * Math.sin(Math.PI * (curAngle - 90) / 180);
+        curAngle += slice;
+        const x2 = center + radius * Math.cos(Math.PI * (curAngle - 90) / 180);
+        const y2 = center + radius * Math.sin(Math.PI * (curAngle - 90) / 180);
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('d', `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${slice > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
+        p.setAttribute('fill', d.color); svg.appendChild(p);
     });
-    
     const wrapper = document.createElement('div');
-    wrapper.className = 'pie-chart-container';
-    wrapper.appendChild(svg);
+    wrapper.className = 'pie-chart-container'; wrapper.appendChild(svg);
     const legend = document.createElement('div');
     legend.className = 'pie-legend';
-    topTasks.forEach(([name, data]) => {
+    top.forEach(([name, d]) => {
         const item = document.createElement('div');
         item.className = 'legend-item';
-        item.innerHTML = `<div class="legend-color" style="background: ${data.color}"></div><div class="legend-label">${escapeHtml(name)}</div><div class="legend-value">${Math.round(data.time/60)}m (${Math.round(data.time/totalTime*100)}%)</div>`;
+        item.innerHTML = `<div class="legend-color" style="background: ${d.color}"></div><div class="legend-label">${escapeHtml(name)}</div><div class="legend-value">${Math.round(d.time/60)}m (${Math.round(d.time/total*100)}%)</div>`;
         legend.appendChild(item);
     });
-    wrapper.appendChild(legend);
-    container.appendChild(wrapper);
+    wrapper.appendChild(legend); container.appendChild(wrapper);
 }
 
 function updateDateTime() {
-    const el = document.getElementById('datetime');
-    if (!el) return;
+    const el = document.getElementById('datetime'); if (!el) return;
     const now = new Date();
     const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour };
     el.textContent = now.toLocaleDateString('en-US', options).replace(',', '');
 }
 
 function formatTimestamp(date) {
-    return date.toLocaleString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: state.settings.use12Hour 
-    });
+    return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
 }
 
 function openProfile() {
     const profilePanel = document.getElementById('profilePanel');
     const settingsOverlay = document.getElementById('settingsOverlay');
     if (!profilePanel || !settingsOverlay) return;
-
-    // Close other panels
-    closeTasks();
-    closePlan();
-    document.getElementById('settingsPanel').classList.remove('open');
-
-    renderAchievements();
-    profilePanel.classList.add('open');
-    settingsOverlay.classList.add('open');
+    closeFocusAreas(); closePlan(); document.getElementById('settingsPanel').classList.remove('open');
+    renderAchievements(); profilePanel.classList.add('open'); settingsOverlay.classList.add('open');
 }
 
 function closeProfile() {
@@ -2182,107 +1529,56 @@ function closeProfile() {
 }
 
 function renderAchievements() {
-    const grid = document.getElementById('achievementsGrid');
-    if (!grid) return;
-
+    const grid = document.getElementById('achievementsGrid'); if (!grid) return;
     grid.innerHTML = '';
     ACHIEVEMENTS.forEach(achievement => {
         const unlocked = state.unlockedAchievements.find(ua => ua.id === achievement.id);
         const badge = document.createElement('div');
-        
-        let icon = achievement.icon;
-        let name = achievement.name;
-        let desc = achievement.desc;
-        
-        if (!unlocked && achievement.hidden) {
-            icon = '❓';
-            name = 'Secret';
-            desc = 'Keep focusing to discover...';
-        }
-
+        let icon = achievement.icon; let name = achievement.name; let desc = achievement.desc;
+        if (!unlocked && achievement.hidden) { icon = '❓'; name = 'Secret'; desc = 'Keep focusing to discover...'; }
         badge.className = `achievement-badge ${unlocked ? 'unlocked' : 'locked'} ${!unlocked && achievement.hidden ? 'hidden' : ''}`;
-        
-        badge.innerHTML = `
-            <div class="badge-icon">${icon}</div>
-            <div class="badge-name">${name}</div>
-            <div class="badge-desc">${desc}</div>
-            ${unlocked ? `<div class="badge-date">${new Date(unlocked.date).toLocaleDateString('en-US', {month:'short', day:'numeric'})}</div>` : ''}
-        `;
-        
+        badge.innerHTML = `<div class="badge-icon">${icon}</div><div class="badge-name">${name}</div><div class="badge-desc">${desc}</div>${unlocked ? `<div class="badge-date">${new Date(unlocked.date).toLocaleDateString('en-US', {month:'short', day:'numeric'})}</div>` : ''}`;
         grid.appendChild(badge);
     });
 }
 
 function checkAchievements() {
-    const newUnlocks = [];
     const totalFocusMinutes = state.sessions.reduce((acc, s) => acc + s.duration, 0) / 60;
     const totalAimsReached = state.aims.filter(aim => getTimeSpentOnAim(aim) >= aim.targetMinutes * 60).length;
-    const currentStreak = parseInt(document.getElementById('currentStreak')?.textContent) || 0;
-
+    const currentStreak = calculateStreak(state.sessions);
     const tryUnlock = (id, condition) => {
         if (!state.unlockedAchievements.find(ua => ua.id === id) && condition) {
             const achievement = ACHIEVEMENTS.find(a => a.id === id);
             const unlock = { id, date: new Date().toISOString() };
             state.unlockedAchievements.push(unlock);
-            newUnlocks.push(achievement);
-            
-            // Big XP Bonus
-            let bonus = 100;
-            if (achievement.type === 'silver') bonus = 250;
-            if (achievement.type === 'gold') bonus = 500;
-            if (achievement.type === 'special') bonus = 300;
-            addXP(bonus, true);
+            let bonus = achievement.type === 'silver' ? 250 : (achievement.type === 'gold' ? 500 : (achievement.type === 'special' ? 300 : 100));
+            addXP(bonus, true); notify(`Achievement Unlocked: ${achievement.name}! 🏆`, 'PomoFlow', 'milestone');
         }
     };
-
     tryUnlock('first_steps', state.sessions.length >= 1);
     tryUnlock('habitual', currentStreak >= 3);
     tryUnlock('deep_diver', totalFocusMinutes >= 600);
     tryUnlock('unstoppable', totalFocusMinutes >= 6000);
     tryUnlock('architect', totalAimsReached >= 10);
-    
-    // Hidden ones
-    const now = new Date();
-    const hour = now.getHours();
-    tryUnlock('night_owl', hour >= 0 && hour < 4 && state.timerState.isRunning === false); // Triggered after session end
-    tryUnlock('early_bird', hour >= 4 && hour < 7 && state.timerState.isRunning === false);
-
-    if (newUnlocks.length > 0) {
-        saveData();
-        newUnlocks.forEach(ach => {
-            notify(`Achievement Unlocked: ${ach.name}! 🏆`, 'PomoFlow', 'milestone');
-        });
-    }
+    const hour = new Date().getHours();
+    tryUnlock('night_owl', hour >= 0 && hour < 4 && !state.timerState.isRunning);
+    tryUnlock('early_bird', hour >= 4 && hour < 7 && !state.timerState.isRunning);
+    saveData();
 }
 
 function openSettings() {
-    const panel = document.getElementById('settingsPanel');
-    const overlay = document.getElementById('settingsOverlay');
-    if (!panel || !overlay) return;
-    
-    const menuDropdown = document.getElementById('menuDropdown');
-    if (menuDropdown) menuDropdown.classList.remove('open');
-
-    // Close other panels
-    closeTasks();
-    closePlan();
-
-    // Reset tabs to general
+    const p = document.getElementById('settingsPanel');
+    const o = document.getElementById('settingsOverlay');
+    const m = document.getElementById('menuDropdown'); if (m) m.classList.remove('open');
+    closeFocusAreas(); closePlan();
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'general'));
     document.querySelectorAll('.settings-section').forEach(s => s.classList.toggle('active', s.id === 'tab-general'));
-
-    panel.classList.add('open');
-
-    overlay.classList.add('open');
-    
-    // Load sharing templates
+    p.classList.add('open'); o.classList.add('open');
     document.getElementById('templateIntent').value = state.settings.shareTemplates.intent;
     document.getElementById('templateSession').value = state.settings.shareTemplates.session;
     document.getElementById('templateMilestone').value = state.settings.shareTemplates.milestone;
     document.getElementById('templateMood').value = state.settings.shareTemplates.mood;
-
     document.getElementById('workDuration').value = state.settings.workDuration;
-
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('shortBreakDurationValue').textContent = `${state.settings.shortBreakDuration} min`;
@@ -2297,9 +1593,9 @@ function openSettings() {
 }
 
 function closeSettings() {
-    document.getElementById('settingsPanel').classList.remove('open');
-    document.getElementById('settingsOverlay').classList.remove('open');
-    
+    const p = document.getElementById('settingsPanel');
+    const o = document.getElementById('settingsOverlay');
+    p.classList.remove('open'); o.classList.remove('open');
     state.settings.workDuration = parseInt(document.getElementById('workDuration').value);
     state.settings.shortBreakDuration = parseInt(document.getElementById('shortBreakDuration').value);
     state.settings.longBreakDuration = parseInt(document.getElementById('longBreakDuration').value);
@@ -2308,23 +1604,18 @@ function closeSettings() {
     state.settings.autoStartWork = document.getElementById('autoStartWork').classList.contains('active');
     state.settings.use12Hour = document.getElementById('timeFormat').classList.contains('active');
     state.settings.soundVolume = parseInt(document.getElementById('soundVolume').value);
-    
-    // Save templates
     state.settings.shareTemplates.intent = document.getElementById('templateIntent').value;
     state.settings.shareTemplates.session = document.getElementById('templateSession').value;
     state.settings.shareTemplates.milestone = document.getElementById('templateMilestone').value;
     state.settings.shareTemplates.mood = document.getElementById('templateMood').value;
-
-    saveData();
-    if (!state.timerState.isRunning) applyMode(state.timerState.mode);
-    updateDateTime();
+    saveData(); if (!state.timerState.isRunning) applyMode(state.timerState.mode); updateDateTime();
 }
 
 let confirmResolve = null;
-function confirmAction(message) {
-    document.getElementById('confirmMessage').textContent = message;
+function confirmAction(msg) {
+    document.getElementById('confirmMessage').textContent = msg;
     document.getElementById('confirmModal').classList.add('open');
-    return new Promise(resolve => { confirmResolve = resolve; });
+    return new Promise(res => { confirmResolve = res; });
 }
 
 function closeConfirmModal() {
@@ -2333,11 +1624,10 @@ function closeConfirmModal() {
     confirmResolve = null;
 }
 
-let editingSessionId = null;
-function openSessionEditModal(session) {
-    editingSessionId = session.id;
-    document.getElementById('sessionEditTaskName').textContent = session.taskName;
-    document.getElementById('sessionEditDuration').value = Math.round(session.duration / 60);
+function openSessionEditModal(s) {
+    editingSessionId = s.id;
+    document.getElementById('sessionEditFocusAreaName').textContent = s.taskName;
+    document.getElementById('sessionEditDuration').value = Math.round(s.duration / 60);
     document.getElementById('sessionEditModal').classList.add('open');
 }
 
@@ -2347,121 +1637,78 @@ function closeSessionEditModal() {
 }
 
 function saveSessionFromModal() {
-    const duration = parseInt(document.getElementById('sessionEditDuration').value);
-    if (isNaN(duration) || duration < 1) return;
-    const session = state.sessions.find(s => s.id === editingSessionId);
-    if (session) {
-        const oldDuration = session.duration;
-        session.duration = duration * 60;
-        if (session.taskId) {
-            const task = state.tasks.find(t => t.id === session.taskId);
-            if (task) task.totalTime = Math.max(0, task.totalTime - oldDuration + session.duration);
+    const dur = parseInt(document.getElementById('sessionEditDuration').value); if (isNaN(dur) || dur < 1) return;
+    const s = state.sessions.find(x => x.id === editingSessionId);
+    if (s) {
+        const old = s.duration; s.duration = dur * 60;
+        if (s.taskId) {
+            const t = state.tasks.find(x => x.id === s.taskId);
+            if (t) t.totalTime = Math.max(0, t.totalTime - old + s.duration);
         }
-        saveData(); renderTasks(); renderHistory(currentFilter); updateStats(); closeSessionEditModal();
+        saveData(); renderFocusAreas(); renderHistory(currentFilter); updateStats(); closeSessionEditModal();
     }
 }
 
-let editingTaskId = null;
-function openTaskEditModal(task) {
-    editingTaskId = task.id;
-    state.editTaskColor = task.color;
-    document.getElementById('taskEditName').value = task.name;
-    document.getElementById('taskEditCategory').value = task.category || 'Uncategorized';
-    document.getElementById('taskEditColorPicker').querySelectorAll('.color-dot').forEach(dot => {
-        dot.classList.toggle('active', dot.dataset.color === task.color);
-    });
-    document.getElementById('taskEditModal').classList.add('open');
+function openFocusAreaEditModal(t) {
+    editingTaskId = t.id;
+    state.editTaskColor = t.color;
+    document.getElementById('focusAreaEditName').value = t.name;
+    document.getElementById('focusAreaEditCategory').value = t.category || 'Uncategorized';
+    document.getElementById('focusAreaEditColorPicker').querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d.dataset.color === t.color));
+    document.getElementById('focusAreaEditModal').classList.add('open');
 }
 
-function closeTaskEditModal() {
-    document.getElementById('taskEditModal').classList.remove('open');
+function closeFocusAreaEditModal() {
+    document.getElementById('focusAreaEditModal').classList.remove('open');
     editingTaskId = null;
 }
 
-function saveTaskFromModal() {
-    const name = document.getElementById('taskEditName').value.trim();
-    const category = document.getElementById('taskEditCategory').value;
-    if (!name) return;
-    const task = state.tasks.find(t => t.id === editingTaskId);
-    if (task) {
-        task.name = name;
-        task.category = category;
-        task.color = state.editTaskColor;
-        state.sessions.forEach(s => { if (s.taskId === task.id) { s.taskName = task.name; s.taskColor = task.color; } });
-        saveData(); renderTasks(); renderHistory(currentFilter); updateTimerDisplay(); closeTaskEditModal();
+function saveFocusAreaFromModal() {
+    const name = document.getElementById('focusAreaEditName').value.trim();
+    const cat = document.getElementById('focusAreaEditCategory').value; if (!name) return;
+    const t = state.tasks.find(x => x.id === editingTaskId);
+    if (t) {
+        t.name = name; t.category = cat; t.color = state.editTaskColor;
+        state.sessions.forEach(s => { if (s.taskId === t.id) { s.taskName = t.name; s.taskColor = t.color; } });
+        saveData(); renderFocusAreas(); renderHistory(currentFilter); updateTimerDisplay(); closeFocusAreaEditModal();
     }
 }
+
 function checkNotificationPrompt() {
     if (Notification.permission === 'default' && localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT) !== 'denied') {
-        const prompt = document.getElementById('notificationPrompt');
-        if (prompt) prompt.style.display = 'flex';
+        const p = document.getElementById('notificationPrompt'); if (p) p.style.display = 'flex';
     }
 }
 
 function requestNotificationPermission() {
-    Notification.requestPermission().then(permission => {
-        console.log('Notification permission result:', permission);
-        state.notificationPermission = permission;
-        const prompt = document.getElementById('notificationPrompt');
-        if (prompt) prompt.style.display = 'none';
-        if (permission === 'granted') {
-            notify('Notifications enabled! You will be alerted when focus ends.');
-        }
+    Notification.requestPermission().then(p => {
+        state.notificationPermission = p;
+        const pr = document.getElementById('notificationPrompt');
+        if (pr) pr.style.display = 'none';
+        if (p === 'granted') notify('Notifications enabled!');
     });
 }
 
-function notify(message, title = 'PomoFlow', type = 'info') {
-    const isBackground = document.visibilityState === 'hidden';
-    
-    // Always try to show the internal toast if visible OR if it's a milestone
-    if (!isBackground || type === 'milestone') {
-        showToast(message, type);
-    }
-    
-    // Push notification logic
-    if (Notification.permission === 'granted') {
-        // If background, or major milestone, send system notification
-        if (isBackground || type === 'milestone') {
-            try {
-                new Notification(title, { 
-                    body: message,
-                    tag: 'pomoflow-notification-' + Date.now(), // Unique tag per notification
-                    silent: false // Ensure system sound is played if allowed
-                });
-            } catch (err) {
-                console.error('Notification Error:', err);
-            }
-        }
-    } else if (isBackground || type === 'milestone') {
-        // Only log if we intended to send a push but didn't have permission
-        console.log('Notification permission state:', Notification.permission);
+function notify(msg, title = 'PomoFlow', type = 'info') {
+    const bg = document.visibilityState === 'hidden';
+    if (!bg || type === 'milestone') showToast(msg, type);
+    if (Notification.permission === 'granted' && (bg || type === 'milestone')) {
+        try { new Notification(title, { body: msg, silent: false }); } catch (e) {}
     }
 }
 
-function showToast(message, type = 'info') {
-    const t = document.getElementById('toast');
-    if (!t) return;
-
-    t.innerHTML = `
-        <div class="toast-content">${message}</div>
-        <div class="toast-progress-container">
-            <div class="toast-progress"></div>
-        </div>
-    `;
+function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast'); if (!t) return;
+    t.innerHTML = `<div class="toast-content">${msg}</div><div class="toast-progress-container"><div class="toast-progress"></div></div>`;
     t.className = `toast show ${type}`;
-
     if (t.timeout) clearTimeout(t.timeout);
-    t.timeout = setTimeout(() => {
-        t.classList.remove('show');
-    }, 5000);
+    t.timeout = setTimeout(() => { t.classList.remove('show'); }, 5000);
 }
+
 function playTone(freq, duration, delay) {
     if (!audioContext) return;
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const vol = state.settings.soundVolume / 100;
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, audioContext.currentTime + delay);
+    const osc = audioContext.createOscillator(); const gain = audioContext.createGain(); const vol = state.settings.soundVolume / 100;
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioContext.currentTime + delay);
     gain.gain.setValueAtTime(0, audioContext.currentTime + delay);
     gain.gain.linearRampToValueAtTime(vol * 0.1, audioContext.currentTime + delay + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
@@ -2487,621 +1734,272 @@ function handleImportFile(e) {
             if (!data.tasks || !data.sessions) throw new Error('Invalid format');
             pendingImportData = data;
             const info = document.getElementById('importInfo');
-            if (info) info.innerHTML = `<p>Found <strong>${data.tasks.length}</strong> goals and <strong>${data.sessions.length}</strong> sessions.</p><p>Proceed?</p>`;
-            const modal = document.getElementById('importModal');
-            if (modal) modal.classList.add('open');
+            if (info) info.innerHTML = `<p>Found <strong>${data.tasks.length}</strong> focus areas and <strong>${data.sessions.length}</strong> sessions.</p><p>Proceed?</p>`;
+            const modal = document.getElementById('importModal'); if (modal) modal.classList.add('open');
         } catch (err) { alert('Error: ' + err.message); }
     };
     reader.readAsText(file);
 }
 
-function closeImportModal() { 
-    const modal = document.getElementById('importModal');
-    if (modal) modal.classList.remove('open'); 
-    pendingImportData = null; 
-    const file = document.getElementById('importFile');
-    if (file) file.value = ''; 
+function closeImportModal() {
+    const modal = document.getElementById('importModal'); if (modal) modal.classList.remove('open');
+    pendingImportData = null; const file = document.getElementById('importFile'); if (file) file.value = '';
 }
 
 function performImport(mode) {
     if (!pendingImportData) return;
-    if (mode === 'replace') { 
-        state.tasks = pendingImportData.tasks; 
-        state.sessions = pendingImportData.sessions; 
-        if (pendingImportData.settings) state.settings = { ...state.settings, ...pendingImportData.settings }; 
+    if (mode === 'replace') {
+        state.tasks = pendingImportData.tasks; state.sessions = pendingImportData.sessions;
+        if (pendingImportData.settings) state.settings = { ...state.settings, ...pendingImportData.settings };
     } else {
-        const taskIds = new Set(state.tasks.map(t => t.id));
-        pendingImportData.tasks.forEach(t => { if (!taskIds.has(t.id)) state.tasks.push(t); });
-        const sessionIds = new Set(state.sessions.map(s => s.id));
-        pendingImportData.sessions.forEach(s => { if (!sessionIds.has(s.id)) state.sessions.push(s); });
+        const ids = new Set(state.tasks.map(t => t.id)); pendingImportData.tasks.forEach(t => { if (!ids.has(t.id)) state.tasks.push(t); });
+        const sids = new Set(state.sessions.map(s => s.id)); pendingImportData.sessions.forEach(s => { if (!sids.has(s.id)) state.sessions.push(s); });
     }
-    saveData(); renderTasks(); renderHistory(currentFilter); updateStats(); closeImportModal(); notify('Data imported');
+    saveData(); renderFocusAreas(); renderHistory(currentFilter); updateStats(); closeImportModal(); notify('Data imported');
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('flowtracker_theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-    
-    document.documentElement.setAttribute('data-theme', theme);
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) themeToggle.classList.toggle('dark', theme === 'dark');
-
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        if (!localStorage.getItem('flowtracker_theme')) {
-            const nextTheme = e.matches ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', nextTheme);
-            if (themeToggle) themeToggle.classList.toggle('dark', nextTheme === 'dark');
-        }
-    });
+    const saved = localStorage.getItem('flowtracker_theme'); const sys = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (sys ? 'dark' : 'light'); document.documentElement.setAttribute('data-theme', theme);
+    const toggle = document.getElementById('themeToggle'); if (toggle) toggle.classList.toggle('dark', theme === 'dark');
 }
 
 function toggleTheme() {
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('flowtracker_theme', next);
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) themeToggle.classList.toggle('dark', next === 'dark');
+    document.documentElement.setAttribute('data-theme', next); localStorage.setItem('flowtracker_theme', next);
+    const toggle = document.getElementById('themeToggle'); if (toggle) toggle.classList.toggle('dark', next === 'dark');
 }
 
 function restoreTimerState() {
     if (state.timerState.isRunning && state.timerState.targetEndTime) {
-        const now = Date.now();
-        const diff = state.timerState.targetEndTime - now;
-
+        const now = Date.now(); const diff = state.timerState.targetEndTime - now;
         if (diff > 0) {
-            // Still have time left, resume normally
-            state.timerState.remainingTime = Math.ceil(diff / 1000);
-            initTimerWorker();
-            timerWorker.postMessage({
-                action: 'start',
-                endTime: state.timerState.targetEndTime
-            });
-            updateTimerDisplay();
-        } else {
-            // Time is up! 
-            state.timerState.remainingTime = 0;
-            // No need to clear targetEndTime yet, handleSessionComplete will do it
-            handleSessionComplete();
-        }
-    } else {
-        // Not running, just ensure display is correct
-        updateTimerDisplay();
-    }
+            state.timerState.remainingTime = Math.ceil(diff / 1000); initTimerWorker();
+            timerWorker.postMessage({ action: 'start', endTime: state.timerState.targetEndTime }); updateTimerDisplay();
+        } else { state.timerState.remainingTime = 0; handleSessionComplete(); }
+    } else { updateTimerDisplay(); }
 }
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
 function clearHistory() {
-    confirmAction('Are you sure you want to clear all session history?').then(confirmed => {
-        if (confirmed) {
-            state.sessions = []; saveData(); renderHistory(currentFilter); updateStats();
-        }
+    confirmAction('Are you sure you want to clear all session history?').then(conf => {
+        if (conf) { state.sessions = []; saveData(); renderHistory(currentFilter); updateStats(); }
     });
 }
 
-function populateCustomGoalSelect(searchQuery = '') {
-    const optionsContainer = document.getElementById('selectOptions');
-    const noResults = document.getElementById('selectNoResults');
-    if (!optionsContainer) return;
-    
-    const activeTasks = state.tasks.filter(t => !t.completed);
-    const filteredTasks = activeTasks.filter(task => 
-        task.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
-    optionsContainer.innerHTML = '';
-    
-    if (filteredTasks.length === 0) {
-        noResults.style.display = 'block';
+function populateCustomFocusAreaSelect(query = '') {
+    const container = document.getElementById('selectOptions');
+    const nores = document.getElementById('selectNoResults');
+    if (!container) return;
+
+    const filtered = state.tasks.filter(t => !t.completed && t.name.toLowerCase().includes(query.toLowerCase()));
+    container.innerHTML = '';
+
+    if (filtered.length === 0) {
+        nores.style.display = 'block';
     } else {
-        noResults.style.display = 'none';
-        filteredTasks.forEach(task => {
-            const isSelected = state.selectedGoalIds.includes(task.id);
-            const option = document.createElement('div');
-            option.className = `select-option ${isSelected ? 'selected' : ''}`;
-            option.innerHTML = `
-                <div class="option-color" style="background: ${task.color}"></div>
-                <div class="option-name">${escapeHtml(task.name)}</div>
-                <div class="option-check">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                </div>
-            `;
-            
-            option.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleGoalSelection(task.id);
+        nores.style.display = 'none';
+        
+        // Group by category
+        const groups = {};
+        filtered.forEach(t => {
+            const cat = t.category || 'Uncategorized';
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(t);
+        });
+
+        // Sort categories to keep a consistent order
+        const sortedCats = Object.keys(groups).sort();
+        
+        sortedCats.forEach(cat => {
+            // Add category header
+            const header = document.createElement('div');
+            header.className = 'select-category-header';
+            header.textContent = cat;
+            container.appendChild(header);
+
+            // Add focus areas in this category
+            groups[cat].forEach(t => {
+                const isSelected = state.selectedFocusAreaIds.includes(t.id);
+                const opt = document.createElement('div');
+                opt.className = `select-option ${isSelected ? 'selected' : ''}`;
+                opt.innerHTML = `<div class="option-color" style="background: ${t.color}"></div><div class="option-name">${escapeHtml(t.name)}</div><div class="option-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>`;
+                opt.onclick = (e) => { e.stopPropagation(); toggleFocusAreaSelection(t.id); };
+                container.appendChild(opt);
             });
-            
-            optionsContainer.appendChild(option);
         });
     }
 }
 
-function toggleGoalSelection(goalId) {
-    const index = state.selectedGoalIds.indexOf(goalId);
-    if (index > -1) {
-        state.selectedGoalIds.splice(index, 1);
-    } else {
-        state.selectedGoalIds.push(goalId);
-    }
-    
+function toggleFocusAreaSelection(id) {
+    const idx = state.selectedFocusAreaIds.indexOf(id);
+    if (idx > -1) state.selectedFocusAreaIds.splice(idx, 1);
+    else state.selectedFocusAreaIds.push(id);
     updateCustomSelectUI();
-    const searchInput = document.getElementById('goalSearchInput');
-    populateCustomGoalSelect(searchInput ? searchInput.value : '');
+    const search = document.getElementById('focusAreaSearchInput');
+    populateCustomFocusAreaSelect(search ? search.value : '');
 }
 
 function updateCustomSelectUI() {
-    const triggerText = document.querySelector('.trigger-text');
-    const badge = document.getElementById('selectedCountBadge');
-    if (!triggerText || !badge) return;
-
-    const count = state.selectedGoalIds.length;
-
-    if (count === 0) {
-        triggerText.textContent = 'Select Goals...';
-        badge.style.display = 'none';
-    } else if (count === 1) {
-        const task = state.tasks.find(t => t.id === state.selectedGoalIds[0]);
-        triggerText.textContent = task ? task.name : '1 Goal Selected';
-        badge.textContent = '1';
-        badge.style.display = 'inline-block';
-    } else {
-        triggerText.textContent = `${count} Goals Selected`;
-        badge.textContent = count;
-        badge.style.display = 'inline-block';
-    }
+    const text = document.querySelector('.trigger-text'); const badge = document.getElementById('selectedCountBadge'); if (!text || !badge) return;
+    const count = state.selectedFocusAreaIds.length;
+    if (count === 0) { text.textContent = 'Select Focus Areas...'; badge.style.display = 'none'; }
+    else if (count === 1) { const t = state.tasks.find(x => x.id === state.selectedFocusAreaIds[0]); text.textContent = t ? t.name : '1 Focus Area Selected'; badge.textContent = '1'; badge.style.display = 'inline-block'; }
+    else { text.textContent = `${count} Focus Areas Selected`; badge.textContent = count; badge.style.display = 'inline-block'; }
 }
+
 function parseDuration(val) {
-    val = val.toLowerCase().trim();
-    if (!val) return 0;
-    
-    let minutes = 0;
-    if (val.includes(':')) {
-        const parts = val.split(':');
-        minutes = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
-    } else if (val.includes('h')) {
-        const parts = val.split('h');
-        minutes += (parseFloat(parts[0]) || 0) * 60;
-        if (parts[1]) {
-            const mPart = parts[1].replace('min', '').replace('m', '').trim();
-            minutes += parseFloat(mPart) || 0;
-        }
-    } else {
-        minutes = parseFloat(val) || 0;
-    }
-    return Math.round(minutes);
+    val = val.toLowerCase().trim(); if (!val) return 0; let m = 0;
+    if (val.includes(':')) { const p = val.split(':'); m = (parseInt(p[0]) || 0) * 60 + (parseInt(p[1]) || 0); }
+    else if (val.includes('h')) { const p = val.split('h'); m += (parseFloat(p[0]) || 0) * 60; if (p[1]) m += parseFloat(p[1].replace('min', '').replace('m', '').trim()) || 0; }
+    else m = parseFloat(val) || 0; return Math.round(m);
 }
 
 function addAim() {
-    const durationInput = document.getElementById('aimDurationInput');
-    const durationWrapper = document.querySelector('.aim-input-row');
-    const durationRaw = durationInput.value.trim().toLowerCase();
-    
-    if (state.selectedGoalIds.length === 0) {
-        notify('Please select at least one goal');
-        return;
+    const input = document.getElementById('aimDurationInput'); const wrap = document.querySelector('.aim-input-row'); const raw = input.value.trim().toLowerCase();
+    if (state.selectedFocusAreaIds.length === 0) { notify('Please select at least one focus area'); return; }
+    if (!raw) { if (wrap) { wrap.classList.add('shake'); setTimeout(() => wrap.classList.remove('shake'), 400); } notify('Please enter a duration'); return; }
+    const mins = parseDuration(raw); if (mins <= 0) { notify('Invalid duration'); return; }
+    const type = document.getElementById('aimDeadlineSelect').value; let date = null;
+    if (type !== 'infinite') {
+        const d = new Date(); if (type === 'today') date = getLogicalDate(); else if (type === 'tomorrow') { d.setDate(d.getDate() + 1); date = getLogicalDate(d); }
+        else if (type === 'week') { const day = d.getDay(); d.setDate(d.getDate() + (7 - day) % 7); date = getLogicalDate(d); }
+        else if (type === 'custom') date = document.getElementById('aimCustomDate').value;
     }
+    state.selectedFocusAreaIds.forEach(id => {
+        const ex = getActiveAimForFocusArea(id); if (ex) { ex.targetMinutes = mins; ex.deadline = date; }
+        else state.aims.push({ id: Date.now().toString() + '-' + id, focusAreaId: id, targetMinutes: mins, createdAt: new Date().toISOString(), deadline: date });
+    });
+    input.value = ''; state.selectedFocusAreaIds = []; updateCustomSelectUI(); document.getElementById('aimDeadlineSelect').value = 'infinite'; document.getElementById('aimCustomDate').style.display = 'none';
     
-    if (!durationRaw) {
-        if (durationWrapper) {
-            durationWrapper.classList.add('shake');
-            setTimeout(() => durationWrapper.classList.remove('shake'), 400);
-        }
-        notify('Please enter a duration');
-        return;
-    }
-    
-    const minutes = parseDuration(durationRaw);
-    
-    if (minutes <= 0) {
-        notify('Invalid duration');
-        return;
-    }
-    
-    const updatedGoalIds = [...state.selectedGoalIds];
-    
-    // Calculate Deadline
-    const deadlineType = document.getElementById('aimDeadlineSelect').value;
-    let deadlineDate = null;
-    
-    if (deadlineType !== 'infinite') {
-        const d = new Date();
-        if (deadlineType === 'today') {
-            deadlineDate = getLogicalDate();
-        } else if (deadlineType === 'tomorrow') {
-            d.setDate(d.getDate() + 1);
-            deadlineDate = getLogicalDate(d);
-        } else if (deadlineType === 'week') {
-            // End of current week (Sunday)
-            const day = d.getDay();
-            const diff = d.getDate() + (7 - day) % 7;
-            d.setDate(diff);
-            deadlineDate = getLogicalDate(d);
-        } else if (deadlineType === 'custom') {
-            const customVal = document.getElementById('aimCustomDate').value;
-            if (customVal) deadlineDate = customVal;
-        }
+    // Auto-collapse
+    const wrapper = document.getElementById('planCreateWrapper');
+    const btn = document.getElementById('togglePlanCreate');
+    if (wrapper && btn) {
+        wrapper.classList.remove('open');
+        btn.classList.remove('active');
     }
 
-    state.selectedGoalIds.forEach(goalId => {
-        // Find existing aim
-        const existingAim = getActiveAimForGoal(goalId);
-        if (existingAim) {
-            existingAim.targetMinutes = Math.round(minutes);
-            existingAim.deadline = deadlineDate;
-        } else {
-            state.aims.push({
-                id: Date.now().toString() + '-' + goalId,
-                goalId: goalId,
-                targetMinutes: Math.round(minutes),
-                createdAt: new Date().toISOString(),
-                deadline: deadlineDate
-            });
-        }
-    });
-    
-    durationInput.value = '';
-    state.selectedGoalIds = [];
-    updateCustomSelectUI();
-    
-    const selectDropdown = document.getElementById('selectDropdown');
-    if (selectDropdown) selectDropdown.classList.remove('open');
-    
-    const searchInput = document.getElementById('goalSearchInput');
-    if (searchInput) searchInput.value = '';
-    
-    // Reset deadline fields
-    document.getElementById('aimDeadlineSelect').value = 'infinite';
-    document.getElementById('aimCustomDate').style.display = 'none';
-    document.getElementById('aimCustomDate').value = '';
-    
-    renderPlan();
-    renderTasks();
-    updateTimerDisplay();
-    
-    // Highlight updated cards
-    updatedGoalIds.forEach(goalId => {
-        const items = document.querySelectorAll('.plan-aim-item');
-        items.forEach(item => {
-            // We need to find the item that matches this goalId
-            // The item doesn't have a data attribute yet, we'll need to add it in renderAimItem
-            if (item.dataset.goalId === goalId) {
-                item.classList.add('highlight');
-                setTimeout(() => item.classList.remove('highlight'), 1500);
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        });
-    });
-    
-    const btn = document.getElementById('addAimBtn');
-    if (btn) {
-        btn.style.background = 'var(--success)';
-        btn.style.color = 'var(--text-on-accent)';
-        setTimeout(() => {
-            btn.style.background = '';
-            btn.style.color = '';
-        }, 500);
-    }
-    
-    notify('Aim(s) added to plan');
+    renderPlan(); renderFocusAreas(); updateTimerDisplay(); notify('Aim(s) added to plan');
 }
 
 function renderPlan() {
-    const todayList = document.getElementById('todayPlanList');
-    const pastList = document.getElementById('pastPlanList');
-    if (!todayList || !pastList) return;
+    const list = document.getElementById('todayPlanList'); const past = document.getElementById('pastPlanList'); if (!list || !past) return;
+    const active = []; const done = [];
+    state.aims.forEach(a => { if (getTimeSpentOnAim(a) >= a.targetMinutes * 60) done.push(a); else active.push(a); });
+    const renderAim = (a) => {
+        const t = state.tasks.find(x => x.id === a.focusAreaId); const name = t ? t.name : 'Unknown Focus Area'; const color = t ? t.color : '#58a6ff';
+        const spent = getTimeSpentOnAim(a); const target = a.targetMinutes * 60; const h = Math.floor(a.targetMinutes / 60); const m = a.targetMinutes % 60; const str = h > 0 ? `${h}h ${m}m` : `${m}m`;
+        let dl = 'Until Done'; let exp = false;
+        if (a.deadline) { const today = getLogicalDate(); dl = a.deadline === today ? 'by Today' : `by ${new Date(a.deadline).toLocaleDateString('en-US', {month:'short', day:'numeric'})}`; if (a.deadline < today) exp = true; }
+        const item = document.createElement('sliding-card'); const reached = spent >= target;
+        item.className = `plan-aim-item ${reached ? 'reached' : ''} ${exp && !reached ? 'expired' : ''}`;
+        item.setAttribute('menu-width', reached ? '150px' : '100px');
 
-    // Group aims into Active and Completed (Reached)
-    const activeAims = [];
-    const completedAims = [];
-    
-    state.aims.forEach(aim => {
-        const spentSeconds = getTimeSpentOnAim(aim);
-        const targetSeconds = aim.targetMinutes * 60;
-        if (spentSeconds >= targetSeconds) {
-            completedAims.push(aim);
-        } else {
-            activeAims.push(aim);
-        }
-    });
-
-    const renderAimItem = (aim) => {
-        const task = state.tasks.find(t => t.id === aim.goalId);
-        const name = task ? task.name : 'Unknown Goal';
-        const color = task ? task.color : '#58a6ff';
-
-        const spentSeconds = getTimeSpentOnAim(aim);
-        const targetSeconds = aim.targetMinutes * 60;
-
-        const hAim = Math.floor(aim.targetMinutes / 60);
-        const mAim = aim.targetMinutes % 60;
-        const aimStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
-
-        // Deadline Logic
-        let deadlineLabel = 'Until Done';
-        let isExpired = false;
-        if (aim.deadline) {
-            const today = getLogicalDate();
-            if (aim.deadline === today) {
-                deadlineLabel = 'by Today';
-            } else {
-                const d = new Date(aim.deadline);
-                const options = { month: 'short', day: 'numeric' };
-                deadlineLabel = `by ${d.toLocaleDateString('en-US', options)}`;
-                if (aim.deadline < today) isExpired = true;
-            }
-        }
-
-        const item = document.createElement('div');
-        const rawProgress = (spentSeconds / targetSeconds) * 100;
-        const reached = rawProgress >= 100;
-        item.className = `plan-aim-item ${reached ? 'reached' : ''} ${isExpired && !reached ? 'expired' : ''}`;
-        item.dataset.goalId = aim.goalId;
-
-        let actionBtnHtml = '';
-        if (reached) {
-            actionBtnHtml = `
-                <button class="share-milestone-btn" title="Share milestone">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
-                    <span>Share</span>
-                </button>
-                <button class="go-again-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                    <span>Go Again!</span>
-                </button>
-            `;
-        } else {
-            actionBtnHtml = `
-                <button class="edit-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
-                    <span>Edit</span>
-                </button>
-            `;
-        }
+        const editIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+        const deleteIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+        const shareIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>';
+        const budgetIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>';
+        const againIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 4V7c3.31 0 6 2.69 6 6 0 2.97-2.17 5.43-5 5.91v2.02c3.95-.49 7-3.85 7-7.93 0-4.42-3.58-8-8-8zm-6 8c0-2.97 2.17-5.43 5-5.91V5.07c-3.95.49-7 3.85-7 7.93 0 4.42 3.58 8 8 8v-4c-3.31 0-6-2.69-6-6z"/></svg>';
 
         item.innerHTML = `
-            <div class="plan-aim-menu">
-                ${actionBtnHtml}
-                <button class="danger delete-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    <span>Delete</span>
-                </button>
-            </div>
-            <div class="plan-aim-slide-wrapper">
-                <div class="history-type-indicator" style="background: ${color}; margin-right: 12px;"></div>
-                <div class="aim-info">
-                    <div class="aim-top-row">
-                        <div class="aim-name">${escapeHtml(name)}</div>
-                    </div>
-                    <div class="aim-bottom-row">
-                        <progress-compact 
-                            value="${spentSeconds}" 
-                            max="${targetSeconds}" 
-                            color="${color}" 
-                            label="${aimStr}">
-                        </progress-compact>
-                        <div class="aim-meta">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.58 8 8-3.58 8-8 8zm-5.5-8c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5-5.5-2.47-5.5-5.5z"/></svg>
-                            <span class="aim-duration-label">${aimStr}</span>
-                        </div>
-                        <div class="aim-deadline-badge ${isExpired ? 'expired' : ''}">${deadlineLabel}</div>
-                    </div>
+            ${reached ? `
+                <button slot="menu" class="share-milestone-btn">${shareIcon}<span>Share</span></button>
+                <button slot="menu" class="edit-btn">${budgetIcon}<span>Re-budget</span></button>
+                <button slot="menu" class="go-again-btn">${againIcon}<span>Go Again</span></button>
+            ` : `
+                <button slot="menu" class="edit-btn">${editIcon}<span>Edit</span></button>
+            `}
+            <button slot="menu" class="danger delete-btn">${deleteIcon}<span>Delete</span></button>
+            <div slot="indicator" class="history-type-indicator" style="background: ${color}; margin-right: 12px;"></div>
+            <div class="aim-info">
+                <div class="aim-top-row">
+                    <div class="aim-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
                 </div>
-                <button class="plan-aim-more">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                </button>
+                <div class="aim-bottom-row">
+                    <progress-compact value="${spent}" max="${target}" color="${color}" label="${str}"></progress-compact>
+                    <div class="aim-meta"><span>${str}</span></div>
+                    <div class="aim-deadline-badge ${exp ? 'expired' : ''}">${dl}</div>
+                </div>
             </div>
         `;
 
-        // ... event listeners remain the same ...
-        let startX = 0;
-        let currentTranslate = 0;
-        let isSliding = false;
-        const wrapper = item.querySelector('.plan-aim-slide-wrapper');
-        
-        wrapper.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isSliding = true;
-            wrapper.style.transition = 'none';
-        }, {passive: true});
-        
-        wrapper.addEventListener('touchmove', (e) => {
-            if (!isSliding) return;
-            const diff = e.touches[0].clientX - startX;
-            if (diff < 0) {
-                currentTranslate = Math.max(diff, -120);
-                wrapper.style.transform = `translateX(${currentTranslate}px)`;
-            }
-        }, {passive: true});
-        
-        wrapper.addEventListener('touchend', () => {
-            isSliding = false;
-            wrapper.style.transition = 'transform 0.2s ease';
-            if (currentTranslate < -60) {
-                item.classList.add('menu-open');
-                wrapper.style.transform = 'translateX(-120px)';
-            } else {
-                item.classList.remove('menu-open');
-                wrapper.style.transform = 'translateX(0)';
-            }
-            currentTranslate = 0;
-        });
-
-        item.querySelector('.plan-aim-more').addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isOpen = item.classList.toggle('menu-open');
-            wrapper.style.transition = 'transform 0.2s ease';
-            wrapper.style.transform = isOpen ? 'translateX(-120px)' : 'translateX(0)';
-        });
-
-        const editBtn = item.querySelector('.edit-btn');
-        if (editBtn) {
-            editBtn.addEventListener('click', () => {
-                editAim(aim.id);
-                item.classList.remove('menu-open');
-                wrapper.style.transform = 'translateX(0)';
-            });
-        }
-
-        const goAgainBtn = item.querySelector('.go-again-btn');
-        if (goAgainBtn) {
-            goAgainBtn.addEventListener('click', () => {
-                // Template Workflow
-                state.selectedGoalIds = [aim.goalId];
-                updateCustomSelectUI();
-                populateCustomGoalSelect();
-                
-                const durationInput = document.getElementById('aimDurationInput');
-                if (durationInput) {
-                    const h = Math.floor(aim.targetMinutes / 60);
-                    const m = aim.targetMinutes % 60;
-                    durationInput.value = h > 0 ? `${h}:${m.toString().padStart(2, '0')}` : `${m}`;
-                }
-
-                const deadlineSelect = document.getElementById('aimDeadlineSelect');
-                if (deadlineSelect) {
-                    // Inherit deadline if it's in the future
-                    if (aim.deadline && aim.deadline >= getLogicalDate()) {
-                        // Check if it's one of the standard options
-                        const today = getLogicalDate();
-                        const d = new Date();
-                        d.setDate(d.getDate() + 1);
-                        const tomorrow = getLogicalDate(d);
-                        
-                        if (aim.deadline === today) {
-                            deadlineSelect.value = 'today';
-                        } else if (aim.deadline === tomorrow) {
-                            deadlineSelect.value = 'tomorrow';
-                        } else {
-                            // Custom date
-                            deadlineSelect.value = 'custom';
-                            const customInput = document.getElementById('aimCustomDate');
-                            if (customInput) {
-                                customInput.value = aim.deadline;
-                                customInput.style.display = 'block';
-                            }
-                        }
-                    } else {
-                        deadlineSelect.value = 'infinite';
-                    }
-                }
-
-                // Scroll to top of drawer
-                const planPanel = document.getElementById('planPanel');
-                if (planPanel) planPanel.scrollTo({ top: 0, behavior: 'smooth' });
-
-                item.classList.remove('menu-open');
-                wrapper.style.transform = 'translateX(0)';
-                
-                // Visual feedback on the Add button
-                const addBtn = document.getElementById('addAimBtn');
-                if (addBtn) {
-                    addBtn.classList.add('pulse-highlight');
-                    setTimeout(() => addBtn.classList.remove('pulse-highlight'), 2000);
-                }
-            });
-        }
-
-        const shareMilestoneBtn = item.querySelector('.share-milestone-btn');
-        if (shareMilestoneBtn) {
-            shareMilestoneBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleShare('x', 'milestone', {
-                    goal: name,
-                    duration: aim.targetMinutes
-                });
-            });
-        }
-
-        item.querySelector('.delete-btn').addEventListener('click', () => {
-            removeAim(aim.id);
-        });
-
+        if (item.querySelector('.edit-btn')) item.querySelector('.edit-btn').onclick = () => { item.isOpen = false; editAim(a.id); };
+        if (item.querySelector('.go-again-btn')) item.querySelector('.go-again-btn').onclick = () => { item.isOpen = false; goAgain(a.id); };
+        if (item.querySelector('.share-milestone-btn')) item.querySelector('.share-milestone-btn').onclick = () => { item.isOpen = false; handleShare('x', 'milestone', { focusArea: name, duration: a.targetMinutes }); };
+        item.querySelector('.delete-btn').onclick = () => { item.isOpen = false; removeAim(a.id); };
         return item;
     };
-    
-    todayList.innerHTML = '';
-    if (activeAims.length === 0) {
-        todayList.innerHTML = '<p class="empty-plan">No active focus aims. Set one above!</p>';
-    } else {
-        activeAims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                  .forEach(aim => todayList.appendChild(renderAimItem(aim)));
-    }
-    
-    pastList.innerHTML = '';
-    if (completedAims.length === 0) {
-        pastList.innerHTML = '<p class="empty-plan">No completed aims yet.</p>';
-    } else {
-        completedAims.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                     .forEach(aim => pastList.appendChild(renderAimItem(aim)));
-    }
+    list.innerHTML = ''; active.forEach(a => list.appendChild(renderAim(a)));
+    past.innerHTML = ''; done.forEach(a => past.appendChild(renderAim(a)));
 }
 
-function removeAim(aimId) {
-    confirmAction('Delete this focus aim?').then(confirmed => {
-        if (confirmed) {
-            state.aims = state.aims.filter(a => a.id !== aimId);
-            saveData();
-            renderPlan();
-            renderTasks();
-            updateTimerDisplay();
-            notify('Aim removed');
-        }
-    });
-}
+function goAgain(aimId) {
+    const a = state.aims.find(x => x.id === aimId);
+    if (!a) return;
 
-function editAim(aimId) {
-    const aim = state.aims.find(a => a.id === aimId);
-    if (!aim) return;
-    
-    const hAim = Math.floor(aim.targetMinutes / 60);
-    const mAim = aim.targetMinutes % 60;
-    const currentStr = hAim > 0 ? `${hAim}h ${mAim}min` : `${mAim}min`;
-    
-    const newAim = prompt('Adjust daily target (e.g. 45 or 1:30):', currentStr);
-    if (newAim !== null) {
-        const mins = parseDuration(newAim);
-        
-        if (mins > 0) {
-            aim.targetMinutes = mins;
-            saveData();
-            renderPlan();
-            renderTasks();
-            updateTimerDisplay();
-            notify('Aim updated');
-        } else {
-            notify('Invalid duration');
-        }
+    // 1. Open creation section if closed
+    const wrapper = document.getElementById('planCreateWrapper');
+    const btn = document.getElementById('togglePlanCreate');
+    if (wrapper && !wrapper.classList.contains('open')) {
+        wrapper.classList.add('open');
+        if (btn) btn.classList.add('active');
     }
-}
 
-window.removeAim = removeAim;
+    // 2. Auto-populate
+    state.selectedFocusAreaIds = [a.focusAreaId];
+    updateCustomSelectUI();
+    populateCustomFocusAreaSelect();
 
-function clearAims() {
-    confirmAction('Clear all aims for today?').then(confirmed => {
-        if (confirmed) {
+    const durationInput = document.getElementById('aimDurationInput');
+    if (durationInput) {
+        durationInput.value = a.targetMinutes;
+    }
+
+    const deadlineSelect = document.getElementById('aimDeadlineSelect');
+    if (deadlineSelect) {
+        // Find if previous deadline was a specific type or custom
+        if (!a.deadline) deadlineSelect.value = 'infinite';
+        else {
+            // Check if it matches today/tomorrow logic roughly, or just set to custom if it's a fixed date string
             const today = getLogicalDate();
-            state.aims = state.aims.filter(a => a.date !== today);
-            saveData();
-            renderPlan();
-            renderTasks();
-            updateTimerDisplay();
-            notify('Today\'s plan cleared');
+            if (a.deadline === today) deadlineSelect.value = 'today';
+            else deadlineSelect.value = 'custom';
+            
+            const customDateInput = document.getElementById('aimCustomDate');
+            if (customDateInput) {
+                customDateInput.value = a.deadline;
+                customDateInput.style.display = deadlineSelect.value === 'custom' ? 'inline-block' : 'none';
+            }
         }
-    });
+    }
+
+    // 3. Scroll to top
+    const panel = document.getElementById('planPanel');
+    if (panel) {
+        panel.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    if (durationInput) durationInput.focus();
 }
 
-window.clearAims = clearAims;
+function removeAim(id) { confirmAction('Delete this aim?').then(conf => { if (conf) { state.aims = state.aims.filter(x => x.id !== id); saveData(); renderPlan(); renderFocusAreas(); updateTimerDisplay(); } }); }
+function editAim(id) {
+    const a = state.aims.find(x => x.id === id);
+    if (!a) return;
+    const val = prompt('Adjust target (min or h:mm):', a.targetMinutes);
+    if (val) {
+        a.targetMinutes = parseDuration(val);
+        a.updatedAt = new Date().toISOString();
+        saveData();
+        renderPlan();
+        renderFocusAreas();
+        updateTimerDisplay();
+    }
+}
 
-document.querySelectorAll('.setting-slider').forEach(s => s.addEventListener('input', () => {
-    const valEl = document.getElementById(`${s.id}Value`);
-    if (valEl) valEl.textContent = s.id === 'soundVolume' ? `${s.value}%` : `${s.value} min`;
-}));
-
-document.querySelectorAll('.setting-toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('active')));
+document.querySelectorAll('.setting-slider').forEach(s => s.oninput = () => { const v = document.getElementById(`${s.id}Value`); if (v) v.textContent = s.id === 'soundVolume' ? `${s.value}%` : `${s.value} min`; });
+document.querySelectorAll('.setting-toggle').forEach(t => t.onclick = () => t.classList.toggle('active'));
 
 init();
