@@ -1017,9 +1017,12 @@ function updateTimerDisplay() {
     }
     const hudEl = document.getElementById('focusAreaProgressHUD');
     const clearBtn = document.getElementById('clearFocusArea');
+    const questionEl = document.getElementById('focusAreaQuestion');
+
     if (state.timerState.activeTaskId) {
         const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
         if (task) {
+            if (questionEl) questionEl.textContent = 'Focusing on:';
             if (textEl) { 
                 textEl.textContent = task.name; 
                 textEl.style.color = task.color; 
@@ -1049,6 +1052,7 @@ function updateTimerDisplay() {
             }
         }
     } else {
+        if (questionEl) questionEl.textContent = 'What are you focusing on?';
         if (textEl) {
             textEl.innerHTML = '<span class="focus-area-add-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span><span class="focus-area-placeholder-text">Focus Area</span>';
             textEl.style.color = '';

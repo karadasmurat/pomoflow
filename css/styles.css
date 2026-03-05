@@ -426,12 +426,78 @@ header {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-focus-area);
     border-radius: 12px 0 0 12px;
-    padding: 0; /* Remove default 24px padding */
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
 }
 
-.focus-area-panel .panel-header {
-    padding: 16px 12px; /* Inner padding for header only */
+.focus-area-panel .panel-header,
+.plan-panel .panel-header {
+    min-height: 100px; /* Taller header */
+    padding: 16px 16px 36px; /* More bottom padding to push content up */
     margin-bottom: 0;
+    border-bottom: none;
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: flex-start; /* Align text to top */
+    position: relative;
+    z-index: 102;
+    overflow: visible;
+}
+
+/* Push the notch DEEPER so it doesn't overlap the text area */
+.focus-area-panel .panel-header::after,
+.plan-panel .panel-header::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -44px; /* Dropped deeper */
+    transform: translateX(-50%);
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--bg);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.panel-header-content {
+    grid-column: 1 / span 3; /* Allow text to span the full header width */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: none; /* Remove restrictive width */
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.2px;
+}
+
+.panel-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: normal; /* Allow wrapping if needed, though we have width now */
+}
+
+.panel-header-actions {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+
+.panel-close-container {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
 }
 
 .focus-area-panel.open {
@@ -449,12 +515,10 @@ header {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-focus-area);
     border-radius: 12px 0 0 12px;
-    padding: 0; /* Remove default 24px padding */
-}
-
-.plan-panel .panel-header {
-    padding: 16px 12px; /* Inner padding for header only */
-    margin-bottom: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
 }
 
 .plan-panel.open {
@@ -1020,6 +1084,15 @@ header {
     align-items: center;
 }
 
+.timer-focus-area-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
 .focus-area-question {
     font-size: 10px;
     color: var(--text-secondary);
@@ -1028,12 +1101,12 @@ header {
     text-transform: uppercase;
     letter-spacing: 1.2px;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 @media (max-width: 480px) {
     .timer-focus-area-main-row {
-        flex-direction: column;
-        gap: 6px;
+        gap: 8px;
     }
 }
 
@@ -1054,6 +1127,14 @@ header {
     height: 30px;
     min-height: 0;
     text-decoration: none;
+    max-width: 200px;
+    overflow: hidden;
+}
+
+#focusAreaText {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .timer-focus-area-link:hover {
@@ -1255,13 +1336,14 @@ header {
     flex-direction: column;
     align-items: center;
     position: relative;
+    overflow: visible;
 }
 
 .timer-share-wrapper {
     position: absolute;
     top: 16px;
     right: 16px;
-    z-index: 10;
+    z-index: 100;
 }
 
 .history-panel {
@@ -1723,9 +1805,8 @@ header {
 .focus-area-category-group.active {
     background: var(--surface-elevated);
     border-radius: 12px;
-    margin: 8px 0; /* Only active category gets a margin for focus */
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    border-bottom: none;
+    border-bottom: 1px solid transparent;
 }
 
 .focus-area-category-group:last-child {
@@ -1736,13 +1817,14 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 12px; /* Reduced horizontal padding */
+    padding: 8px 12px;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 13px;
     font-weight: 600;
+    border-bottom: 1px solid transparent;
 }
 
 .focus-area-category-header:hover {
@@ -1753,7 +1835,7 @@ header {
 .focus-area-category-header.active {
     background: var(--surface-elevated);
     color: var(--text-primary);
-    padding: 8px 12px; /* Consistent horizontal padding */
+    padding: 8px 12px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -3260,58 +3342,115 @@ sliding-card[active] .focus-area-play-btn {
 
 .panel-header-actions {
     display: flex;
+    align-items: flex-end; /* Align actions to the bottom of the header */
+    gap: 12px;
+}
+
+.panel-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
     align-items: center;
-    gap: 0; /* Gap managed by individual margins */
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.panel-close:hover {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
 }
 
 .header-toggle-btn {
+    position: absolute;
+    bottom: -36px;
+    left: 50%;
+    transform: translateX(-50%);
     background: var(--primary);
-    border: none;
     color: #ffffff;
-    width: 28px; /* Slightly smaller for main header */
-    height: 28px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+    transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    /* MUI Elevation 6 */
+    box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2),
+                0px 6px 10px 0px rgba(0,0,0,0.14),
+                0px 1px 18px 0px rgba(0,0,0,0.12);
+    border: 1px solid var(--border);
+    z-index: 10;
 }
 
 .header-toggle-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(88, 166, 255, 0.4);
+    /* MUI Elevation 8 */
+    box-shadow: 0px 5px 5px -3px rgba(0,0,0,0.2),
+                0px 8px 10px 1px rgba(0,0,0,0.14),
+                0px 3px 14px 2px rgba(0,0,0,0.12);
+    background-color: #4a9eff; /* Slightly brighter on hover */
+}
+
+.header-toggle-btn:active {
+    /* MUI Elevation 12 */
+    box-shadow: 0px 7px 8px -4px rgba(0,0,0,0.2),
+                0px 12px 17px 2px rgba(0,0,0,0.14),
+                0px 5px 22px 4px rgba(0,0,0,0.12);
+    transform: translateX(-50%) scale(0.95); /* Pressed effect */
 }
 
 .header-toggle-btn.active {
-    background: var(--surface-elevated);
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.header-toggle-btn.active::after {
+    display: none; /* Remove bleed effect */
+}
+
+.header-toggle-btn svg {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+}
+
+.header-toggle-btn.active svg {
     transform: rotate(45deg);
-    box-shadow: none;
 }
 
 .header-toggle-btn.active:hover {
     background: var(--border);
     color: var(--text-primary);
+    box-shadow: none;
 }
 
 .panel-section-create-wrapper {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s, opacity 0.3s;
     overflow: hidden;
-    visibility: hidden; /* Hide content and borders entirely */
+    visibility: hidden;
+    opacity: 0;
     position: relative;
     z-index: 100;
+    margin-top: 44px; /* Space for the floating button notch */
 }
 
 .panel-section-create-wrapper.open {
     grid-template-rows: 1fr;
-    margin-bottom: 16px;
     visibility: visible;
-    overflow: visible;
+    opacity: 1;
+}
+
+.panel-section-create-container {
+    min-height: 0;
+    padding: 0 12px; /* Move horizontal padding here */
 }
 
 .panel-section-create {
@@ -3320,6 +3459,7 @@ sliding-card[active] .focus-area-play-btn {
     background: var(--surface-elevated);
     border-radius: 12px;
     border: 1px solid var(--border);
+    margin-bottom: 12px;
 }
 
 /* Adjustments for existing containers */
@@ -3686,31 +3826,117 @@ button {
 }
 
 .share-btn {
-    background: transparent;
+    background: var(--surface-elevated);
     border: 1px solid var(--border);
-    color: var(--text-secondary);
+    color: var(--text-primary);
     cursor: pointer;
-    height: 30px;
-    padding: 0 12px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     transition: all 200ms ease;
     flex-shrink: 0;
+    box-shadow: var(--shadow-modal);
 }
+
+.share-btn:hover {
+    background: var(--border);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Liquid FAB Implementation */
+.liquid-fab-container {
+    position: relative;
+    overflow: visible;
+    display: inline-flex;
+    justify-content: center;
+    filter: url('#gooey');
+    -webkit-filter: url('#gooey');
+    isolation: isolate; /* Localize filter and blending */
+}
+
+.liquid-fab-container.open .share-btn,
+.liquid-fab-container.open .liquid-fab-item {
+    box-shadow: none !important;
+}
+
+.liquid-fab-container .liquid-fab-content {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    
+    /* Ensure it overlaps exactly with the trigger at start */
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    min-width: 0 !important;
+}
+
+.liquid-fab-trigger {
+    position: relative;
+    z-index: 2;
+}
+
+.liquid-fab-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 1;
+    visibility: visible;
+}
+
+.liquid-fab-container.open .liquid-fab-content {
+    pointer-events: auto;
+}
+
+.liquid-fab-item {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    opacity: 0;
+    transition: all 900ms cubic-bezier(0.22, 0.82, 0.24, 1);
+    background: var(--surface-elevated) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.liquid-fab-item:hover {
+    background: var(--border) !important;
+    color: var(--primary) !important;
+}
+
+.liquid-fab-container.open .liquid-fab-item {
+    opacity: 1;
+    transform: translateX(-50%) scale(0.7);
+    transition: all 900ms cubic-bezier(0.22, 0.82, 0.24, 1);
+}
+
+/* Tighter staggered expansion for better 'melt' overlap */
+.liquid-fab-container.open .liquid-fab-item:nth-child(1) { top: 56px; transition-delay: 0.01s; }
+.liquid-fab-container.open .liquid-fab-item:nth-child(2) { top: 108px; transition-delay: 0.04s; }
 
 .share-btn span {
     font-size: 12px;
     font-weight: 600;
-}
-
-.share-btn:hover {
-    color: var(--primary);
-    border-color: var(--primary);
-    background: var(--surface-elevated);
-    transform: translateY(-1px);
 }
 
 .toast {

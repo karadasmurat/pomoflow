@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Navbar + Hamburger + Settings Drawer</title>
+  <style>
+    :root {
+      --nav-h: 56px;
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --accent: #3b82f6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background: #0b1020;
+    }
+
+    .navbar {
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .hamburger-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      background: #0b1224;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .hamburger-icon {
+      width: 18px;
+      height: 12px;
+      position: relative;
+    }
+
+    .hamburger-icon span {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+    }
+
+    .hamburger-icon span:nth-child(1) {
+      top: 0;
+    }
+
+    .hamburger-icon span:nth-child(2) {
+      top: 5px;
+    }
+
+    .hamburger-icon span:nth-child(3) {
+      top: 10px;
+    }
+
+    .menu {
+      position: absolute;
+      top: calc(var(--nav-h) + 6px);
+      right: 12px;
+      min-width: 180px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      padding: 8px;
+      display: none;
+      z-index: 30;
+    }
+
+    .menu.open {
+      display: block;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .menu button:hover {
+      background: #1f2937;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 40;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(360px, 88vw);
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      position: relative;
+      min-height: 104px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      padding: 16px 14px 28px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(170deg, #1f2d4a 0%, #172036 55%, #111827 100%);
+      overflow: visible;
+      isolation: isolate;
+    }
+
+    .drawer-header::after {
+      content: "";
+      position: absolute;
+      right: 16px;
+      bottom: -26px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .drawer-title {
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .drawer-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      border: 1px solid var(--border);
+      background: #0b1224;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      z-index: 3;
+    }
+
+    .drawer-fab {
+      position: absolute;
+      right: 22px;
+      bottom: -20px;
+      width: 52px;
+      height: 52px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #f8fbff;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35);
+      z-index: 2;
+    }
+
+    .drawer-content {
+      padding: 34px 14px 14px;
+      color: var(--muted);
+    }
+
+    main {
+      padding: 20px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="brand">My App</div>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false">
+      <span class="hamburger-icon" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+    </button>
+
+    <div class="menu" id="hamburgerMenu" role="menu" aria-label="Main menu">
+      <button id="settingsBtn" role="menuitem">Settings</button>
+    </div>
+  </nav>
+
+  <main>
+    <h2>Demo Page</h2>
+    <p>Use the hamburger in the navbar, then click <strong>Settings</strong>.</p>
+  </main>
+
+  <div class="overlay" id="overlay"></div>
+
+  <aside class="drawer" id="settingsDrawer" aria-label="Settings drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">Settings</div>
+      <div class="drawer-subtitle">Tune your preferences</div>
+      <button class="drawer-fab" id="createNewBtn" aria-label="Create New" title="Create New">+</button>
+      <button class="close-btn" id="closeDrawerBtn">Close</button>
+    </div>
+    <div class="drawer-content">
+      Put your settings controls here.
+    </div>
+  </aside>
+
+  <script>
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const hamburgerMenu = document.getElementById("hamburgerMenu");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const drawer = document.getElementById("settingsDrawer");
+    const overlay = document.getElementById("overlay");
+    const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+
+    hamburgerBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isOpen = hamburgerMenu.classList.toggle("open");
+      hamburgerBtn.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    settingsBtn.addEventListener("click", () => {
+      hamburgerMenu.classList.remove("open");
+      hamburgerBtn.setAttribute("aria-expanded", "false");
+      drawer.classList.add("open");
+      overlay.classList.add("open");
+    });
+
+    function closeDrawer() {
+      drawer.classList.remove("open");
+      overlay.classList.remove("open");
+    }
+
+    closeDrawerBtn.addEventListener("click", closeDrawer);
+    overlay.addEventListener("click", closeDrawer);
+
+    document.addEventListener("click", (event) => {
+      if (!hamburgerMenu.contains(event.target) && !hamburgerBtn.contains(event.target)) {
+        hamburgerMenu.classList.remove("open");
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hamburgerMenu.classList.remove("open");
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+        closeDrawer();
+      }
+    });
+  </script>
+</body>
+</html>
