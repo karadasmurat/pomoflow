@@ -3,8 +3,8 @@
  * Handles all database operations off the main thread using OPFS.
  */
 
-// We'll use the official SQLite WASM distribution locally
-const SQLITE_WASM_URL = 'vendor/sqlite/sqlite3.js';
+// Use a specific versioned CDN URL to rule out redirection issues
+const SQLITE_WASM_URL = 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.51.1-build2/sqlite-wasm/jswasm/sqlite3.js';
 
 let db = null;
 let sqlite3 = null;
@@ -15,13 +15,27 @@ async function init() {
         importScripts(SQLITE_WASM_URL);
         
         // Initialize SQLite3
+        console.log('Initializing SQLite3 (v3.51.1) from CDN...');
+        const wasmUrl = 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.51.1-build2/sqlite-wasm/jswasm/sqlite3.wasm';
+        
+        // Manual check for the WASM file to get better error details
+        try {
+            const response = await fetch(wasmUrl);
+            console.log('WASM Fetch Status:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch WASM: ${response.status} ${response.statusText}`);
+            }
+        } catch (fetchErr) {
+            console.error('WASM Pre-fetch check failed:', fetchErr);
+        }
+
         sqlite3 = await sqlite3InitModule({
             print: console.log,
             printErr: console.error,
             locateFile: (path) => {
                 if (path.endsWith('.wasm')) {
-                    // This resolves relative to the worker's script location (js/db-worker.js)
-                    return new URL('vendor/sqlite/' + path, self.location.href).href;
+                    console.log('SQLite requesting WASM from:', wasmUrl);
+                    return wasmUrl;
                 }
                 return path;
             }
