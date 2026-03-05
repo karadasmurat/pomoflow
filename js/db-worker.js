@@ -16,9 +16,12 @@ async function init() {
         
         // Initialize SQLite3
         sqlite3 = await sqlite3InitModule({
+            print: console.log,
+            printErr: console.error,
             locateFile: (path) => {
                 if (path.endsWith('.wasm')) {
-                    return 'vendor/sqlite/' + path;
+                    // This resolves relative to the worker's script location (js/db-worker.js)
+                    return new URL('vendor/sqlite/' + path, self.location.href).href;
                 }
                 return path;
             }
