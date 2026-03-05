@@ -3,8 +3,8 @@
  * Handles all database operations off the main thread using OPFS.
  */
 
-// We'll use the official SQLite WASM distribution from a CDN
-const SQLITE_WASM_URL = 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.44.2/sqlite-wasm/j/sqlite3.js';
+// We'll use the official SQLite WASM distribution locally
+const SQLITE_WASM_URL = 'vendor/sqlite/sqlite3.js';
 
 let db = null;
 let sqlite3 = null;
@@ -15,7 +15,14 @@ async function init() {
         importScripts(SQLITE_WASM_URL);
         
         // Initialize SQLite3
-        sqlite3 = await sqlite3InitModule();
+        sqlite3 = await sqlite3InitModule({
+            locateFile: (path) => {
+                if (path.endsWith('.wasm')) {
+                    return 'vendor/sqlite/' + path;
+                }
+                return path;
+            }
+        });
         
         if ('opfs' in sqlite3) {
             db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
