@@ -220,8 +220,25 @@ function switchMode(mode) {
 let currentFilter = 'today';
 let showAllHistory = false;
 
-function init() {
+async function init() {
+    // Initialize SQLite Database
+    try {
+        await dbManager.init();
+    } catch (e) {
+        console.error('SQLite initialization failed, falling back to localStorage only:', e);
+    }
+
     loadData();
+
+    // Check if migration is needed
+    if (dbManager.initialized && !localStorage.getItem('flowtracker_sqlite_migrated')) {
+        try {
+            await dbManager.migrateFromLocalStorage(state);
+        } catch (e) {
+            console.error('Migration to SQLite failed:', e);
+        }
+    }
+
     setupEventListeners();
     renderFocusAreas();
     renderHistory('today');
@@ -369,6 +386,15 @@ function saveData() {
             collapsedCategories: state.collapsedCategories,
             activeCategoryIndex: state.activeCategoryIndex
         }));
+
+        // Async sync to SQLite
+        if (dbManager.initialized) {
+            state.tasks.forEach(t => dbManager.insertFocusArea(t));
+            state.aims.forEach(a => dbManager.insertAim(a));
+            for (const [key, value] of Object.entries(state.settings)) {
+                dbManager.setSetting(key, value);
+            }
+        }
     } catch (e) {
         console.error('Error saving data:', e);
     }
@@ -598,7 +624,7 @@ function setupEventListeners() {
 
     const el = {};
     Object.keys(elements).forEach(key => {
-        el[elements[key]] = document.getElementById(elements[key]);
+        el[key] = document.getElementById(elements[key]);
     });
 
     // --- Unified Global Click Handler ---
@@ -1039,7 +1065,13 @@ function updateTimerDisplay() {
                     const h = Math.floor(targetMins / 60);
                     const m = targetMins % 60;
                     const aimStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
-                    hudEl.innerHTML = `<progress-compact value="${spent}" max="${targetMins * 60}" color="${task.color}" label="${aimStr}"></progress-compact>`;
+                    const existingProgress = hudEl.querySelector('progress-compact');
+                    if (existingProgress) {
+                        existingProgress.setAttribute('value', spent);
+                        existingProgress.setAttribute('label', aimStr);
+                    } else {
+                        hudEl.innerHTML = `<progress-compact value="${spent}" max="${targetMins * 60}" color="${task.color}" label="${aimStr}"></progress-compact>`;
+                    }
                 } else {
                     if (!hudEl.querySelector('.set-aim-cta')) hudEl.innerHTML = `<div class="set-aim-cta"><span class="set-aim-text">Set a focus aim.</span></div>`;
                 }
@@ -1054,7 +1086,7 @@ function updateTimerDisplay() {
     } else {
         if (questionEl) questionEl.textContent = 'What are you focusing on?';
         if (textEl) {
-            textEl.innerHTML = '<span class="focus-area-add-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span><span class="focus-area-placeholder-text">Focus Area</span>';
+            textEl.innerHTML = '<span class="focus-area-add-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>';
             textEl.style.color = '';
             textEl.title = '';
         }
@@ -1302,6 +1334,7 @@ function saveSession() {
         }
     }
     state.sessions.push(session);
+    if (dbManager.initialized) dbManager.insertSession(session);
     const xp = Math.floor(session.duration / 60) * 10;
     if (xp > 0) addXP(xp);
     saveData(); renderFocusAreas(); renderHistory(currentFilter); checkAchievements();

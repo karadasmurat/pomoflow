@@ -1116,31 +1116,60 @@ header {
     color: var(--text-secondary);
     cursor: pointer;
     padding: 0 14px;
-    border-radius: 8px;
-    transition: all 200ms ease;
+    border-radius: 16px;
+    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 8px;
     font-family: var(--font-sans);
     font-size: 13px;
     font-weight: 500;
-    height: 30px;
+    height: 32px;
     min-height: 0;
     text-decoration: none;
     max-width: 200px;
     overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
 }
 
-#focusAreaText {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* FAB mode when it's just a placeholder icon */
+.timer-focus-area-link:has(.focus-area-add-icon):not(:has(.timer-focus-area-prefix[style*="display: inline"])) {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    aspect-ratio: 1 / 1;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white !important;
+    border: none;
+    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.35);
+    line-height: 0;
+}
+
+.timer-focus-area-link:has(.focus-area-add-icon):not(:has(.timer-focus-area-prefix[style*="display: inline"])) .focus-area-add-icon {
+    color: white !important;
 }
 
 .timer-focus-area-link:hover {
     color: var(--text-primary);
     border-color: var(--text-secondary);
     background: var(--surface-elevated);
+    transform: translateY(-1px);
+}
+
+.timer-focus-area-link:has(.focus-area-add-icon):not(:has(.timer-focus-area-prefix[style*="display: inline"])):hover {
+    background: #4a9eff;
+    box-shadow: 0 6px 16px rgba(88, 166, 255, 0.4);
+    color: white !important;
+    transform: translateY(-2px) scale(1.05);
+}
+
+.timer-focus-area-link:active {
+    transform: scale(0.95);
 }
 
 .focus-area-clear-icon {
