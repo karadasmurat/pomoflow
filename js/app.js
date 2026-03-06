@@ -229,6 +229,7 @@ function purgeLocalStorage() {
 
 let currentFilter = 'today';
 let showAllHistory = false;
+let savePending = false;
 
 async function init() {
     console.log('Cross-Origin Isolated:', self.crossOriginIsolated ? '✅ YES' : '❌ NO (OPFS will fail)');
@@ -322,6 +323,11 @@ async function init() {
     restoreTimerState();
     // initTheme() is now handled by the SQLite loader above
     checkAchievements();
+
+    // 5. Finalize - if any saves were buffered during init, perform them now
+    if (savePending && dbManager.initialized) {
+        saveData();
+    }
 }
 
 function loadData() {
@@ -456,8 +462,10 @@ function saveData() {
             dbManager.setAppState('timer_state', state.timerState);
             dbManager.setAppState('theme', document.documentElement.getAttribute('data-theme') || 'dark');
             dbManager.setAppState('notification_prompt', state.notificationPermission);
+            savePending = false;
         } else {
-            console.warn('SQLite not yet initialized, buffering save...');
+            savePending = true;
+            console.log('SQLite not yet initialized, buffering save...');
         }
     } catch (e) {
         console.error('Error saving data:', e);

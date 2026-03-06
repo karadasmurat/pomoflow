@@ -11,38 +11,44 @@ class DatabaseManager {
         this.disabled = false;
 
         try {
-            // Cache bust the worker for testing
-            this.worker = new Worker('js/db-worker.js?v=' + Date.now());
-            this.worker.onmessage = (e) => {
-                const { action, success, result, error, requestId } = e.data;
-                
-                if (action === 'init_result') {
-                    this.initialized = success;
-                }
+            this.worker = new Worker('js/db-worker.js');
+            
+            // Create a promise that resolves when the worker is initialized
+            this.initPromise = new Promise((resolve) => {
+                this.worker.onmessage = (e) => {
+                    const { action, success, result, error, requestId } = e.data;
+                    
+                    if (action === 'init_result') {
+                        this.initialized = success;
+                        resolve(success);
+                    }
 
-                if (this.requests.has(requestId)) {
-                    const { resolve, reject } = this.requests.get(requestId);
-                    this.requests.delete(requestId);
-                    if (error) reject(new Error(error));
-                    else resolve(result);
-                }
-            };
+                    if (this.requests.has(requestId)) {
+                        const { resolve: reqResolve, reject } = this.requests.get(requestId);
+                        this.requests.delete(requestId);
+                        if (error) reject(new Error(error));
+                        else reqResolve(result);
+                    }
+                };
+            });
+
+            // Trigger actual initialization
+            const needsMigration = !localStorage.getItem('flowtracker_sqlite_migrated');
+            this.worker.postMessage({ 
+                action: 'init', 
+                payload: { purge: needsMigration },
+                requestId: 'initial-init' 
+            });
+
         } catch (e) {
-            console.warn('Web Workers not available (likely file:// origin). SQLite disabled.', e);
+            console.warn('Web Workers not available. SQLite disabled.', e);
             this.disabled = true;
+            this.initPromise = Promise.resolve(false);
         }
     }
 
     async init() {
-        if (this.disabled) return false;
-        // Check if DB exists by trying to find our migration flag
-        const result = await this.initPromise; // Wait for initial worker init
-        return result;
-    }
-
-    async initWithPurge(purge = false) {
-        if (this.disabled) return false;
-        return this._send('init', { purge });
+        return this.initPromise;
     }
 
     async _send(action, payload = {}) {
