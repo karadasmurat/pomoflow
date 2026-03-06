@@ -9,7 +9,11 @@ let editingTaskId = null;
 // We'll keep them here for now but accessing them might require window.* assignment if HTML uses inline onclick.
 
 function toggleTimer() {
-    timer.toggle();
+    if (state.timerState.isRunning) {
+        pauseTimer();
+    } else {
+        startTimer();
+    }
 }
 
 function startTimer() {
@@ -893,15 +897,6 @@ function handleSessionComplete(skipped = false) {
         }
     }
 
-    const msgEl = document.getElementById('timerMessage');
-    if (msgEl) {
-        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
-        const status = skipped ? `Skipped ${wasWork ? 'Focus Area' : 'Break'}` : `Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}`;
-        msgEl.innerHTML = `<span class="msg-status">${status}</span><span class="msg-action">Let's start a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}!</span>`;
-        const display = document.querySelector('.timer-display');
-        if (display) display.classList.add('has-message');
-    }
-    
     if (wasWork && !skipped) {
         state.timerState.sessionCount++;
         saveSession();
@@ -939,6 +934,16 @@ function handleSessionComplete(skipped = false) {
     saveData();
 
     renderHistory(currentFilter);
+
+    // Show Guidance Message
+    const msgEl = document.getElementById('timerMessage');
+    if (msgEl) {
+        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
+        const status = skipped ? `Skipped ${wasWork ? 'Focus Area' : 'Break'}` : `Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}`;
+        msgEl.innerHTML = `<span class="msg-status">${status}</span><span class="msg-action">Let's start a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}!</span>`;
+        const display = document.querySelector('.timer-display');
+        if (display) display.classList.add('has-message');
+    }
     
     // Auto-start logic only applies to natural finishes, not manual skips
     if (!skipped && ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks))) {
