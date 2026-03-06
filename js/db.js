@@ -59,11 +59,31 @@ class DatabaseManager {
     async getAllSettings() { 
         const rows = await this._send('get_all_settings');
         const settings = {};
-        rows.forEach(row => {
-            try { settings[row.key] = JSON.parse(row.value); }
-            catch (e) { settings[row.key] = row.value; }
-        });
+        if (rows) {
+            rows.forEach(row => {
+                try { settings[row.key] = JSON.parse(row.value); }
+                catch (e) { settings[row.key] = row.value; }
+            });
+        }
         return settings;
+    }
+
+    async getFullState() {
+        if (this.disabled) return null;
+        
+        const [tasks, sessions, aims, settings] = await Promise.all([
+            this.getAllFocusAreas(),
+            this.getAllSessions(),
+            this.getAllAims(),
+            this.getAllSettings()
+        ]);
+
+        return {
+            tasks: tasks || [],
+            sessions: sessions || [],
+            aims: aims || [],
+            settings: Object.keys(settings).length > 0 ? settings : null
+        };
     }
 
     async migrateFromLocalStorage(state) {

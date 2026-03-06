@@ -223,24 +223,56 @@ let showAllHistory = false;
 async function init() {
     console.log('Cross-Origin Isolated:', self.crossOriginIsolated ? '✅ YES' : '❌ NO (OPFS will fail)');
     
-    // Initialize SQLite Database
+    // 1. Initialize SQLite Database
     try {
         await dbManager.init();
     } catch (e) {
-        console.error('SQLite initialization failed, falling back to localStorage only:', e);
+        console.error('SQLite initialization failed:', e);
     }
 
+    // 2. Load basic profile and transient UI state from localStorage first (for speed)
     loadData();
 
-    // Check if migration is needed
-    if (dbManager.initialized && !localStorage.getItem('flowtracker_sqlite_migrated')) {
-        try {
+    // 3. If SQLite is ready, load the heavy data (Tasks, Sessions, Aims)
+    if (dbManager.initialized) {
+        // Check if we need to migrate from localStorage one last time
+        if (!localStorage.getItem('flowtracker_sqlite_migrated')) {
             await dbManager.migrateFromLocalStorage(state);
-        } catch (e) {
-            console.error('Migration to SQLite failed:', e);
+            
+            // USER REQUEST: Remove the heavy localStorage backup entirely
+            // We clear everything except the tiny bit needed for the "migrated" flag
+            // and the transient profile/timer state which makes the app feel fast on load.
+            Object.values(STORAGE_KEYS).forEach(key => {
+                if (key !== STORAGE_KEYS.PROFILE && key !== STORAGE_KEYS.STATE && key !== STORAGE_KEYS.VERSION) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+        
+        // Regular load from SQLite
+        const dbState = await dbManager.getFullState();
+        if (dbState) {
+            if (dbState.tasks.length > 0) state.tasks = dbState.tasks;
+            if (dbState.sessions.length > 0) state.sessions = dbState.sessions;
+            if (dbState.aims.length > 0) state.aims = dbState.aims;
+            if (dbState.settings) state.settings = { ...state.settings, ...dbState.settings };
         }
     }
 
+    // Fallback for first-run users (both stores empty)
+    if (state.tasks.length === 0) {
+        state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
+            id: (Date.now() + index).toString(),
+            name: t.name,
+            category: t.category,
+            color: t.color,
+            completed: false,
+            createdAt: new Date().toISOString()
+        }));
+        saveData();
+    }
+
+    // 4. Initialize UI
     setupEventListeners();
     renderFocusAreas();
     renderHistory('today');
@@ -303,42 +335,21 @@ function loadData() {
         }
 
         const tasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-        const parsedTasks = tasks ? JSON.parse(tasks) : null;
-
-        if (parsedTasks && parsedTasks.length > 0) {
-            state.tasks = parsedTasks;
-            state.tasks.forEach(t => {
-                if (!t.color) t.color = '#58a6ff';
-            });
-        } else {
-            state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
-                id: (Date.now() + index).toString(),
-                name: t.name,
-                category: t.category,
-                color: t.color,
-                completed: false,
-                createdAt: new Date().toISOString()
-            }));
-            saveData();
+        if (tasks) {
+            const parsedTasks = JSON.parse(tasks);
+            if (parsedTasks && parsedTasks.length > 0) {
+                state.tasks = parsedTasks;
+            }
         }
 
         const sessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
         if (sessions) {
             state.sessions = JSON.parse(sessions);
-            state.sessions.forEach(s => {
-                if (!s.taskColor) s.taskColor = '#58a6ff';
-                if (!s.timestamp || isNaN(new Date(s.timestamp).getTime())) {
-                    s.timestamp = new Date().toISOString();
-                }
-            });
         }
 
         const aims = localStorage.getItem(STORAGE_KEYS.AIMS);
         if (aims) {
             state.aims = JSON.parse(aims);
-            state.aims.forEach(a => {
-                if (!a.createdAt) a.createdAt = new Date().toISOString();
-            });
         }
 
         const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -372,10 +383,8 @@ function loadData() {
 
 function saveData() {
     try {
-        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasks));
-        localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(state.sessions));
-        localStorage.setItem(STORAGE_KEYS.AIMS, JSON.stringify(state.aims));
-        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
+        // We only save transient UI state and basic profile to localStorage
+        // Tasks, Sessions, and Aims now live ONLY in SQLite
         localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state.timerState));
         localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
 
@@ -389,13 +398,22 @@ function saveData() {
             activeCategoryIndex: state.activeCategoryIndex
         }));
 
-        // Async sync to SQLite
+        // Primary storage: SQLite sync
         if (dbManager.initialized) {
+            // In a real app, you'd only sync changed items, 
+            // but we'll stick to the current full sync for simplicity
             state.tasks.forEach(t => dbManager.insertFocusArea(t));
+            state.sessions.forEach(s => dbManager.insertSession(s));
             state.aims.forEach(a => dbManager.insertAim(a));
             for (const [key, value] of Object.entries(state.settings)) {
                 dbManager.setSetting(key, value);
             }
+        } else {
+            // Fallback: If SQLite failed, we keep localStorage as a safety net
+            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasks));
+            localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(state.sessions));
+            localStorage.setItem(STORAGE_KEYS.AIMS, JSON.stringify(state.aims));
+            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
         }
     } catch (e) {
         console.error('Error saving data:', e);
