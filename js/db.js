@@ -11,7 +11,8 @@ class DatabaseManager {
         this.disabled = false;
 
         try {
-            this.worker = new Worker('js/db-worker.js');
+            // Add a cache bust to ensure worker changes are picked up
+            this.worker = new Worker('js/db-worker.js?v=' + Date.now());
             this.worker.onmessage = (e) => {
                 const { action, success, result, error, requestId } = e.data;
                 
