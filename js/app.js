@@ -926,6 +926,11 @@ function handleSessionComplete(skipped = false) {
     // If skipped, we apply the next duration immediately as requested, but wait for start.
     if (skipped) {
         timer.applyMode(nextMode);
+        // Ensure UI is clean if they skipped while a message was showing
+        const msgEl = document.getElementById('timerMessage');
+        if (msgEl) msgEl.innerHTML = '';
+        const display = document.querySelector('.timer-display');
+        if (display) display.classList.remove('has-message');
     } else {
         state.timerState.mode = nextMode;
         state.timerState.remainingTime = 0;
@@ -935,14 +940,16 @@ function handleSessionComplete(skipped = false) {
 
     renderHistory(currentFilter);
 
-    // Show Guidance Message
-    const msgEl = document.getElementById('timerMessage');
-    if (msgEl) {
-        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
-        const status = skipped ? `Skipped ${wasWork ? 'Focus Area' : 'Break'}` : `Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}`;
-        msgEl.innerHTML = `<span class="msg-status">${status}</span><span class="msg-action">Let's start a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}!</span>`;
-        const display = document.querySelector('.timer-display');
-        if (display) display.classList.add('has-message');
+    // Show Guidance Message ONLY if it wasn't a manual skip
+    if (!skipped) {
+        const msgEl = document.getElementById('timerMessage');
+        if (msgEl) {
+            const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
+            const status = `Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}`;
+            msgEl.innerHTML = `<span class="msg-status">${status}</span><span class="msg-action">Let's start a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}!</span>`;
+            const display = document.querySelector('.timer-display');
+            if (display) display.classList.add('has-message');
+        }
     }
     
     // Auto-start logic only applies to natural finishes, not manual skips
