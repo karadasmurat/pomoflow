@@ -20,12 +20,13 @@ async function init() {
             printErr: console.error,
         });
         
-        if ('opfs' in sqlite3) {
+        // Check for OPFS support (requires cross-origin isolation)
+        if (sqlite3.opfs) {
             db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
             console.log('SQLite OPFS Database initialized:', db.filename);
         } else {
             db = new sqlite3.oo1.DB('/pomoflow.db', 'ct');
-            console.warn('OPFS not available, falling back to transient/memory storage');
+            console.warn('OPFS support not found in sqlite3 object, falling back to transient/memory storage');
         }
 
         // Create Tables

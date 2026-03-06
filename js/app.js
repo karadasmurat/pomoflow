@@ -221,6 +221,8 @@ let currentFilter = 'today';
 let showAllHistory = false;
 
 async function init() {
+    console.log('Cross-Origin Isolated:', self.crossOriginIsolated ? '✅ YES' : '❌ NO (OPFS will fail)');
+    
     // Initialize SQLite Database
     try {
         await dbManager.init();

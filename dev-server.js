@@ -17,7 +17,13 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  // Remove query strings for path resolution
+  // CRITICAL HEADERS for SQLite OPFS (SharedArrayBuffer)
+  // These MUST be set on the main HTML request to enable cross-origin isolation.
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+
+  // Handle URL path
   let filePath = '.' + req.url.split('?')[0];
   if (filePath === './') filePath = './index.html';
 
@@ -28,19 +34,15 @@ const server = http.createServer((req, res) => {
     if (error) {
       if (error.code === 'ENOENT') {
         console.log(`\x1b[31m404 - Not Found: ${filePath}\x1b[0m`);
-        res.writeHead(404);
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('File not found');
       } else {
-        console.log(`\x1b[31m500 - Server Error: ${error.code} for ${filePath}\x1b[0m`);
-        res.writeHead(500);
+        console.log(`\x1b[31m500 - Server Error: ${error.code}\x1b[0m`);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Server error: ' + error.code);
       }
     } else {
       console.log(`\x1b[32m200 - OK: ${filePath} (${contentType})\x1b[0m`);
-      // CRITICAL: These headers are required for SQLite WASM to use SharedArrayBuffer and OPFS
-      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-      
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content, 'utf-8');
     }
@@ -48,7 +50,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\x1b[32m🚀 PomoFlow Dev Server running at http://localhost:${PORT}/\x1b[0m`);
-  console.log('Security headers (COOP/COEP) are active for SQLite OPFS support.');
-  console.log('Press Ctrl+C to stop.');
+  console.log(`\x1b[32m🚀 PomoFlow Dev Server: http://localhost:${PORT}/\x1b[0m`);
+  console.log('Isolation headers (COOP/COEP) are ACTIVE.');
+  console.log('IMPORTANT: Perform a HARD REFRESH (Cmd+Shift+R) in your browser.');
 });
