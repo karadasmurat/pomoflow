@@ -15,7 +15,11 @@ function toggleTimer() {
 function startTimer() {
     // Clear any messages when starting
     const msgEl = document.getElementById('timerMessage');
-    if (msgEl) msgEl.innerHTML = '';
+    if (msgEl) {
+        msgEl.innerHTML = '';
+        const display = document.querySelector('.timer-display');
+        if (display) display.classList.remove('has-message');
+    }
 
     // If we are at 0:00, it means we are transitioning modes
     if (state.timerState.remainingTime <= 0) {
@@ -894,6 +898,8 @@ function handleSessionComplete(skipped = false) {
         const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
         const status = skipped ? `Skipped ${wasWork ? 'Focus Area' : 'Break'}` : `Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}`;
         msgEl.innerHTML = `<span class="msg-status">${status}</span><span class="msg-action">Let's start a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}!</span>`;
+        const display = document.querySelector('.timer-display');
+        if (display) display.classList.add('has-message');
     }
     
     if (wasWork && !skipped) {
@@ -930,7 +936,11 @@ function handleSessionComplete(skipped = false) {
     saveData();
 
     renderHistory(currentFilter);
-    if ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks)) {
+    if (skipped) {
+        // If they manually skipped, we move to the next session immediately
+        if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode);
+        startTimer();
+    } else if ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks)) {
         setTimeout(() => {
             if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode);
             startTimer();
