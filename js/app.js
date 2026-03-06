@@ -926,21 +926,22 @@ function handleSessionComplete(skipped = false) {
         setTimeout(() => notify('Break is over! Ready to focus?'), 500);
     }
     
-    // Internal applyMode to avoid side effects
-    state.timerState.mode = nextMode;
-    
-    // DYNAMIC GUIDANCE: We stay at 0:00 so the user can read the message.
-    // The next duration will be applied only when they click "Start"
-    state.timerState.remainingTime = 0;
-    updateTimerDisplay();
+    // DYNAMIC GUIDANCE:
+    // If naturally finished, we stay at 0:00 so the user can read the message.
+    // If skipped, we apply the next duration immediately as requested, but wait for start.
+    if (skipped) {
+        timer.applyMode(nextMode);
+    } else {
+        state.timerState.mode = nextMode;
+        state.timerState.remainingTime = 0;
+        updateTimerDisplay();
+    }
     saveData();
 
     renderHistory(currentFilter);
-    if (skipped) {
-        // If they manually skipped, we move to the next session immediately
-        if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode);
-        startTimer();
-    } else if ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks)) {
+    
+    // Auto-start logic only applies to natural finishes, not manual skips
+    if (!skipped && ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks))) {
         setTimeout(() => {
             if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode);
             startTimer();
