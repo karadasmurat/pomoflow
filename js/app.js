@@ -1530,17 +1530,22 @@ function renderChart(sessions) {
     container.innerHTML = ''; if (sessions.length === 0) return;
     const data = {};
     sessions.forEach(s => {
-        if (!data[s.taskName]) data[s.taskName] = { time: 0, color: s.taskColor || '#58a6ff' };
-        data[s.taskName].time += s.duration;
+        const name = s.taskName || 'Unknown';
+        const duration = Number(s.duration) || 0;
+        if (!data[name]) data[name] = { time: 0, color: s.taskColor || '#58a6ff' };
+        data[name].time += duration;
     });
     const top = Object.entries(data).sort((a, b) => b[1].time - a[1].time).slice(0, 5);
-    const total = sessions.reduce((acc, s) => acc + s.duration, 0);
+    const total = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
+    if (total <= 0) return;
+
     const chartSize = 140; const center = chartSize / 2; const radius = 60; let curAngle = 0;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', `0 0 ${chartSize} ${chartSize}`);
     svg.classList.add('pie-chart');
     top.forEach(([name, d]) => {
         const slice = (d.time / total) * 360;
+        if (isNaN(slice)) return;
         if (slice >= 359.9) {
             const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             c.setAttribute('cx', center); c.setAttribute('cy', center); c.setAttribute('r', radius); c.setAttribute('fill', d.color);

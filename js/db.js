@@ -54,7 +54,16 @@ class DatabaseManager {
     async setSetting(key, value) { return this._send('set_setting', { key, value: JSON.stringify(value) }); }
 
     async getAllFocusAreas() { return this._send('get_all_focus_areas'); }
-    async getAllSessions() { return this._send('get_all_sessions'); }
+    async getAllSessions() { 
+        const rows = await this._send('get_all_sessions');
+        if (!rows) return [];
+        return rows.map(s => ({
+            ...s,
+            taskId: s.focus_area_id,
+            duration: s.duration_seconds,
+            xp: s.xp_earned
+        }));
+    }
     async getAllAims() { return this._send('get_all_aims'); }
     async getAllSettings() { 
         const rows = await this._send('get_all_settings');

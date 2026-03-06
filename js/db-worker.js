@@ -22,6 +22,10 @@ async function init() {
         
         // Check for OPFS support (requires cross-origin isolation)
         if (sqlite3.opfs) {
+            // If we are migrating, we might want to clear existing broken DB
+            if (!localStorage.getItem('flowtracker_sqlite_migrated')) {
+                try { await sqlite3.opfs.unlink('/pomoflow.db'); } catch(e) {}
+            }
             db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
             console.log('SQLite OPFS Database initialized:', db.filename);
         } else {
@@ -52,7 +56,7 @@ async function init() {
 
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
-                focus_area_id TEXT NOT NULL,
+                focus_area_id TEXT,
                 duration_seconds INTEGER NOT NULL,
                 xp_earned INTEGER DEFAULT 0,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
