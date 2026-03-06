@@ -619,7 +619,10 @@ function setupEventListeners() {
         confirmCancel: 'confirmCancel',
         confirmOk: 'confirmOk',
         confirmModal: 'confirmModal',
-        clearFocusArea: 'clearFocusArea'
+        clearFocusArea: 'clearFocusArea',
+        enableNotifications: 'enableNotifications',
+        denyNotifications: 'denyNotifications',
+        notificationPrompt: 'notificationPrompt'
     };
 
     const el = {};
@@ -834,6 +837,12 @@ function setupEventListeners() {
             }
         };
     }
+
+    if (el.enableNotifications) el.enableNotifications.onclick = requestNotificationPermission;
+    if (el.denyNotifications) el.denyNotifications.onclick = () => {
+        localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'denied');
+        if (el.notificationPrompt) el.notificationPrompt.style.display = 'none';
+    };
 
     if (el.editPersonaBtn && el.identitySlider) el.editPersonaBtn.onclick = () => el.identitySlider.classList.add('editing');
     if (el.cancelPersonaEdit && el.identitySlider) el.cancelPersonaEdit.onclick = () => el.identitySlider.classList.remove('editing');

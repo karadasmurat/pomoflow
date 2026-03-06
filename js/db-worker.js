@@ -3,8 +3,8 @@
  * Handles all database operations off the main thread using OPFS.
  */
 
-// Use a specific versioned CDN URL to rule out redirection issues
-const SQLITE_WASM_URL = 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.51.1-build2/sqlite-wasm/jswasm/sqlite3.js';
+// Use the local SQLite WASM distribution (now moved to the same directory as the worker)
+const SQLITE_WASM_URL = 'sqlite3.js';
 
 let db = null;
 let sqlite3 = null;
@@ -15,25 +15,7 @@ async function init() {
         importScripts(SQLITE_WASM_URL);
         
         // Initialize SQLite3
-        console.log('Initializing SQLite3 (v3.51.1) from CDN via manual binary fetch...');
-        const wasmUrl = 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.51.1-build2/sqlite-wasm/jswasm/sqlite3.wasm';
-        
-        let wasmBinary = null;
-        try {
-            const response = await fetch(wasmUrl);
-            console.log('WASM Fetch Status:', response.status);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch WASM: ${response.status} ${response.statusText}`);
-            }
-            wasmBinary = await response.arrayBuffer();
-            console.log('WASM Binary loaded successfully, size:', wasmBinary.byteLength);
-        } catch (fetchErr) {
-            console.error('WASM Binary fetch failed:', fetchErr);
-            throw fetchErr;
-        }
-
         sqlite3 = await sqlite3InitModule({
-            wasmBinary: wasmBinary,
             print: console.log,
             printErr: console.error,
         });
