@@ -17,6 +17,11 @@ function startTimer() {
     const msgEl = document.getElementById('timerMessage');
     if (msgEl) msgEl.innerHTML = '';
 
+    // If we are at 0:00, it means we are transitioning modes
+    if (state.timerState.remainingTime <= 0) {
+        timer.applyMode(state.timerState.mode);
+    }
+
     timer.start();
 }
 
@@ -917,17 +922,20 @@ function handleSessionComplete(skipped = false) {
     
     // Internal applyMode to avoid side effects
     state.timerState.mode = nextMode;
-    let duration = state.settings.workDuration;
-    if (nextMode === 'shortBreak') duration = state.settings.shortBreakDuration;
-    else if (nextMode === 'longBreak') duration = state.settings.longBreakDuration;
     
-    state.timerState.totalTime = duration * 60;
-    state.timerState.remainingTime = duration * 60;
+    // DYNAMIC GUIDANCE: We stay at 0:00 so the user can read the message.
+    // The next duration will be applied only when they click "Start"
+    state.timerState.remainingTime = 0;
     updateTimerDisplay();
     saveData();
 
     renderHistory(currentFilter);
-    if ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks)) setTimeout(startTimer, 1500);
+    if ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks)) {
+        setTimeout(() => {
+            if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode);
+            startTimer();
+        }, 1500);
+    }
 }
 
 function updateTimerDisplay() {
