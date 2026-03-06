@@ -217,6 +217,16 @@ function switchMode(mode) {
     applyMode(mode);
 }
 
+function purgeLocalStorage() {
+    // Completely clear all PomoFlow related keys from localStorage
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('flowtracker_')) {
+            localStorage.removeItem(key);
+        }
+    });
+    console.log('localStorage completely purged of flowtracker keys.');
+}
+
 let currentFilter = 'today';
 let showAllHistory = false;
 
@@ -230,36 +240,54 @@ async function init() {
         console.error('SQLite initialization failed:', e);
     }
 
-    // 2. Load basic profile and transient UI state from localStorage first (for speed)
-    loadData();
-
-    // 3. If SQLite is ready, load the heavy data (Tasks, Sessions, Aims)
     if (dbManager.initialized) {
-        // Check if we need to migrate from localStorage one last time
-        if (!localStorage.getItem('flowtracker_sqlite_migrated')) {
-            await dbManager.migrateFromLocalStorage(state);
-            
-            // USER REQUEST: Remove the heavy localStorage backup entirely
-            // We clear everything except the tiny bit needed for the "migrated" flag
-            // and the transient profile/timer state which makes the app feel fast on load.
-            Object.values(STORAGE_KEYS).forEach(key => {
-                if (key !== STORAGE_KEYS.PROFILE && key !== STORAGE_KEYS.STATE && key !== STORAGE_KEYS.VERSION) {
-                    localStorage.removeItem(key);
-                }
-            });
-        }
+        const fullState = await dbManager.getFullState();
         
-        // Regular load from SQLite
-        const dbState = await dbManager.getFullState();
-        if (dbState) {
-            if (dbState.tasks.length > 0) state.tasks = dbState.tasks;
-            if (dbState.sessions.length > 0) state.sessions = dbState.sessions;
-            if (dbState.aims.length > 0) state.aims = dbState.aims;
-            if (dbState.settings) state.settings = { ...state.settings, ...dbState.settings };
+        // 2. Check if we need a final migration
+        const needsMigration = !fullState.appState || !fullState.appState.migrated;
+        
+        if (needsMigration) {
+            // Load what we have in localStorage currently
+            loadData(); 
+            // Migrate it all to SQLite
+            await dbManager.migrateFromLocalStorage(state);
+            // PURGE localStorage completely as requested
+            purgeLocalStorage();
+        } else {
+            // 3. Regular Load from SQLite
+            if (fullState.tasks.length > 0) state.tasks = fullState.tasks;
+            if (fullState.sessions.length > 0) state.sessions = fullState.sessions;
+            if (fullState.aims.length > 0) state.aims = fullState.aims;
+            if (fullState.settings) state.settings = { ...state.settings, ...fullState.settings };
+            
+            // Load Profile
+            if (fullState.profile && fullState.profile.full_profile) {
+                const p = fullState.profile.full_profile;
+                state.xp = p.xp || 0;
+                state.totalXp = p.totalXp || 0;
+                state.level = p.level || 1;
+                state.avatar = p.avatar || '🦉';
+                state.unlockedAchievements = p.unlockedAchievements || [];
+                state.collapsedCategories = p.collapsedCategories || [];
+                state.activeCategoryIndex = p.activeCategoryIndex || 0;
+            }
+            
+            // Load App State (Theme, Timer)
+            if (fullState.appState) {
+                if (fullState.appState.timer_state) {
+                    state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
+                }
+                if (fullState.appState.theme) {
+                    document.documentElement.setAttribute('data-theme', fullState.appState.theme);
+                }
+            }
         }
+    } else {
+        // Fallback to localStorage ONLY if SQLite is disabled/failed
+        loadData();
     }
 
-    // Fallback for first-run users (both stores empty)
+    // Initialize UI defaults if everything was empty
     if (state.tasks.length === 0) {
         state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
             id: (Date.now() + index).toString(),
@@ -272,26 +300,23 @@ async function init() {
         saveData();
     }
 
+    if (!state.collapsedCategories || state.collapsedCategories.length === 0) {
+        state.collapsedCategories = ["Education & Personal Development", "Health & Wellness", "Personal Life & Home", "Work & Career", "Creative & Innovation", "Completed"];
+    }
+
     // 4. Initialize UI
     setupEventListeners();
     renderFocusAreas();
     renderHistory('today');
     renderPlan();
     updateLevelUI();
-
-    const todayBtn = document.querySelector('.filter-btn[data-filter="today"]');
-    if (todayBtn) {
-        document.querySelectorAll('.history-filters .filter-btn').forEach(b => b.classList.remove('active'));
-        todayBtn.classList.add('active');
-    }
-
     updateTimerDisplay();
     updateStats();
     updateDateTime();
     setInterval(updateDateTime, 1000);
     try { checkNotificationPrompt(); } catch(e) {}
     restoreTimerState();
-    initTheme();
+    // initTheme() is now handled by the SQLite loader above
     checkAchievements();
 }
 
@@ -383,37 +408,47 @@ function loadData() {
 
 function saveData() {
     try {
-        // We only save transient UI state and basic profile to localStorage
-        // Tasks, Sessions, and Aims now live ONLY in SQLite
-        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state.timerState));
-        localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
-
-        localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify({
-            xp: state.xp,
-            totalXp: state.totalXp,
-            level: state.level,
-            avatar: state.avatar,
-            unlockedAchievements: state.unlockedAchievements,
-            collapsedCategories: state.collapsedCategories,
-            activeCategoryIndex: state.activeCategoryIndex
-        }));
-
         // Primary storage: SQLite sync
         if (dbManager.initialized) {
-            // In a real app, you'd only sync changed items, 
-            // but we'll stick to the current full sync for simplicity
             state.tasks.forEach(t => dbManager.insertFocusArea(t));
             state.sessions.forEach(s => dbManager.insertSession(s));
             state.aims.forEach(a => dbManager.insertAim(a));
             for (const [key, value] of Object.entries(state.settings)) {
                 dbManager.setSetting(key, value);
             }
+
+            // Save Profile
+            dbManager.setUserProfile('full_profile', {
+                xp: state.xp,
+                totalXp: state.totalXp,
+                level: state.level,
+                avatar: state.avatar,
+                unlockedAchievements: state.unlockedAchievements,
+                collapsedCategories: state.collapsedCategories,
+                activeCategoryIndex: state.activeCategoryIndex
+            });
+
+            // Save App Meta
+            dbManager.setAppState('timer_state', state.timerState);
+            dbManager.setAppState('theme', document.documentElement.getAttribute('data-theme') || 'dark');
+            dbManager.setAppState('notification_prompt', state.notificationPermission);
         } else {
             // Fallback: If SQLite failed, we keep localStorage as a safety net
             localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasks));
             localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(state.sessions));
             localStorage.setItem(STORAGE_KEYS.AIMS, JSON.stringify(state.aims));
             localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
+            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state.timerState));
+            localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
+            localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify({
+                xp: state.xp,
+                totalXp: state.totalXp,
+                level: state.level,
+                avatar: state.avatar,
+                unlockedAchievements: state.unlockedAchievements,
+                collapsedCategories: state.collapsedCategories,
+                activeCategoryIndex: state.activeCategoryIndex
+            }));
         }
     } catch (e) {
         console.error('Error saving data:', e);
@@ -860,7 +895,8 @@ function setupEventListeners() {
 
     if (el.enableNotifications) el.enableNotifications.onclick = requestNotificationPermission;
     if (el.denyNotifications) el.denyNotifications.onclick = () => {
-        localStorage.setItem(STORAGE_KEYS.NOTIFICATION_PROMPT, 'denied');
+        state.notificationPermission = 'denied';
+        saveData();
         if (el.notificationPrompt) el.notificationPrompt.style.display = 'none';
     };
 
@@ -1746,7 +1782,7 @@ function saveFocusAreaFromModal() {
 }
 
 function checkNotificationPrompt() {
-    if (Notification.permission === 'default' && localStorage.getItem(STORAGE_KEYS.NOTIFICATION_PROMPT) !== 'denied') {
+    if (Notification.permission === 'default' && state.notificationPermission !== 'denied') {
         const p = document.getElementById('notificationPrompt'); if (p) p.style.display = 'flex';
     }
 }
@@ -1830,15 +1866,27 @@ function performImport(mode) {
 }
 
 function initTheme() {
-    const saved = localStorage.getItem('flowtracker_theme'); const sys = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = saved || (sys ? 'dark' : 'light'); document.documentElement.setAttribute('data-theme', theme);
-    const toggle = document.getElementById('themeToggle'); if (toggle) toggle.classList.toggle('dark', theme === 'dark');
+    let theme = document.documentElement.getAttribute('data-theme');
+    if (!theme) {
+        const saved = localStorage.getItem('flowtracker_theme');
+        const sys = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        theme = saved || (sys ? 'dark' : 'light');
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+    const toggle = document.getElementById('themeToggle'); 
+    if (toggle) toggle.classList.toggle('dark', theme === 'dark');
 }
 
 function toggleTheme() {
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next); localStorage.setItem('flowtracker_theme', next);
-    const toggle = document.getElementById('themeToggle'); if (toggle) toggle.classList.toggle('dark', next === 'dark');
+    document.documentElement.setAttribute('data-theme', next);
+    if (dbManager.initialized) {
+        dbManager.setAppState('theme', next);
+    } else {
+        localStorage.setItem('flowtracker_theme', next);
+    }
+    const toggle = document.getElementById('themeToggle'); 
+    if (toggle) toggle.classList.toggle('dark', next === 'dark');
 }
 
 function restoreTimerState() {

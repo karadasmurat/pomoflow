@@ -35,8 +35,14 @@ class DatabaseManager {
 
     async init() {
         if (this.disabled) return false;
-        const needsMigration = !localStorage.getItem('flowtracker_sqlite_migrated');
-        return this._send('init', { purge: needsMigration });
+        // Check if DB exists by trying to find our migration flag
+        const result = await this.initPromise; // Wait for initial worker init
+        return result;
+    }
+
+    async initWithPurge(purge = false) {
+        if (this.disabled) return false;
+        return this._send('init', { purge });
     }
 
     async _send(action, payload = {}) {
@@ -53,6 +59,8 @@ class DatabaseManager {
     async insertSession(session) { return this._send('insert_session', session); }
     async insertAim(aim) { return this._send('insert_aim', aim); }
     async setSetting(key, value) { return this._send('set_setting', { key, value: JSON.stringify(value) }); }
+    async setUserProfile(key, value) { return this._send('set_user_profile', { key, value: JSON.stringify(value) }); }
+    async setAppState(key, value) { return this._send('set_app_state', { key, value: JSON.stringify(value) }); }
 
     async getAllFocusAreas() { return this._send('get_all_focus_areas'); }
     async getAllSessions() { 
@@ -66,61 +74,72 @@ class DatabaseManager {
         }));
     }
     async getAllAims() { return this._send('get_all_aims'); }
-    async getAllSettings() { 
-        const rows = await this._send('get_all_settings');
-        const settings = {};
+    
+    async _getKVTable(action) {
+        const rows = await this._send(action);
+        const data = {};
         if (rows) {
             rows.forEach(row => {
-                try { settings[row.key] = JSON.parse(row.value); }
-                catch (e) { settings[row.key] = row.value; }
+                try { data[row.key] = JSON.parse(row.value); }
+                catch (e) { data[row.key] = row.value; }
             });
         }
-        return settings;
+        return data;
     }
+
+    async getAllSettings() { return this._getKVTable('get_all_settings'); }
+    async getUserProfile() { return this._getKVTable('get_all_user_profile'); }
+    async getAppState() { return this._getKVTable('get_all_app_state'); }
 
     async getFullState() {
         if (this.disabled) return null;
         
-        const [tasks, sessions, aims, settings] = await Promise.all([
+        const [tasks, sessions, aims, settings, profile, appState] = await Promise.all([
             this.getAllFocusAreas(),
             this.getAllSessions(),
             this.getAllAims(),
-            this.getAllSettings()
+            this.getAllSettings(),
+            this.getUserProfile(),
+            this.getAppState()
         ]);
 
         return {
             tasks: tasks || [],
             sessions: sessions || [],
             aims: aims || [],
-            settings: Object.keys(settings).length > 0 ? settings : null
+            settings: Object.keys(settings).length > 0 ? settings : null,
+            profile: Object.keys(profile).length > 0 ? profile : null,
+            appState: Object.keys(appState).length > 0 ? appState : null
         };
     }
 
     async migrateFromLocalStorage(state) {
-        console.log('Starting migration to SQLite...');
+        console.log('Starting FINAL migration to SQLite...');
         
         // Migrate Tasks
-        for (const task of state.tasks) {
-            await this.insertFocusArea(task);
-        }
-
+        for (const task of state.tasks) { await this.insertFocusArea(task); }
         // Migrate Sessions
-        for (const session of state.sessions) {
-            await this.insertSession(session);
-        }
-
+        for (const session of state.sessions) { await this.insertSession(session); }
         // Migrate Aims
-        for (const aim of state.aims) {
-            await this.insertAim(aim);
-        }
-
+        for (const aim of state.aims) { await this.insertAim(aim); }
         // Migrate Settings
-        for (const [key, value] of Object.entries(state.settings)) {
-            await this.setSetting(key, value);
-        }
+        for (const [key, value] of Object.entries(state.settings)) { await this.setSetting(key, value); }
+        
+        // Migrate Profile & Meta
+        await this.setUserProfile('full_profile', {
+            xp: state.xp,
+            totalXp: state.totalXp,
+            level: state.level,
+            avatar: state.avatar,
+            unlockedAchievements: state.unlockedAchievements,
+            collapsedCategories: state.collapsedCategories,
+            activeCategoryIndex: state.activeCategoryIndex
+        });
 
-        // Mark as migrated
-        localStorage.setItem('flowtracker_sqlite_migrated', 'true');
+        await this.setAppState('theme', localStorage.getItem('flowtracker_theme') || 'dark');
+        await this.setAppState('notification_prompt', localStorage.getItem('flowtracker_notification_prompt') || 'default');
+        await this.setAppState('migrated', true);
+
         console.log('Migration to SQLite complete!');
     }
 }

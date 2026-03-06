@@ -74,6 +74,11 @@ async function init(purge = false) {
                 value TEXT
             );
 
+            CREATE TABLE IF NOT EXISTS app_state (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            );
+
             CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp);
             CREATE INDEX IF NOT EXISTS idx_sessions_area ON sessions(focus_area_id);
             CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
@@ -137,6 +142,22 @@ self.onmessage = async (e) => {
                 break;
             case 'get_all_settings':
                 result = db.exec("SELECT * FROM settings", { returnValue: 'resultRows', rowMode: 'object' });
+                break;
+            case 'get_all_user_profile':
+                result = db.exec("SELECT * FROM user_profile", { returnValue: 'resultRows', rowMode: 'object' });
+                break;
+            case 'get_all_app_state':
+                result = db.exec("SELECT * FROM app_state", { returnValue: 'resultRows', rowMode: 'object' });
+                break;
+            case 'set_user_profile':
+                db.exec("INSERT OR REPLACE INTO user_profile (key, value) VALUES (?, ?)", {
+                    bind: [payload.key, payload.value]
+                });
+                break;
+            case 'set_app_state':
+                db.exec("INSERT OR REPLACE INTO app_state (key, value) VALUES (?, ?)", {
+                    bind: [payload.key, payload.value]
+                });
                 break;
         }
         self.postMessage({ action: 'success', result, requestId });
