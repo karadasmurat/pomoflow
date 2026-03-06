@@ -297,7 +297,11 @@ async function init() {
             completed: false,
             createdAt: new Date().toISOString()
         }));
-        saveData();
+        
+        // Only save if store is ready
+        if (dbManager.initialized || dbManager.disabled) {
+            saveData();
+        }
     }
 
     if (!state.collapsedCategories || state.collapsedCategories.length === 0) {
@@ -323,7 +327,7 @@ async function init() {
 function loadData() {
     try {
         const version = localStorage.getItem(STORAGE_KEYS.VERSION);
-        if (!version || parseInt(version) !== CURRENT_VERSION) {
+        if ((!version || parseInt(version) !== CURRENT_VERSION) && dbManager.disabled) {
             localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
         }
 
@@ -408,6 +412,26 @@ function loadData() {
 
 function saveData() {
     try {
+        if (dbManager.disabled) {
+            // Emergent Fallback: ONLY if SQLite is physically unavailable (file:// etc)
+            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasks));
+            localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(state.sessions));
+            localStorage.setItem(STORAGE_KEYS.AIMS, JSON.stringify(state.aims));
+            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
+            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state.timerState));
+            localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
+            localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify({
+                xp: state.xp,
+                totalXp: state.totalXp,
+                level: state.level,
+                avatar: state.avatar,
+                unlockedAchievements: state.unlockedAchievements,
+                collapsedCategories: state.collapsedCategories,
+                activeCategoryIndex: state.activeCategoryIndex
+            }));
+            return;
+        }
+
         // Primary storage: SQLite sync
         if (dbManager.initialized) {
             state.tasks.forEach(t => dbManager.insertFocusArea(t));
@@ -433,22 +457,7 @@ function saveData() {
             dbManager.setAppState('theme', document.documentElement.getAttribute('data-theme') || 'dark');
             dbManager.setAppState('notification_prompt', state.notificationPermission);
         } else {
-            // Fallback: If SQLite failed, we keep localStorage as a safety net
-            localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasks));
-            localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(state.sessions));
-            localStorage.setItem(STORAGE_KEYS.AIMS, JSON.stringify(state.aims));
-            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
-            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state.timerState));
-            localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
-            localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify({
-                xp: state.xp,
-                totalXp: state.totalXp,
-                level: state.level,
-                avatar: state.avatar,
-                unlockedAchievements: state.unlockedAchievements,
-                collapsedCategories: state.collapsedCategories,
-                activeCategoryIndex: state.activeCategoryIndex
-            }));
+            console.warn('SQLite not yet initialized, buffering save...');
         }
     } catch (e) {
         console.error('Error saving data:', e);
@@ -1882,7 +1891,7 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', next);
     if (dbManager.initialized) {
         dbManager.setAppState('theme', next);
-    } else {
+    } else if (dbManager.disabled) {
         localStorage.setItem('flowtracker_theme', next);
     }
     const toggle = document.getElementById('themeToggle'); 
@@ -2121,4 +2130,11 @@ function editAim(id) {
 document.querySelectorAll('.setting-slider').forEach(s => s.oninput = () => { const v = document.getElementById(`${s.id}Value`); if (v) v.textContent = s.id === 'soundVolume' ? `${s.value}%` : `${s.value} min`; });
 document.querySelectorAll('.setting-toggle').forEach(t => t.onclick = () => t.classList.toggle('active'));
 
-init();
+// Start initialization and ensure it finishes before any other operations
+(async () => {
+    try {
+        await init();
+    } catch (e) {
+        console.error('Final initialization failed:', e);
+    }
+})();
