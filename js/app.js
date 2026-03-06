@@ -1011,13 +1011,13 @@ function updateTimerDisplay() {
     if (timerProgress) {
         timerProgress.style.strokeDashoffset = offset;
         timerProgress.style.stroke = sessionColor;
-        timerProgress.className = `timer-ring-progress ${modeClass}`;
+        timerProgress.setAttribute('class', `timer-ring-progress ${modeClass}`);
     }
     
     // Update all focus area small rings to match the current mode and its color
     document.querySelectorAll('.focus-area-ring-progress').forEach(ring => {
         ring.style.stroke = sessionColor;
-        ring.className = `focus-area-ring-progress ${modeClass}`;
+        ring.setAttribute('class', `focus-area-ring-progress ${modeClass}`);
     });
 }
 
