@@ -32,11 +32,10 @@ class DatabaseManager {
                 };
             });
 
-            // Trigger actual initialization
-            const needsMigration = !localStorage.getItem('flowtracker_sqlite_migrated');
+            // Trigger actual initialization - NEVER purge automatically anymore
             this.worker.postMessage({ 
                 action: 'init', 
-                payload: { purge: needsMigration },
+                payload: { purge: false },
                 requestId: 'initial-init' 
             });
 

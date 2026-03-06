@@ -39,11 +39,12 @@ function switchMode(mode) {
 function purgeLocalStorage() {
     // Completely clear all PomoFlow related keys from localStorage
     Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('flowtracker_')) {
+        // Keep the migration flag so we don't accidentally try to migrate from empty storage
+        if (key.startsWith('flowtracker_') && key !== 'flowtracker_sqlite_migrated') {
             localStorage.removeItem(key);
         }
     });
-    console.log('localStorage completely purged of flowtracker keys.');
+    console.log('localStorage purged of flowtracker keys (except migration flag).');
 }
 
 let currentFilter = 'today';
@@ -109,6 +110,13 @@ async function init() {
 
     // Initialize UI defaults if everything was empty
     if (state.tasks.length === 0) {
+        // EMERGENCY RECOVERY: If migration flag is set but we have no data, 
+        // it means we likely hit the purge bug. Clear the flag to allow a re-migration if any data exists in localStorage.
+        if (localStorage.getItem('flowtracker_sqlite_migrated')) {
+            localStorage.removeItem('flowtracker_sqlite_migrated');
+            console.warn('Data missing but migration flag found. Clearing flag for retry.');
+        }
+
         state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
             id: (Date.now() + index).toString(),
             name: t.name,

@@ -22,10 +22,6 @@ async function init(purge = false) {
         
         // Check for OPFS support (requires cross-origin isolation)
         if (sqlite3.opfs) {
-            // If we are migrating, we clear existing broken DB
-            if (purge) {
-                try { await sqlite3.opfs.unlink('/pomoflow.db'); } catch(e) {}
-            }
             db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
             console.log('SQLite OPFS Database initialized:', db.filename);
         } else {
