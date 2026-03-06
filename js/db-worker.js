@@ -9,7 +9,7 @@ const SQLITE_WASM_URL = 'sqlite3.js';
 let db = null;
 let sqlite3 = null;
 
-async function init() {
+async function init(purge = false) {
     try {
         // Load the SQLite3 loader script
         importScripts(SQLITE_WASM_URL);
@@ -22,8 +22,8 @@ async function init() {
         
         // Check for OPFS support (requires cross-origin isolation)
         if (sqlite3.opfs) {
-            // If we are migrating, we might want to clear existing broken DB
-            if (!localStorage.getItem('flowtracker_sqlite_migrated')) {
+            // If we are migrating, we clear existing broken DB
+            if (purge) {
                 try { await sqlite3.opfs.unlink('/pomoflow.db'); } catch(e) {}
             }
             db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
@@ -90,7 +90,7 @@ self.onmessage = async (e) => {
     const { action, payload, requestId } = e.data;
 
     if (action === 'init') {
-        const success = await init();
+        const success = await init(payload ? payload.purge : false);
         self.postMessage({ action: 'init_result', success, requestId });
         return;
     }

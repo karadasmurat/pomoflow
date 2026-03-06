@@ -35,7 +35,8 @@ class DatabaseManager {
 
     async init() {
         if (this.disabled) return false;
-        return this._send('init');
+        const needsMigration = !localStorage.getItem('flowtracker_sqlite_migrated');
+        return this._send('init', { purge: needsMigration });
     }
 
     async _send(action, payload = {}) {
