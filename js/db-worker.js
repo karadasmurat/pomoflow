@@ -15,30 +15,27 @@ async function init() {
         importScripts(SQLITE_WASM_URL);
         
         // Initialize SQLite3
-        console.log('Initializing SQLite3 (v3.51.1) from CDN...');
+        console.log('Initializing SQLite3 (v3.51.1) from CDN via manual binary fetch...');
         const wasmUrl = 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.51.1-build2/sqlite-wasm/jswasm/sqlite3.wasm';
         
-        // Manual check for the WASM file to get better error details
+        let wasmBinary = null;
         try {
             const response = await fetch(wasmUrl);
-            console.log('WASM Fetch Status:', response.status, response.statusText);
+            console.log('WASM Fetch Status:', response.status);
             if (!response.ok) {
                 throw new Error(`Failed to fetch WASM: ${response.status} ${response.statusText}`);
             }
+            wasmBinary = await response.arrayBuffer();
+            console.log('WASM Binary loaded successfully, size:', wasmBinary.byteLength);
         } catch (fetchErr) {
-            console.error('WASM Pre-fetch check failed:', fetchErr);
+            console.error('WASM Binary fetch failed:', fetchErr);
+            throw fetchErr;
         }
 
         sqlite3 = await sqlite3InitModule({
+            wasmBinary: wasmBinary,
             print: console.log,
             printErr: console.error,
-            locateFile: (path) => {
-                if (path.endsWith('.wasm')) {
-                    console.log('SQLite requesting WASM from:', wasmUrl);
-                    return wasmUrl;
-                }
-                return path;
-            }
         });
         
         if ('opfs' in sqlite3) {
