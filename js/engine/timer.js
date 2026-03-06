@@ -60,6 +60,28 @@ class TimerEngine {
         }
     }
 
+    playTone(freq, duration, delay) {
+        this._initAudio();
+        if (!this.audioContext) return;
+        
+        const osc = this.audioContext.createOscillator(); 
+        const gain = this.audioContext.createGain(); 
+        const vol = state.settings.soundVolume / 100;
+        
+        osc.type = 'sine'; 
+        osc.frequency.setValueAtTime(freq, this.audioContext.currentTime + delay);
+        
+        gain.gain.setValueAtTime(0, this.audioContext.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(vol * 0.1, this.audioContext.currentTime + delay + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + delay + duration);
+        
+        osc.connect(gain); 
+        gain.connect(this.audioContext.destination);
+        
+        osc.start(this.audioContext.currentTime + delay); 
+        osc.stop(this.audioContext.currentTime + delay + duration);
+    }
+
     start() {
         if (this.audioContext && this.audioContext.state === 'suspended') this.audioContext.resume();
         

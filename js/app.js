@@ -874,8 +874,8 @@ function handleSessionComplete(skipped = false) {
             container.classList.add('timer-pulse');
             setTimeout(() => container.classList.remove('timer-pulse'), 600);
         }
-        playTone(440, 0.1, 0);
-        setTimeout(() => playTone(880, 0.2, 0.1), 100);
+        timer.playTone(440, 0.1, 0);
+        setTimeout(() => timer.playTone(880, 0.2, 0.1), 100);
         const xp = Math.floor(state.settings.workDuration) * 10;
         setTimeout(() => notify(`Focus Area session complete! +${xp} XP earned 🚀`), 500);
     } else if (!wasWork && !skipped) {
@@ -884,8 +884,8 @@ function handleSessionComplete(skipped = false) {
             container.classList.add('timer-pulse');
             setTimeout(() => container.classList.remove('timer-pulse'), 600);
         }
-        playTone(880, 0.1, 0);
-        setTimeout(() => playTone(440, 0.2, 0.1), 100);
+        timer.playTone(880, 0.1, 0);
+        setTimeout(() => timer.playTone(440, 0.2, 0.1), 100);
         setTimeout(() => notify('Break is over! Ready to focus?'), 500);
     }
     
@@ -1267,7 +1267,7 @@ function addXP(amt, bonus = false) {
         notify(`LEVEL UP! Level ${state.level}`, 'PomoFlow', 'milestone');
         const av = document.getElementById('headerAvatar');
         if (av) { av.classList.add('avatar-victory'); setTimeout(() => av.classList.remove('avatar-victory'), 800); }
-        playTone(523.25, 0.1, 0);
+        timer.playTone(523.25, 0.1, 0);
     }
     updateLevelUI(old);
 }
@@ -1654,17 +1654,6 @@ function showToast(msg, type = 'info') {
     t.className = `toast show ${type}`;
     if (t.timeout) clearTimeout(t.timeout);
     t.timeout = setTimeout(() => { t.classList.remove('show'); }, 5000);
-}
-
-function playTone(freq, duration, delay) {
-    if (!audioContext) return;
-    const osc = audioContext.createOscillator(); const gain = audioContext.createGain(); const vol = state.settings.soundVolume / 100;
-    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioContext.currentTime + delay);
-    gain.gain.setValueAtTime(0, audioContext.currentTime + delay);
-    gain.gain.linearRampToValueAtTime(vol * 0.1, audioContext.currentTime + delay + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
-    osc.connect(gain); gain.connect(audioContext.destination);
-    osc.start(audioContext.currentTime + delay); osc.stop(audioContext.currentTime + delay + duration);
 }
 
 function exportData() {
