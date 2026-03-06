@@ -74,6 +74,8 @@ class DatabaseManager {
         return rows.map(s => ({
             ...s,
             taskId: s.focus_area_id,
+            taskName: s.display_name,
+            taskColor: s.display_color,
             duration: s.duration_seconds,
             xp: s.xp_earned
         }));
@@ -143,6 +145,15 @@ class DatabaseManager {
 
         await this.setAppState('theme', localStorage.getItem('flowtracker_theme') || 'dark');
         await this.setAppState('notification_prompt', localStorage.getItem('flowtracker_notification_prompt') || 'default');
+        
+        await this.setAppState('ui_state', {
+            lastSessionId: state.lastSessionId,
+            lastTaskId: state.lastTaskId,
+            selectedTaskColor: state.selectedTaskColor,
+            editTaskColor: state.editTaskColor,
+            selectedFocusAreaIds: state.selectedFocusAreaIds
+        });
+
         await this.setAppState('migrated', true);
 
         console.log('Migration to SQLite complete!');

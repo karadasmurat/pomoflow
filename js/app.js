@@ -93,13 +93,24 @@ async function init() {
                 state.activeCategoryIndex = p.activeCategoryIndex || 0;
             }
             
-            // Load App State (Theme, Timer)
+            // Load App State (Theme, Timer, UI)
             if (fullState.appState) {
                 if (fullState.appState.timer_state) {
                     state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
                 }
                 if (fullState.appState.theme) {
                     document.documentElement.setAttribute('data-theme', fullState.appState.theme);
+                }
+                if (fullState.appState.notification_prompt) {
+                    state.notificationPermission = fullState.appState.notification_prompt;
+                }
+                if (fullState.appState.ui_state) {
+                    const ui = fullState.appState.ui_state;
+                    state.lastSessionId = ui.lastSessionId;
+                    state.lastTaskId = ui.lastTaskId;
+                    state.selectedTaskColor = ui.selectedTaskColor || '#58a6ff';
+                    state.editTaskColor = ui.editTaskColor || '#58a6ff';
+                    state.selectedFocusAreaIds = ui.selectedFocusAreaIds || [];
                 }
             }
         }
@@ -297,6 +308,13 @@ function saveData() {
             dbManager.setAppState('timer_state', state.timerState);
             dbManager.setAppState('theme', document.documentElement.getAttribute('data-theme') || 'dark');
             dbManager.setAppState('notification_prompt', state.notificationPermission);
+            dbManager.setAppState('ui_state', {
+                lastSessionId: state.lastSessionId,
+                lastTaskId: state.lastTaskId,
+                selectedTaskColor: state.selectedTaskColor,
+                editTaskColor: state.editTaskColor,
+                selectedFocusAreaIds: state.selectedFocusAreaIds
+            });
             savePending = false;
         } else {
             savePending = true;

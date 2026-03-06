@@ -53,6 +53,8 @@ async function init(purge = false) {
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 focus_area_id TEXT,
+                task_name TEXT,
+                task_color TEXT,
                 duration_seconds INTEGER NOT NULL,
                 xp_earned INTEGER DEFAULT 0,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -79,6 +81,10 @@ async function init(purge = false) {
             CREATE INDEX IF NOT EXISTS idx_sessions_area ON sessions(focus_area_id);
             CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
         `);
+
+        // Migration: Add task_name and task_color if they don't exist
+        try { db.exec("ALTER TABLE sessions ADD COLUMN task_name TEXT"); } catch(e) {}
+        try { db.exec("ALTER TABLE sessions ADD COLUMN task_color TEXT"); } catch(e) {}
 
         return true;
     } catch (err) {
@@ -113,8 +119,8 @@ self.onmessage = async (e) => {
                 });
                 break;
             case 'insert_session':
-                db.exec("INSERT OR REPLACE INTO sessions (id, focus_area_id, duration_seconds, xp_earned, timestamp) VALUES (?, ?, ?, ?, ?)", {
-                    bind: [payload.id, payload.taskId, payload.duration, payload.xp || 0, payload.timestamp]
+                db.exec("INSERT OR REPLACE INTO sessions (id, focus_area_id, task_name, task_color, duration_seconds, xp_earned, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)", {
+                    bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp]
                 });
                 break;
             case 'insert_aim':
@@ -131,7 +137,14 @@ self.onmessage = async (e) => {
                 result = db.exec("SELECT * FROM focus_areas", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_sessions':
-                result = db.exec("SELECT * FROM sessions ORDER BY timestamp DESC", { returnValue: 'resultRows', rowMode: 'object' });
+                result = db.exec(`
+                    SELECT s.*, 
+                           COALESCE(f.name, s.task_name, 'Unknown Focus Area') as display_name,
+                           COALESCE(f.color, s.task_color, '#58a6ff') as display_color
+                    FROM sessions s 
+                    LEFT JOIN focus_areas f ON s.focus_area_id = f.id 
+                    ORDER BY s.timestamp DESC
+                `, { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_aims':
                 result = db.exec("SELECT * FROM aims", { returnValue: 'resultRows', rowMode: 'object' });
