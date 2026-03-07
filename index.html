@@ -186,6 +186,21 @@
                         <div class="timer-message" id="timerMessage"></div>
                         <div class="session-progress" id="sessionProgress"></div>
                     </div>
+
+                    <div class="timer-duration-shortcuts orbit" id="durationOrbit">
+                        <!-- Main Toggle at 3 o'clock -->
+                        <button class="duration-btn orbiter trigger" id="durationToggle" style="--angle: 90deg" aria-label="Quick timer settings">⏱️</button>
+                        
+                        <!-- Options that fan out -->
+                        <button class="duration-btn orbiter option" data-mins="10" style="--angle: 20deg">10</button>
+                        <button class="duration-btn orbiter option" data-mins="20" style="--angle: 48deg">20</button>
+                        
+                        <button class="duration-btn orbiter option adj-btn" id="decDuration" style="--angle: 76deg">−</button>
+                        <button class="duration-btn orbiter option adj-btn" id="incDuration" style="--angle: 104deg">+</button>
+                        
+                        <button class="duration-btn orbiter option" data-mins="30" style="--angle: 132deg">30</button>
+                        <button class="duration-btn orbiter option" data-mins="40" style="--angle: 160deg">40</button>
+                    </div>
                 </div>
                 <div aria-live="polite" id="timerAnnouncer"></div>
 
@@ -226,21 +241,6 @@
                     </button>
                 </div>
 
-                <div class="stats-bar">
-                    <div class="stat-item">
-                        <div class="stat-value" id="todayFocusTime">0:00</div>
-                        <div class="stat-label">Today's Focus</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="todaySessions">0</div>
-                        <div class="stat-label">Sessions Today</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="currentStreak">--</div>
-                        <div class="stat-label">Day Streak</div>
-                    </div>
-                </div>
-
                 <div class="keyboard-hint">
                     <kbd>Space</kbd> Start/Pause &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>N</kbd> Skip &nbsp; <kbd>G</kbd> Focus Areas &nbsp; <kbd>P</kbd> Plan &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes
                 </div>
@@ -248,7 +248,7 @@
 
             <section class="panel history-panel">
                 <div class="panel-header">
-                    <span>Session History</span>
+                    <span>Activity Dashboard</span>
                     <div class="panel-header-actions">
                         <div class="history-filters">
                             <button class="filter-btn active" data-filter="today">Today</button>
@@ -261,18 +261,43 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="stats-bar compact momentum-tier">
+                    <div class="stat-item">
+                        <div class="stat-value" id="todayFocusTime">0:00</div>
+                        <div class="stat-label">Focus Time</div>
+                        <div class="stat-trend" id="focusTimeTrend"></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="todaySessions">0</div>
+                        <div class="stat-label">Sessions</div>
+                        <div class="stat-trend" id="sessionsTrend"></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="currentStreak">--</div>
+                        <div class="stat-label">Day Streak</div>
+                        <div class="stat-trend" id="streakTrend"></div>
+                    </div>
+                    <div class="stats-refresh-container">
+                        <span id="lastUpdatedLabel">Updated just now</span>
+                        <button id="manualRefreshBtn" class="refresh-btn" aria-label="Refresh metrics">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                        </button>
+                    </div>
+                </div>
                 
                 <div class="history-content-grid">
                     <div class="history-analytics-col">
                         <div class="history-list-header">
-                            <div class="history-list-title">Top Focus Areas</div>
+                            <div class="history-list-title">Focus Distribution</div>
+                            <div id="heroBadgeContainer"></div>
                         </div>
                         <div class="history-chart" id="historyChart"></div>
                     </div>
 
                     <div class="history-list-col">
                         <div class="history-list-header">
-                            <span class="history-list-title">Recent Sessions</span>
+                            <span class="history-list-title">Activity Log</span>
                             <div class="history-show-all-container">
                                 <button class="filter-btn" data-filter="showAll">Show All</button>
                             </div>

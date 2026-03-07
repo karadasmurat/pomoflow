@@ -41,6 +41,53 @@ function resetTimer() {
     timer.reset();
 }
 
+function updateActiveDuration(mins, notifyUser = true) {
+    mins = parseInt(mins);
+    if (isNaN(mins) || mins <= 0) return;
+
+    const mode = state.timerState.mode;
+    let settingKey = 'workDuration';
+    let inputId = 'workDuration';
+    let labelId = 'workDurationValue';
+
+    if (mode === 'shortBreak') {
+        settingKey = 'shortBreakDuration';
+        inputId = 'shortBreakDuration';
+        labelId = 'shortBreakDurationValue';
+    } else if (mode === 'longBreak') {
+        settingKey = 'longBreakDuration';
+        inputId = 'longBreakDuration';
+        labelId = 'longBreakDurationValue';
+    }
+
+    // 1. Update Settings
+    mutations.updateSettings({ [settingKey]: mins });
+    
+    // 2. Reset timer for current mode to new duration
+    timer.stop();
+    timer.applyMode(mode);
+
+    // 3. Update UI Shortcuts (Orbitchips)
+    document.querySelectorAll('.orbiter.option').forEach(btn => {
+        if (btn.dataset.mins) {
+            btn.classList.toggle('active', parseInt(btn.dataset.mins) === mins);
+        }
+    });
+
+    // Sync with settings panel inputs
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if (input) input.value = mins;
+    if (label) label.textContent = `${mins} min`;
+
+    // 4. Save
+    saveData();
+    if (notifyUser) {
+        const modeName = mode === 'work' ? 'Focus' : (mode === 'shortBreak' ? 'Short Break' : 'Long Break');
+        notify(`${modeName} duration set to ${mins}m ⏱️`);
+    }
+}
+
 function applyMode(mode) {
     timer.applyMode(mode);
 }
@@ -177,7 +224,27 @@ async function init() {
     updateTimerDisplay();
     updateStats();
     updateDateTime();
+    state.lastLogicalDate = getLogicalDate();
+    state.lastRefreshTime = Date.now();
+    
+    // Initialize duration shortcut buttons active state based on current mode
+    document.querySelectorAll('.orbiter.option').forEach(btn => {
+        if (btn.dataset.mins) {
+            const mode = state.timerState.mode;
+            const currentDur = mode === 'work' ? state.settings.workDuration : (mode === 'shortBreak' ? state.settings.shortBreakDuration : state.settings.longBreakDuration);
+            btn.classList.toggle('active', parseInt(btn.dataset.mins) === currentDur);
+        }
+    });
+
     setInterval(updateDateTime, 1000);
+
+    // Page Visibility API to handle return to tab
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            updateDateTime();
+        }
+    });
+
     try { checkNotificationPrompt(); } catch(e) {}
     restoreTimerState();
     // initTheme() is now handled by the SQLite loader above
@@ -560,7 +627,12 @@ function setupEventListeners() {
         clearFocusArea: 'clearFocusArea',
         enableNotifications: 'enableNotifications',
         denyNotifications: 'denyNotifications',
-        notificationPrompt: 'notificationPrompt'
+        notificationPrompt: 'notificationPrompt',
+        manualRefreshBtn: 'manualRefreshBtn',
+        durationToggle: 'durationToggle',
+        durationOrbit: 'durationOrbit',
+        decDuration: 'decDuration',
+        incDuration: 'incDuration'
     };
 
     const el = {};
@@ -589,6 +661,17 @@ function setupEventListeners() {
                 // Toggle is handled by el.selectTrigger.onclick
             } else {
                 selectDropdown.classList.remove('open');
+            }
+        }
+
+        // 3. Duration Orbit Toggle
+        if (el.durationToggle && el.durationOrbit) {
+            if (el.durationToggle.contains(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                el.durationOrbit.classList.toggle('open');
+            } else if (!el.durationOrbit.contains(e.target)) {
+                el.durationOrbit.classList.remove('open');
             }
         }
 
@@ -723,10 +806,36 @@ function setupEventListeners() {
     if (el.resetBtn) el.resetBtn.onclick = (e) => { e.preventDefault(); resetTimer(); };
     if (el.skipBtn) el.skipBtn.onclick = (e) => { e.preventDefault(); skipSession(); };
     if (el.clearHistoryBtn) el.clearHistoryBtn.onclick = clearHistory;
+    if (el.manualRefreshBtn) el.manualRefreshBtn.onclick = (e) => { e.preventDefault(); refreshTodayMetrics(); };
 
     document.querySelectorAll('.mode-tab').forEach(tab => {
         tab.onclick = () => switchMode(tab.dataset.mode);
     });
+
+    document.querySelectorAll('.orbiter.option:not(.adj-btn)').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            updateActiveDuration(btn.dataset.mins);
+            // Close orbit on specific duration selection
+            if (el.durationOrbit) el.durationOrbit.classList.remove('open');
+        };
+    });
+
+    if (el.decDuration) el.decDuration.onclick = (e) => {
+        e.stopPropagation();
+        const mode = state.timerState.mode;
+        const current = parseInt(mode === 'work' ? state.settings.workDuration : (mode === 'shortBreak' ? state.settings.shortBreakDuration : state.settings.longBreakDuration));
+        const next = Math.max(1, current - 1);
+        updateActiveDuration(next, false);
+    };
+
+    if (el.incDuration) el.incDuration.onclick = (e) => {
+        e.stopPropagation();
+        const mode = state.timerState.mode;
+        const current = parseInt(mode === 'work' ? state.settings.workDuration : (mode === 'shortBreak' ? state.settings.shortBreakDuration : state.settings.longBreakDuration));
+        const next = Math.min(120, current + 1);
+        updateActiveDuration(next, false);
+    };
 
     document.querySelectorAll('.history-filters .filter-btn').forEach(btn => {
         btn.onclick = () => {
@@ -1007,6 +1116,15 @@ function updateTimerDisplay() {
         if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
         document.body.classList.remove('timer-running');
     }
+
+    // Refresh orbiter active states based on current mode
+    document.querySelectorAll('.orbiter.option').forEach(btn => {
+        if (btn.dataset.mins) {
+            const mode = state.timerState.mode;
+            const currentDur = mode === 'work' ? state.settings.workDuration : (mode === 'shortBreak' ? state.settings.shortBreakDuration : state.settings.longBreakDuration);
+            btn.classList.toggle('active', parseInt(btn.dataset.mins) === currentDur);
+        }
+    });
     const hudEl = document.getElementById('focusAreaProgressHUD');
     const clearBtn = document.getElementById('clearFocusArea');
     const questionEl = document.getElementById('focusAreaQuestion');
@@ -1365,8 +1483,9 @@ function animateValue(obj, start, end, duration) {
 function renderHistory(filter = 'today') {
     const list = document.getElementById('historyList');
     if (!list) return;
-    const headerHTML = `<div class="history-header-grid sticky-header"><div class="history-header-indicator"></div><div class="history-header-info"><div>FOCUS AREA</div><div>DURATION</div><div>CHECKED OFF AT</div></div><div class="history-header-more"></div></div>`;
+    const headerHTML = `<div class="history-header-grid sticky-header"><div class="history-header-indicator"></div><div class="history-header-info"><div>FOCUS AREA</div><div>DURATION</div><div>FINISHED AT</div></div><div class="history-header-more"></div></div>`;
     let sessions = filterSessions(state.sessions, filter);
+    
     if (sessions.length === 0) {
         list.innerHTML = headerHTML + '<div class="empty-state"><p>No sessions found for this period.</p></div>';
         renderChart([]);
@@ -1374,32 +1493,50 @@ function renderHistory(filter = 'today') {
     }
     sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     renderChart(sessions);
+    
     list.innerHTML = headerHTML;
     const displaySessions = showAllHistory ? sessions : sessions.slice(0, 4);
-    displaySessions.forEach(session => {
-        const item = document.createElement('sliding-card');
-        item.setAttribute('menu-width', '100px');
-        const timeStr = formatTimestamp(new Date(session.timestamp));
-        const durationMin = Math.round(session.duration / 60);
-        
-        const editIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
-        const deleteIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
 
-        item.innerHTML = `
-            <button slot="menu" class="edit-btn">${editIcon}<span>Edit</span></button>
-            <button slot="menu" class="danger delete-btn">${deleteIcon}<span>Delete</span></button>
-            <div slot="indicator" class="history-type-indicator" style="background: ${session.taskColor || '#58a6ff'}"></div>
-            <div class="history-info">
-                <div class="history-focus-area" title="${escapeHtml(session.taskName)}">${escapeHtml(session.taskName)}</div>
-                <div class="history-duration">${durationMin} min</div>
-                <div class="history-time">${timeStr}</div>
-            </div>
-        `;
-        
-        item.querySelector('.edit-btn').addEventListener('click', () => { item.isOpen = false; openSessionEditModal(session); });
-        item.querySelector('.delete-btn').addEventListener('click', () => { item.isOpen = false; deleteSession(session.id); });
-        list.appendChild(item);
+    // Group by category
+    const groups = {};
+    displaySessions.forEach(s => {
+        const cat = s.taskCategory || 'Uncategorized';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(s);
     });
+
+    Object.entries(groups).forEach(([cat, groupSessions]) => {
+        const catHeader = document.createElement('div');
+        catHeader.className = 'activity-group-header';
+        catHeader.textContent = cat;
+        list.appendChild(catHeader);
+
+        groupSessions.forEach(session => {
+            const item = document.createElement('sliding-card');
+            item.setAttribute('menu-width', '100px');
+            const timeStr = formatTimestamp(new Date(session.timestamp));
+            const durationMin = Math.round(session.duration / 60);
+            
+            const editIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+            const deleteIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+            item.innerHTML = `
+                <button slot="menu" class="edit-btn">${editIcon}<span>Edit</span></button>
+                <button slot="menu" class="danger delete-btn">${deleteIcon}<span>Delete</span></button>
+                <div slot="indicator" class="history-type-indicator" style="background: ${session.taskColor || '#58a6ff'}"></div>
+                <div class="history-info">
+                    <div class="history-focus-area" title="${escapeHtml(session.taskName)}">${escapeHtml(session.taskName)}</div>
+                    <div class="history-duration">${durationMin} min</div>
+                    <div class="history-time">${timeStr}</div>
+                </div>
+            `;
+            
+            item.querySelector('.edit-btn').addEventListener('click', () => { item.isOpen = false; openSessionEditModal(session); });
+            item.querySelector('.delete-btn').addEventListener('click', () => { item.isOpen = false; deleteSession(session.id); });
+            list.appendChild(item);
+        });
+    });
+
     const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
     if (showAllBtn) {
         showAllBtn.style.display = sessions.length > 4 ? 'flex' : 'none';
@@ -1435,17 +1572,59 @@ function deleteSession(id) {
 
 function updateStats() {
     const today = getLogicalDate();
+    const now = new Date();
+    const yesterdayDate = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+    const yesterday = getLogicalDate(yesterdayDate);
+
     const todaySessions = state.sessions.filter(s => getLogicalDate(new Date(s.timestamp)) === today);
-    const totalSecs = todaySessions.reduce((acc, s) => acc + s.duration, 0);
-    const h = Math.floor(totalSecs / 3600);
-    const m = Math.floor((totalSecs % 3600) / 60);
+    const yesterdaySessions = state.sessions.filter(s => getLogicalDate(new Date(s.timestamp)) === yesterday);
+
+    const todaySecs = todaySessions.reduce((acc, s) => acc + s.duration, 0);
+    const yesterdaySecs = yesterdaySessions.reduce((acc, s) => acc + s.duration, 0);
+
+    // Update Focus Time
+    const h = Math.floor(todaySecs / 3600);
+    const m = Math.floor((todaySecs % 3600) / 60);
     const todayTimeEl = document.getElementById('todayFocusTime');
     if (todayTimeEl) todayTimeEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+
+    // Update Sessions
     const todaySessEl = document.getElementById('todaySessions');
     if (todaySessEl) todaySessEl.textContent = todaySessions.length;
+
+    // Update Streak
     const streak = calculateStreak(state.sessions);
     const streakEl = document.getElementById('currentStreak');
     if (streakEl) streakEl.textContent = streak > 0 ? `${streak} days` : '--';
+
+    // Update Trends
+    updateTrend('focusTimeTrend', todaySecs, yesterdaySecs, 'time');
+    updateTrend('sessionsTrend', todaySessions.length, yesterdaySessions.length, 'count');
+    // Streak trend is harder, maybe just show it's active
+    const streakTrendEl = document.getElementById('streakTrend');
+    if (streakTrendEl) {
+        streakTrendEl.innerHTML = streak > 0 ? '<span class="trend-up">🔥 Active</span>' : '';
+    }
+}
+
+function updateTrend(elementId, today, yesterday, type) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    if (yesterday === 0) {
+        el.innerHTML = today > 0 ? '<span class="trend-up">+100% vs yesterday</span>' : '';
+        return;
+    }
+
+    const diff = today - yesterday;
+    const percent = Math.abs(Math.round((diff / yesterday) * 100));
+    const isUp = diff >= 0;
+
+    if (diff === 0) {
+        el.innerHTML = '<span class="trend-neutral">Same as yesterday</span>';
+    } else {
+        el.innerHTML = `<span class="trend-${isUp ? 'up' : 'down'}">${isUp ? '↑' : '↓'} ${percent}% vs yesterday</span>`;
+    }
 }
 
 function calculateStreak(sessions) {
@@ -1463,8 +1642,12 @@ function calculateStreak(sessions) {
 
 function renderChart(sessions) {
     const container = document.getElementById('historyChart');
+    const heroContainer = document.getElementById('heroBadgeContainer');
     if (!container) return;
-    container.innerHTML = ''; if (sessions.length === 0) return;
+    container.innerHTML = '';
+    if (heroContainer) heroContainer.innerHTML = '';
+
+    if (sessions.length === 0) return;
     const data = {};
     sessions.forEach(s => {
         const name = s.taskName || 'Unknown';
@@ -1472,9 +1655,24 @@ function renderChart(sessions) {
         if (!data[name]) data[name] = { time: 0, color: s.taskColor || '#58a6ff' };
         data[name].time += duration;
     });
-    const top = Object.entries(data).sort((a, b) => b[1].time - a[1].time).slice(0, 5);
+    const sorted = Object.entries(data).sort((a, b) => b[1].time - a[1].time);
+    const top = sorted.slice(0, 5);
     const total = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
     if (total <= 0) return;
+
+    // Hero Badge Logic
+    if (heroContainer && sorted.length > 0) {
+        const hero = sorted[0];
+        const heroName = hero[0];
+        const heroData = hero[1];
+        const percent = Math.round((heroData.time / total) * 100);
+        heroContainer.innerHTML = `
+            <div class="hero-badge" style="border-color: ${heroData.color}; color: ${heroData.color}">
+                <span class="hero-icon">🏆</span>
+                <span class="hero-label">Focus Hero: ${escapeHtml(heroName)} (${percent}%)</span>
+            </div>
+        `;
+    }
 
     const chartSize = 140; const center = chartSize / 2; const radius = 60; let curAngle = 0;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1515,6 +1713,49 @@ function updateDateTime() {
     const now = new Date();
     const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour };
     el.textContent = now.toLocaleDateString('en-US', options).replace(',', '');
+
+    // Check for logical day change
+    const currentLogicalDate = getLogicalDate();
+    if (state.lastLogicalDate && state.lastLogicalDate !== currentLogicalDate) {
+        console.log(`Logical day changed from ${state.lastLogicalDate} to ${currentLogicalDate}. Refreshing metrics...`);
+        state.lastLogicalDate = currentLogicalDate;
+        refreshTodayMetrics();
+    }
+
+    // Also update the "Updated X ago" label every second (it will recalculate relative time)
+    updateRefreshLabel();
+}
+
+function updateRefreshLabel() {
+    const label = document.getElementById('lastUpdatedLabel');
+    if (!label || !state.lastRefreshTime) return;
+
+    const diffInSeconds = Math.floor((Date.now() - state.lastRefreshTime) / 1000);
+    
+    if (diffInSeconds < 60) {
+        label.textContent = 'Updated just now';
+    } else {
+        const mins = Math.floor(diffInSeconds / 60);
+        label.textContent = `Updated ${mins}m ago`;
+    }
+}
+
+function refreshTodayMetrics() {
+    // Refresh all UI components that depend on "Today"
+    renderFocusAreas();
+    renderHistory(currentFilter); // currentFilter is usually 'today'
+    renderPlan();
+    updateStats();
+    
+    state.lastRefreshTime = Date.now();
+    updateRefreshLabel();
+
+    // Visual feedback for refresh button if it exists
+    const btn = document.getElementById('manualRefreshBtn');
+    if (btn) {
+        btn.classList.add('refreshing');
+        setTimeout(() => btn.classList.remove('refreshing'), 600);
+    }
 }
 
 function formatTimestamp(date) {
@@ -1786,7 +2027,11 @@ function restoreTimerState() {
             state.timerState.remainingTime = Math.ceil(diff / 1000); initTimerWorker();
             timerWorker.postMessage({ action: 'start', endTime: state.timerState.targetEndTime }); updateTimerDisplay();
         } else { state.timerState.remainingTime = 0; handleSessionComplete(); }
-    } else { updateTimerDisplay(); }
+    } else { 
+        // If not running, ensure the timer display matches the current mode's duration settings
+        timer.applyMode(state.timerState.mode);
+        updateTimerDisplay(); 
+    }
 }
 
 function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }

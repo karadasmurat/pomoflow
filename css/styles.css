@@ -2334,6 +2334,93 @@ sliding-card[active] .focus-area-play-btn {
     letter-spacing: 1px;
 }
 
+.timer-duration-shortcuts.orbit {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px; /* Slightly larger than the 280px ring */
+    height: 320px;
+    pointer-events: none; /* Let clicks pass through the container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+}
+
+.orbiter {
+    position: absolute;
+    pointer-events: auto; /* Re-enable for buttons */
+    --distance: 145px; /* Half of width + padding */
+    --base-angle: 90deg; /* Initial trigger position (3 o'clock) */
+    
+    /* Default collapsed state (at trigger position) */
+    transform: rotate(var(--base-angle)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--base-angle)));
+    opacity: 0;
+    scale: 0.8;
+    
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 11px;
+    background: var(--surface-elevated);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.orbiter.trigger {
+    opacity: 1;
+    scale: 1;
+    z-index: 6;
+    background: var(--surface-elevated);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-size: 14px;
+}
+
+.orbiter.adj-btn {
+    font-size: 16px;
+    font-family: var(--font-time);
+    color: var(--primary);
+    background: rgba(88, 166, 255, 0.1);
+    border-color: rgba(88, 166, 255, 0.3);
+}
+
+.orbiter.adj-btn:active {
+    scale: 0.9;
+    background: var(--primary);
+    color: white;
+}
+
+.orbit.open .orbiter.option {
+    opacity: 1;
+    scale: 1;
+    /* Fanned out to their specific angles */
+    transform: rotate(var(--angle)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle)));
+}
+
+.orbiter.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
+    font-weight: 700;
+}
+
+.orbiter:hover:not(.active) {
+    background: var(--border);
+}
+
+.orbit.open .orbiter:hover:not(.active) {
+    transform: rotate(var(--angle)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle))) scale(1.1);
+}
+
 .timer-message {
     display: none;
     flex-direction: column;
@@ -2509,8 +2596,60 @@ sliding-card[active] .focus-area-play-btn {
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     width: 100%;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
+}
+
+.stats-bar.compact {
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding-top: 16px; /* Override original padding-top */
+}
+
+.stats-bar.compact .stat-value {
+    font-size: 18px;
+}
+
+.stats-bar.compact .stat-label {
+    font-size: 11px;
+}
+
+.stats-refresh-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.refresh-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms ease;
+}
+
+.refresh-btn:hover {
+    background: var(--border);
+    color: var(--primary);
+}
+
+.refresh-btn.refreshing {
+    animation: spin 600ms linear;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .stat-item {
@@ -2528,6 +2667,58 @@ sliding-card[active] .focus-area-play-btn {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 2px;
+}
+
+.stat-trend {
+    font-size: 10px;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.trend-up { color: var(--success); }
+.trend-down { color: var(--error, #ff4d4d); }
+.trend-neutral { color: var(--text-secondary); opacity: 0.7; }
+
+.hero-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.hero-icon {
+    font-size: 12px;
+}
+
+.history-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.activity-group-header {
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.activity-group-header:first-child {
+    margin-top: 0;
 }
 
 .history-filters {
@@ -4094,6 +4285,34 @@ button {
         width: 100%;
         justify-content: space-between;
         flex-wrap: wrap;
+    }
+
+    .stats-bar.compact {
+        grid-template-columns: repeat(3, 1fr); /* Back to 3 columns to save vertical space */
+        gap: 8px;
+        padding: 10px 8px;
+        margin-bottom: 16px;
+    }
+
+    .stats-refresh-container {
+        grid-column: span 3;
+        justify-content: center;
+        padding-top: 6px;
+        margin-top: 4px;
+        border-top: 1px solid var(--border);
+        font-size: 10px;
+    }
+
+    .stats-bar.compact .stat-value {
+        font-size: 16px;
+    }
+
+    .stats-bar.compact .stat-label {
+        font-size: 10px;
+    }
+
+    .stat-trend {
+        font-size: 9px;
     }
 
     .history-header-grid {

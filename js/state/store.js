@@ -99,7 +99,9 @@ export let state = {
     avatar: '🦉',
     unlockedAchievements: [],
     collapsedCategories: [],
-    activeCategoryIndex: 0
+    activeCategoryIndex: 0,
+    lastLogicalDate: null,
+    lastRefreshTime: null
 };
 
 // State mutations
