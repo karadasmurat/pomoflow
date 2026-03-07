@@ -11,7 +11,7 @@ class DatabaseManager {
         this.disabled = false;
 
         try {
-            this.worker = new Worker('js/db-worker.js');
+            this.worker = new Worker(new URL('./db-worker.js', import.meta.url));
             
             // Create a promise that resolves when the worker is initialized
             this.initPromise = new Promise((resolve) => {
@@ -120,6 +120,33 @@ class DatabaseManager {
         };
     }
 
+    async saveFullState(state) {
+        if (this.disabled || !this.initialized) return;
+        
+        // Save Settings
+        for (const [key, value] of Object.entries(state.settings)) {
+            await this.setSetting(key, value);
+        }
+
+        // Save Profile
+        await this.setUserProfile('full_profile', {
+            xp: state.xp,
+            totalXp: state.totalXp,
+            level: state.level,
+            avatar: state.avatar,
+            unlockedAchievements: state.unlockedAchievements,
+            collapsedCategories: state.collapsedCategories,
+            activeCategoryIndex: state.activeCategoryIndex
+        });
+
+        // Save App State (Theme, UI, Timer)
+        await this.setAppState('timer_state', state.timerState);
+        await this.setAppState('ui_state', {
+            selectedTaskColor: state.selectedTaskColor,
+            selectedFocusAreaIds: state.selectedFocusAreaIds
+        });
+    }
+
     async migrateFromLocalStorage(state) {
         console.log('Starting FINAL migration to SQLite...');
         
@@ -160,4 +187,4 @@ class DatabaseManager {
     }
 }
 
-const dbManager = new DatabaseManager();
+export const dbManager = new DatabaseManager();
