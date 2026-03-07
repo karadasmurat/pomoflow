@@ -361,14 +361,22 @@ function openSettings() {
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
+    
+    // Set active variant button
+    const variant = state.settings.cardVariant || 'glass';
+    document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.variant === variant);
+    });
 }
 
 function closeSettings() {
+    const activeVariantBtn = document.querySelector('#cardVariantSelect .filter-btn.active');
     SettingsService.updateSettings({
         workDuration: parseInt(document.getElementById('workDuration').value),
         shortBreakDuration: parseInt(document.getElementById('shortBreakDuration').value),
         longBreakDuration: parseInt(document.getElementById('longBreakDuration').value),
-        use12Hour: document.getElementById('timeFormat')?.classList.contains('active')
+        use12Hour: document.getElementById('timeFormat')?.classList.contains('active'),
+        cardVariant: activeVariantBtn ? activeVariantBtn.dataset.variant : 'glass'
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');
     saveData(); refreshUI();
@@ -493,6 +501,14 @@ function setupEventListeners() {
 
     document.querySelectorAll('.mode-tab').forEach(tab => {
         tab.onclick = () => { timer.stop(); timer.applyMode(tab.dataset.mode); refreshUI(); saveData(); };
+    });
+
+    // Card Variant Selection
+    document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        };
     });
 
     // Orbital Ray Action Handlers

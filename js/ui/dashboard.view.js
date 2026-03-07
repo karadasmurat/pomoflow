@@ -100,6 +100,7 @@ export class DashboardView {
     static _createHistoryItem(session, callbacks) {
         const item = document.createElement('sliding-card');
         item.setAttribute('menu-width', '100px');
+        item.setAttribute('variant', state.settings.cardVariant || 'glass');
         
         const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
         const durationMin = Math.round(session.duration / 60);

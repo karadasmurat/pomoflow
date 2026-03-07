@@ -105,6 +105,7 @@ export class FocusView {
 
     static _createTaskItem(task, callbacks) {
         const item = document.createElement('sliding-card');
+        item.setAttribute('variant', state.settings.cardVariant || 'glass');
         const todayTime = this._getTodayTimeForFocusArea(task.id);
         const totalTime = this._getTotalTimeForFocusArea(task.id);
 
@@ -199,6 +200,7 @@ export class FocusView {
             }
 
             const item = document.createElement('sliding-card');
+            item.setAttribute('variant', state.settings.cardVariant || 'glass');
             const reached = spent >= target;
             item.className = `plan-aim-item ${reached ? 'reached' : ''} ${exp && !reached ? 'expired' : ''}`;
             item.setAttribute('menu-width', reached ? '150px' : '100px');

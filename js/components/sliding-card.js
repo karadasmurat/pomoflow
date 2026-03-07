@@ -1,11 +1,6 @@
 /**
  * SlidingCard Web Component
- * A reusable card that slides to reveal a menu of actions.
- * Supports click-to-toggle and swipe-to-reveal.
- * 
- * Attributes:
- * - menu-width: Width of the hidden menu (default: 120px)
- * - active: Highlighted state (for active focus areas)
+ * A premium, multi-variant card that slides to reveal actions.
  */
 class SlidingCard extends HTMLElement {
     constructor() {
@@ -15,10 +10,11 @@ class SlidingCard extends HTMLElement {
         this._startX = 0;
         this._currentX = 0;
         this._isDragging = false;
+        this._dragStartTime = 0;
     }
 
     static get observedAttributes() {
-        return ['menu-width', 'active'];
+        return ['menu-width', 'active', 'variant'];
     }
 
     get isOpen() { return this._isOpen; }
@@ -27,13 +23,18 @@ class SlidingCard extends HTMLElement {
         this.updateState();
     }
 
-    attributeChangedCallback() {
-        this.render();
+    attributeChangedCallback(name, oldVal, newVal) {
+        if (oldVal !== newVal) {
+            this.updateVariant();
+            this.updateState();
+        }
     }
 
     connectedCallback() {
         this.render();
         this.setupEventListeners();
+        this.updateVariant();
+        this.updateState();
     }
 
     setupEventListeners() {
@@ -42,218 +43,193 @@ class SlidingCard extends HTMLElement {
 
         moreBtn.onclick = (e) => {
             e.stopPropagation();
-            this.isOpen = !this.isOpen;
-            this.dispatchEvent(new CustomEvent('toggle', { detail: { isOpen: this.isOpen } }));
+            this.toggleMenu();
         };
 
-        // Touch support
-        wrapper.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
-        wrapper.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-        wrapper.addEventListener('touchend', (e) => this.handleTouchEnd(e));
-        
-        // Close if clicking elsewhere in the component's content (optional behavior)
-        wrapper.onclick = (e) => {
-            if (this.isOpen && e.target !== moreBtn) {
+        wrapper.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.more-btn') || (e.button !== 0 && e.pointerType === 'mouse')) return;
+            this.handleDragStart(e.clientX);
+            const onMove = (me) => this.handleDragMove(me.clientX, me);
+            const onUp = () => {
+                this.handleDragEnd();
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+            };
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+        });
+
+        wrapper.addEventListener('click', (e) => {
+            const dragDist = Math.abs(this._currentX - (this.isOpen ? -parseInt(this.getAttribute('menu-width') || '120') : 0));
+            if (dragDist > 10) { e.stopPropagation(); return; }
+            if (this.isOpen && !e.target.closest('.more-btn')) {
                 this.isOpen = false;
+                e.stopPropagation();
             }
-        };
+        });
     }
 
-    handleTouchStart(e) {
-        this._startX = e.touches[0].clientX;
+    handleDragStart(clientX) {
+        this._startX = clientX;
         this._isDragging = true;
-        this.shadowRoot.getElementById('wrapper').style.transition = 'none';
+        this._dragStartTime = Date.now();
+        const wrapper = this.shadowRoot.getElementById('wrapper');
+        wrapper.style.transition = 'none';
+        wrapper.classList.add('pressing');
+        if (wrapper.setPointerCapture) wrapper.setPointerCapture(1);
     }
 
-    handleTouchMove(e) {
+    handleDragMove(clientX, e) {
         if (!this._isDragging) return;
-        const x = e.touches[0].clientX;
-        const diff = x - this._startX;
+        const diff = clientX - this._startX;
         const menuWidth = parseInt(this.getAttribute('menu-width') || '120');
-        
-        // Only allow dragging to the left
         let translate = this.isOpen ? -menuWidth + diff : diff;
-        translate = Math.max(-menuWidth - 20, Math.min(0, translate)); // Add some resistance
-        
+        if (translate < -menuWidth) translate = -menuWidth + ((translate + menuWidth) * 0.3);
+        else if (translate > 0) translate = translate * 0.3;
         this._currentX = translate;
         this.shadowRoot.getElementById('wrapper').style.transform = `translateX(${translate}px)`;
-        
-        // Prevent vertical scroll if swiping horizontally
-        if (Math.abs(diff) > 5) {
-            e.preventDefault();
-        }
     }
 
-    handleTouchEnd() {
+    handleDragEnd() {
         if (!this._isDragging) return;
         this._isDragging = false;
         const wrapper = this.shadowRoot.getElementById('wrapper');
+        wrapper.classList.remove('pressing');
         const menuWidth = parseInt(this.getAttribute('menu-width') || '120');
-        wrapper.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-
-        const threshold = menuWidth / 2;
-        if (this.isOpen) {
-            // If open, close if swiped right enough
-            this.isOpen = this._currentX < -threshold;
-        } else {
-            // If closed, open if swiped left enough
-            this.isOpen = this._currentX < -threshold;
-        }
+        const dragDuration = Date.now() - this._dragStartTime;
+        const dragDistance = this._currentX - (this.isOpen ? -menuWidth : 0);
+        const velocity = dragDistance / Math.max(dragDuration, 1);
+        if (Math.abs(velocity) > 0.3 && Math.abs(dragDistance) > 10) this.isOpen = velocity < 0;
+        else this.isOpen = this._currentX < -(menuWidth / 2);
         this.updateState();
+    }
+
+    updateVariant() {
+        const variant = this.getAttribute('variant') || 'glass';
+        const container = this.shadowRoot.querySelector('.container');
+        if (container) container.className = `container variant-${variant}`;
+    }
+
+    toggleMenu() {
+        this.isOpen = !this.isOpen;
+        this.dispatchEvent(new CustomEvent('toggle', { detail: { isOpen: this.isOpen }, bubbles: true, composed: true }));
     }
 
     updateState() {
         const wrapper = this.shadowRoot.getElementById('wrapper');
+        const moreBtn = this.shadowRoot.getElementById('moreBtn');
+        if (!wrapper || !moreBtn) return;
         const menuWidth = this.getAttribute('menu-width') || '120px';
         const widthVal = menuWidth.includes('px') ? menuWidth : `${menuWidth}px`;
-        
+        wrapper.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
         if (this._isOpen) {
             wrapper.style.transform = `translateX(-${widthVal})`;
             this.setAttribute('open', '');
+            moreBtn.setAttribute('aria-expanded', 'true');
         } else {
             wrapper.style.transform = 'translateX(0)';
             this.removeAttribute('open');
+            moreBtn.setAttribute('aria-expanded', 'false');
         }
     }
 
     render() {
-        const menuWidth = this.getAttribute('menu-width') || '120px';
-        const isActive = this.hasAttribute('active');
-
         this.shadowRoot.innerHTML = `
             <style>
                 :host {
-                    display: block;
-                    width: 100%;
-                    position: relative;
-                    --card-bg: var(--bg, #0d1117);
-                    --card-border: var(--border, #30363d);
-                    --card-radius: 12px;
-                    --active-color: var(--primary, #58a6ff);
+                    display: block; width: 100%; position: relative;
+                    --sc-radius: var(--radius, 12px);
+                    --sc-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+                    contain: layout; transform: translateZ(0);
                 }
-
+                :host(:hover) { z-index: 100; }
+                
                 .container {
-                    position: relative;
-                    min-height: 64px;
-                    background: var(--surface-elevated, #161b22);
-                    border-radius: var(--card-radius);
-                    overflow: hidden;
-                    display: flex;
-                    align-items: stretch;
+                    position: relative; border-radius: var(--sc-radius);
+                    overflow: visible !important; display: flex; align-items: stretch;
+                    margin: 4px 4px; /* Tight mobile margins */
+                    background: transparent; will-change: transform;
+                    padding: 2px;
                 }
 
-                .menu-container {
-                    position: absolute;
-                    top: 0;
-                    bottom: 0;
-                    right: 0;
-                    width: ${menuWidth};
-                    display: flex;
-                    align-items: center;
-                    justify-content: flex-end;
-                    z-index: 1;
-                    padding: 0 2px;
-                    box-sizing: border-box;
-                    gap: 2px;
+                @media (min-width: 768px) {
+                    .container { margin: 8px 12px; }
                 }
 
+                /* THE CARD WRAPPER - BASE */
                 .slide-wrapper {
-                    position: relative;
-                    width: 100%;
-                    background: var(--card-bg);
-                    border: 1px solid transparent;
-                    border-radius: var(--card-radius);
-                    display: flex;
-                    align-items: center;
-                    padding: 10px 12px;
-                    gap: 12px;
-                    z-index: 2;
-                    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
-                    box-sizing: border-box;
-                    touch-action: pan-y;
-                }
-
-                :host([active]) .slide-wrapper {
-                    /* Removed border and shadow that caused vertical line artifact */
-                }
-
-                .slide-wrapper:hover {
-                    border-color: var(--text-secondary, #8b949e);
-                }
-
-                .main-content {
-                    flex: 1;
-                    min-width: 0;
-                }
-
-                .more-btn {
-                    background: transparent;
-                    border: none;
-                    color: var(--text-secondary, #8b949e);
-                    cursor: pointer;
-                    padding: 8px;
-                    border-radius: 4px;
-                    opacity: 0.7;
-                    transition: opacity 0.2s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 18px;
-                    flex-shrink: 0;
-                }
-
-                .more-btn:hover {
-                    opacity: 1;
-                    background: var(--surface-elevated, #161b22);
-                }
-
-                /* Slot specific styles - Decisive Reset & Precision */
-                ::slotted([slot="menu"]) {
-                    /* Reset & Layout */
-                    margin: 0 !important;
-                    padding: 0 !important;
+                    position: relative; width: 100%; height: auto; z-index: 2;
+                    min-height: 48px; /* High-density minimum */
+                    display: flex; align-items: center; padding: 8px 16px; gap: 16px;
+                    box-sizing: border-box; cursor: pointer; user-select: none; touch-action: none;
+                    background: var(--surface, #161b22);
                     border: none !important;
-                    outline: none !important;
-                    background: transparent !important;
-                    box-shadow: none !important;
-                    flex: 1 !important;
+                    border-radius: var(--sc-radius) !important;
+                    /* THE ONLY ALLOWED SHADOW */
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+                    transition: transform 0.5s var(--sc-spring), scale 0.2s ease, background-color 0.2s ease;
+                }
+
+                /* VARIANTS - Background Overrides */
+                .container.variant-glass .slide-wrapper { background: rgba(255, 255, 255, 0.08) !important; backdrop-filter: blur(20px); }
+                .container.variant-bento .slide-wrapper { background: var(--surface-elevated, #21262d) !important; border-radius: calc(var(--sc-radius) * 1.5) !important; }
+                .container.variant-skeuo { 
+                    background: var(--skeuo-trench, #0f172a) !important; 
+                    border: 1px solid var(--border, #30363d) !important;
+                    box-shadow: inset 0 2px 8px -4px rgba(0, 0, 0, 0.3) !important; 
+                    overflow: hidden !important; 
+                }
+                .container.variant-skeuo .slide-wrapper { background: var(--skeuo-face, #1c2128) !important; }
+
+                /* INTERACTION */
+                .slide-wrapper:hover { transform: translateY(-2px); }
+                .slide-wrapper.pressing { transform: translateY(0); scale: 0.985; }
+                :host([active]) .slide-wrapper { background: var(--primary-muted, rgba(88, 166, 255, 0.08)) !important; }
+
+                /* MENU UI */
+                .menu-container { position: absolute; top: 0; bottom: 0; right: 0; width: auto; display: flex; align-items: center; justify-content: flex-end; z-index: 1; padding: 0 8px; gap: 4px; opacity: 0; transition: opacity 0.3s ease; }
+                :host([open]) .menu-container { opacity: 1; }
+                .main-content { flex: 1; min-width: 0; pointer-events: auto; }
+                .more-btn { background: rgba(255, 255, 255, 0.05); border: none; color: var(--text-secondary, #8b949e); cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; pointer-events: auto; }
+                .more-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary, #ffffff); transform: rotate(90deg); }
+                
+                ::slotted([slot="menu"]) {
+                    margin: 0 !important;
+                    padding: 2px 1px !important;
+                    border: none !important;
+                    background: rgba(255, 255, 255, 0.03) !important;
+                    width: 44px !important; /* Slightly increased for label fitting */
+                    height: 44px !important;
                     display: flex !important;
                     flex-direction: column !important;
                     align-items: center !important;
                     justify-content: center !important;
-                    gap: 2px !important;
+                    border-radius: 8px !important;
+                    color: var(--text-secondary) !important;
+                    font-size: 7px !important; /* Micro-font for absolute fit */
+                    font-weight: 600 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.1px !important;
+                    transition: all 0.2s var(--sc-fast) !important;
                     cursor: pointer !important;
-                    transition: all 0.2s ease !important;
-                    border-radius: 10px !important;
+                    flex-shrink: 0 !important;
+                    pointer-events: auto;
                 }
-
-                ::slotted([slot="menu"]:hover) {
-                    background: var(--surface-elevated, #161b22) !important;
-                }
-
-                ::slotted([slot="menu"].danger:hover) {
-                    background: rgba(248, 81, 73, 0.1) !important;
-                }
-
-                ::slotted([slot="indicator"]) {
-                    flex-shrink: 0;
-                }
+                ::slotted([slot="menu"]:hover) { color: var(--primary, #58a6ff) !important; background: rgba(88, 166, 255, 0.15) !important; transform: translateY(-1px) !important; }
+                ::slotted([slot="menu"].danger:hover) { color: #ff7b72 !important; background: rgba(248, 81, 73, 0.15) !important; }
+                ::slotted([slot="indicator"]) { flex-shrink: 0; }
             </style>
             <div class="container">
-                <div class="menu-container">
-                    <slot name="menu"></slot>
-                </div>
-                <div class="slide-wrapper" id="wrapper">
+                <div class="menu-container" aria-hidden="true"><slot name="menu"></slot></div>
+                <div class="slide-wrapper" id="wrapper" role="button" tabindex="0">
                     <slot name="indicator"></slot>
-                    <div class="main-content">
-                        <slot></slot>
-                    </div>
-                    <button class="more-btn" id="moreBtn" aria-label="Toggle menu">⋮</button>
+                    <div class="main-content"><slot></slot></div>
+                    <button class="more-btn" id="moreBtn" aria-label="Toggle actions" aria-haspopup="true" aria-expanded="false">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM1.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm13 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>
+                    </button>
                 </div>
             </div>
         `;
-        this.updateState();
     }
 }
-
 customElements.define('sliding-card', SlidingCard);

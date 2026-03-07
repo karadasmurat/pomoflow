@@ -68,6 +68,7 @@ export let state = {
         autoStartWork: false,
         soundVolume: 70,
         use12Hour: false,
+        cardVariant: 'glass',
         shareTemplates: {
             intent: "🧠 Focusing on {focusArea} for {duration} mins. Back at {time}! 🚀 #PomoFlow #DeepWork",
             session: "🎯 Session complete! Focused on {focusArea} for {duration} mins. Earned {xp} XP! 📈 #PomoFlow",
