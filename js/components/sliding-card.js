@@ -187,7 +187,14 @@ class SlidingCard extends HTMLElement {
                 :host([active]) .slide-wrapper { background: var(--primary-muted, rgba(88, 166, 255, 0.08)) !important; }
 
                 /* MENU UI */
-                .menu-container { position: absolute; top: 0; bottom: 0; right: 0; width: auto; display: flex; align-items: center; justify-content: flex-end; z-index: 1; padding: 0 8px; gap: 4px; opacity: 0; transition: opacity 0.3s ease; }
+                .menu-container { 
+                    position: absolute; top: 0; bottom: 0; right: 0; width: auto; 
+                    display: flex; align-items: center; justify-content: flex-end; 
+                    z-index: 1; 
+                    padding: 0 12px; /* Breathing room from right edge */
+                    gap: 6px;        /* Gap between buttons */
+                    opacity: 0; transition: opacity 0.3s ease; 
+                }
                 :host([open]) .menu-container { opacity: 1; }
                 .main-content { flex: 1; min-width: 0; pointer-events: auto; }
                 .more-btn { background: rgba(255, 255, 255, 0.05); border: none; color: var(--text-secondary, #8b949e); cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; pointer-events: auto; }

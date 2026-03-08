@@ -491,7 +491,9 @@ function setupEventListeners() {
         'focusAreaEditSave': saveFocusAreaFromModal, 'focusAreaEditCancel': () => document.getElementById('focusAreaEditModal').classList.remove('open'),
         'shareXBtn': () => SettingsService.handleShare('x', 'intent', {}, notify),
         'shareCopyBtn': () => SettingsService.handleShare('copy', 'intent', {}, notify),
-        'focusAreaLink': openFocusAreas, 'focusAreaOverlay': closeFocusAreas, 'planOverlay': closePlan
+        'focusAreaLink': openFocusAreas, 
+        'clearFocusArea': (e) => { e.stopPropagation(); mutations.updateTimer({ activeTaskId: null }); refreshUI(); saveData(); },
+        'focusAreaOverlay': closeFocusAreas, 'planOverlay': closePlan
     };
 
     Object.entries(clickMap).forEach(([id, fn]) => {

@@ -139,6 +139,14 @@ export class FocusView {
             </div>
         `;
 
+        // Task Selection Logic
+        item.onclick = (e) => {
+            // Only trigger if we aren't clicking a specific button or sliding
+            if (!e.target.closest('button') && !item.isOpen) {
+                if (callbacks.onPlay) callbacks.onPlay(task);
+            }
+        };
+
         item.querySelector('.focus-area-play-btn').onclick = (e) => {
             e.stopPropagation();
             if (callbacks.onPlay) callbacks.onPlay(task);

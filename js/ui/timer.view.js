@@ -72,6 +72,7 @@ export class TimerView {
     }
 
     static _updateActiveTask(textEl, prefixEl) {
+        const linkEl = document.getElementById('focusAreaLink');
         const clearBtn = document.getElementById('clearFocusArea');
         const questionEl = document.getElementById('focusAreaQuestion');
         const hudEl = document.getElementById('focusAreaProgressHUD');
@@ -79,6 +80,10 @@ export class TimerView {
         if (state.timerState.activeTaskId) {
             const task = state.tasks.find(t => t.id === state.timerState.activeTaskId);
             if (task) {
+                if (linkEl) {
+                    linkEl.classList.remove('is-empty');
+                    linkEl.style.pointerEvents = 'auto';
+                }
                 if (questionEl) questionEl.textContent = 'Focusing on:';
                 if (textEl) { 
                     textEl.textContent = task.name; 
@@ -87,12 +92,16 @@ export class TimerView {
                 }
                 if (prefixEl) prefixEl.style.display = 'none';
                 if (clearBtn) clearBtn.style.display = 'flex';
-                // Note: HUD update involves Aim logic which might stay in app.js or FocusView for now
             }
         } else {
+            if (linkEl) {
+                linkEl.classList.add('is-empty');
+                linkEl.style.pointerEvents = 'auto';
+            }
             if (questionEl) questionEl.textContent = 'What are you focusing on?';
             if (textEl) {
-                textEl.innerHTML = '<span class="focus-area-add-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>';
+                const addIcon = '<span class="focus-area-add-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>';
+                if (textEl.innerHTML !== addIcon) textEl.innerHTML = addIcon;
                 textEl.style.color = '';
                 textEl.title = '';
             }
