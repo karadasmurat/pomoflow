@@ -118,6 +118,11 @@ self.onmessage = async (e) => {
                     bind: [payload.id, payload.name, payload.color, payload.category, payload.is_active ? 1 : 0]
                 });
                 break;
+            case 'delete_focus_area':
+                db.exec("DELETE FROM focus_areas WHERE id = ?", {
+                    bind: [payload.id]
+                });
+                break;
             case 'insert_session':
                 db.exec("INSERT OR REPLACE INTO sessions (id, focus_area_id, task_name, task_color, duration_seconds, xp_earned, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)", {
                     bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp]

@@ -47,6 +47,7 @@ async function init() {
             
             if (fullState.appState) {
                 if (fullState.appState.timer_state) state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
+                if (fullState.appState.categories) state.categories = fullState.appState.categories;
                 if (fullState.appState.theme) document.documentElement.setAttribute('data-theme', fullState.appState.theme);
                 if (fullState.appState.notification_prompt) state.notificationPermission = fullState.appState.notification_prompt;
                 if (fullState.appState.ui_state) {
@@ -67,9 +68,18 @@ async function init() {
             completed: false, createdAt: new Date().toISOString()
         }));
         saveData();
+    } else {
+        // DATA REPAIR: If ALL tasks are marked as completed, reset them to active
+        // This fixes a bug where tasks were incorrectly saved as inactive during development.
+        if (state.tasks.length > 0 && state.tasks.every(t => t.completed === true || t.completed === 1 || t.completed === 'true')) {
+            console.warn('Repairing data: All focus areas were marked as completed incorrectly.');
+            state.tasks.forEach(t => t.completed = false);
+            saveData();
+        }
     }
 
     setupEventListeners();
+    FocusView.populateCategorySelects();
     
     timer.init({
         onTick: () => TimerView.updateDisplay(),
@@ -98,117 +108,64 @@ function refreshUI() {
         } 
     });
     renderPlan();
-    FocusView.updateLevelUI();
     TimerView.updateDisplay();
-    DashboardView.updateStats();
-    updateDateTime();
+    FocusView.updateLevelUI();
 }
-
-// --- 2. TIMER & SESSION ---
 
 function toggleTimer() {
     if (state.timerState.isRunning) {
         timer.stop();
     } else {
-        const display = document.querySelector('.timer-display');
-        if (display?.classList.contains('has-message')) {
-            const msgEl = document.getElementById('timerMessage');
-            if (msgEl) msgEl.innerHTML = '';
-            display.classList.remove('has-message');
+        if (!state.timerState.activeTaskId && state.timerState.mode === 'work') {
+            return notify('Select focus area first 🎯');
         }
-
-        // Fix: If timer is at 0:00, we must apply the mode to get the full duration back
-        if (state.timerState.remainingTime <= 0) {
-            timer.applyMode(state.timerState.mode);
-        }
-
         timer.start();
     }
+    refreshUI();
+    saveData();
 }
 
 function resetTimer() {
-    const display = document.querySelector('.timer-display');
-    const isPostSession = display?.classList.contains('has-message');
-
-    if (isPostSession) {
-        // User wants to restart the session that JUST finished.
-        // We need to revert the mode change that happened in handleSessionComplete.
-        const currentMode = state.timerState.mode;
-        
-        if (currentMode === 'work') {
-            // We just finished a break. Go back to break.
-            if (state.timerState.cycleStation > 1) {
-                state.timerState.mode = 'shortBreak';
-                state.timerState.cycleStation--;
-            } else {
-                state.timerState.mode = 'longBreak';
-                state.timerState.cycleStation = state.settings.sessionsBeforeLongBreak;
-            }
-        } else {
-            // We just finished a focus session. Go back to work.
-            state.timerState.mode = 'work';
-            state.timerState.sessionCount = Math.max(0, state.timerState.sessionCount - 1);
-        }
-
-        // Clear the guidance message
-        const msgEl = document.getElementById('timerMessage');
-        if (msgEl) msgEl.innerHTML = '';
-        display.classList.remove('has-message');
-    }
-
-    timer.reset();
+    timer.stop();
+    timer.applyMode(state.timerState.mode);
     refreshUI();
+    saveData();
 }
 
-function handleSessionComplete(skipped = false) {
-    timer.stop();
-    const { wasWork, nextMode } = TimerService.handleSessionEnd(skipped);
+function handleSessionComplete(isSkip = false) {
+    if (state.timerState.mode === 'work' && !isSkip) {
+        saveSession();
+        checkAchievements();
+    }
 
-    if (!skipped) {
-        if (wasWork) saveSession();
-        timer.playTone(wasWork ? 440 : 880, 0.1, 0);
-        notify(wasWork ? 'Focus session complete! 🚀' : 'Break is over! Ready to focus?');
-    }
+    const nextMode = TimerService.getNextMode(state.timerState.mode, state.timerState.sessionCount, state.settings.sessionsBeforeLongBreak);
     
-    if (skipped) {
-        // Escape Hatch: Skip suggested session
-        // 1. Clear UI message if it exists
-        const display = document.querySelector('.timer-display');
-        if (display?.classList.contains('has-message')) {
-            const msgEl = document.getElementById('timerMessage');
-            if (msgEl) msgEl.innerHTML = '';
-            display.classList.remove('has-message');
-        }
+    mutations.updateTimer({
+        mode: nextMode,
+        sessionCount: state.timerState.mode === 'work' && !isSkip ? state.timerState.sessionCount + 1 : state.timerState.sessionCount,
+        isRunning: false
+    });
+
+    timer.applyMode(nextMode);
+    
+    if (!isSkip) {
+        const title = state.timerState.mode === 'work' ? 'Break Finished!' : 'Focus Session Finished!';
+        const body = state.timerState.mode === 'work' ? 'Ready to focus?' : 'Time for a break!';
+        SettingsService.sendNotification(title, body);
         
-        // 2. Set mode and apply full duration
-        state.timerState.mode = nextMode;
-        timer.applyMode(nextMode);
-    } else {
-        // Transition to 'End-of-Session' (0:00 + Guidance)
-        state.timerState.mode = nextMode;
-        state.timerState.remainingTime = 0;
-        TimerView.updateDisplay();
-        
-        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: state.settings.use12Hour });
-        const msgEl = document.getElementById('timerMessage');
-        if (msgEl) {
-            msgEl.innerHTML = `<span class="msg-status">Finished ${wasWork ? 'Focus Area' : 'Break'} at ${time}</span><span class="msg-action">Ready for a ${nextMode === 'longBreak' ? 'long break' : (nextMode === 'shortBreak' ? 'break' : 'focus session')}?</span>`;
-            document.querySelector('.timer-display')?.classList.add('has-message');
+        if (state.timerState.mode === 'work' ? state.settings.autoStartWork : state.settings.autoStartBreaks) {
+            setTimeout(() => { if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode); timer.start(); }, 1500);
         }
     }
     
-    saveData();
     refreshUI();
-
-    if (!skipped && ((nextMode === 'work' && state.settings.autoStartWork) || (nextMode !== 'work' && state.settings.autoStartBreaks))) {
-        setTimeout(() => { if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode); timer.start(); }, 1500);
-    }
+    saveData();
 }
 
 function saveSession() {
-    const session = { 
-        id: Date.now().toString(), taskId: state.timerState.activeTaskId, 
-        duration: state.settings.workDuration * 60, timestamp: new Date().toISOString() 
+    const session = {
+        id: Date.now().toString(), taskId: state.timerState.activeTaskId,
+        duration: state.settings.workDuration * 60, timestamp: new Date().toISOString()
     };
 
     if (state.timerState.activeTaskId) {
@@ -223,7 +180,7 @@ function saveSession() {
             }
         }
     }
-    
+
     state.sessions.push(session);
     if (dbManager.initialized) dbManager.insertSession(session);
     addXP(Math.floor(session.duration / 60) * 10);
@@ -261,23 +218,80 @@ function renderFocusAreas() {
         onEdit: (task) => openFocusAreaEditModal(task),
         onToggleComplete: (id) => toggleFocusAreaComplete(id),
         onDelete: (id) => deleteFocusArea(id),
+        onEditCategory: (name) => openCategoryEditModal(name),
+        onMoveToCategory: (taskId, newCat) => moveTaskToCategory(taskId, newCat),
         onStateChange: () => saveData()
     });
 }
 
 function addFocusArea() {
-    const name = document.getElementById('focusAreaInput').value.trim();
-    const cat = document.getElementById('focusAreaCategorySelect').value;
-    if (FocusService.addFocusArea(name, cat)) {
-        document.getElementById('focusAreaInput').value = '';
-        saveData(); renderFocusAreas();
+    try {
+        const input = document.getElementById('focusAreaInput');
+        const name = input.value.trim();
+        if (!name) return notify('Enter focus area name');
+        
+        const catSelect = document.getElementById('focusAreaCategorySelect');
+        let cat = catSelect.value;
+
+        if (cat === '__new__') {
+            const newName = document.getElementById('newCategoryNameInput').value.trim();
+            const newIcon = document.getElementById('newCategoryIconInput').value.trim() || '📁';
+            if (!newName) return notify('Enter new category name');
+            
+            // Add category to state if it doesn't exist
+            if (!state.categories.find(c => c.name.toLowerCase() === newName.toLowerCase())) {
+                state.categories.push({ id: Date.now().toString(), name: newName, icon: newIcon });
+                FocusView.populateCategorySelects();
+            }
+            cat = newName;
+            
+            // Hide the new category wrapper
+            document.getElementById('newCategoryWrapper').style.display = 'none';
+            document.getElementById('newCategoryNameInput').value = '';
+            document.getElementById('newCategoryIconInput').value = '📁';
+            document.getElementById('selectedIconDisplay').textContent = '📁';
+        }
+        
+        const task = FocusService.addFocusArea(name, cat);
+        
+        if (task) {
+            input.value = '';
+            
+            // Recalculate grouped categories to find the correct index
+            const active = state.tasks.filter(t => {
+                const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
+                return !isComp;
+            });
+            const grouped = active.reduce((acc, t) => {
+                const c = t.category || 'Uncategorized';
+                if (!acc[c]) acc[c] = [];
+                acc[c].push(t);
+                return acc;
+            }, {});
+            
+            const order = state.categories.map(c => c.name);
+            const activeCats = Object.keys(grouped).sort((a, b) => {
+                const ia = order.indexOf(a), ib = order.indexOf(b);
+                return (ia !== -1 && ib !== -1) ? ia - ib : (ia !== -1 ? -1 : (ib !== -1 ? 1 : a.localeCompare(b)));
+            });
+            
+            state.activeCategoryIndex = activeCats.indexOf(task.category || 'Uncategorized');
+            
+            saveData(); 
+            renderFocusAreas(); 
+            notify(`Added: ${name}`);
+        }
+    } catch (e) {
+        console.error('Failed to add focus area:', e);
+        notify('Error adding focus area');
     }
 }
 
 function toggleFocusAreaComplete(id) {
     const t = state.tasks.find(x => x.id === id);
     if (t) {
-        t.completed = !t.completed;
+        const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
+        t.completed = !isComp;
         if (t.completed && state.timerState.activeTaskId === id) state.timerState.activeTaskId = null;
         saveData(); renderFocusAreas();
     }
@@ -285,7 +299,11 @@ function toggleFocusAreaComplete(id) {
 
 function deleteFocusArea(id) {
     confirmAction('Delete focus area?').then(conf => {
-        if (conf) { FocusService.deleteFocusArea(id); saveData(); renderFocusAreas(); }
+        if (conf) { 
+            FocusService.deleteFocusArea(id); 
+            if (dbManager.initialized) dbManager.deleteFocusArea(id);
+            saveData(); renderFocusAreas(); 
+        }
     });
 }
 
@@ -412,6 +430,66 @@ function saveFocusAreaFromModal() {
     document.getElementById('focusAreaEditModal').classList.remove('open');
 }
 
+let editingCategoryName = null;
+function openCategoryEditModal(name) {
+    editingCategoryName = name;
+    const cat = state.categories.find(c => c.name === name);
+    if (!cat) return;
+
+    document.getElementById('categoryEditName').value = cat.name;
+    document.getElementById('categoryEditIconDisplay').textContent = cat.icon;
+    document.getElementById('categoryEditIconInput').value = cat.icon;
+    
+    // Populate dropdown icons
+    const dropdown = document.getElementById('categoryEditIconDropdown');
+    const icons = ["🎓", "💼", "💪", "🏠", "🎨", "🧪", "📚", "🚀", "🧠", "🎯", "💻", "📈", "🔧", "🧹", "🛒"];
+    dropdown.innerHTML = icons.map(i => `<button type="button" class="icon-dot" data-icon="${i}">${i}</button>`).join('');
+    
+    // Setup dropdown listeners
+    dropdown.querySelectorAll('.icon-dot').forEach(btn => {
+        btn.onclick = () => {
+            const icon = btn.dataset.icon;
+            document.getElementById('categoryEditIconDisplay').textContent = icon;
+            document.getElementById('categoryEditIconInput').value = icon;
+            dropdown.classList.remove('open');
+        };
+    });
+
+    document.getElementById('categoryEditModal').classList.add('open');
+}
+
+function saveCategoryFromModal() {
+    const newName = document.getElementById('categoryEditName').value.trim();
+    const newIcon = document.getElementById('categoryEditIconInput').value;
+    if (!newName) return notify('Category name cannot be empty');
+
+    const cat = state.categories.find(c => c.name === editingCategoryName);
+    if (cat) {
+        // Update all tasks in this category
+        state.tasks.forEach(t => {
+            if (t.category === editingCategoryName) t.category = newName;
+        });
+        
+        cat.name = newName;
+        cat.icon = newIcon;
+        
+        saveData();
+        refreshUI();
+        FocusView.populateCategorySelects();
+    }
+    document.getElementById('categoryEditModal').classList.remove('open');
+}
+
+function moveTaskToCategory(taskId, newCat) {
+    const t = state.tasks.find(x => x.id === taskId);
+    if (t) {
+        t.category = newCat;
+        saveData();
+        refreshUI();
+        notify(`Moved to ${newCat}`);
+    }
+}
+
 // --- 5. PERSISTENCE & SYSTEM ---
 
 function saveData() { dbManager.initialized ? dbManager.saveFullState(state) : localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state)); }
@@ -477,6 +555,29 @@ function setupEventListeners() {
         'skipBtn': () => handleSessionComplete(true),
         'themeToggle': () => SettingsService.toggleTheme(),
         'addFocusAreaBtn': addFocusArea,
+        'toggleFocusAreaManagement': (e) => {
+            const panel = document.getElementById('focusAreaPanel');
+            const isManagement = panel?.classList.toggle('management-mode');
+            const btn = e.currentTarget;
+            btn.classList.toggle('active', isManagement);
+            
+            const span = btn.querySelector('span');
+            const svgContainer = btn.querySelector('svg');
+            
+            if (isManagement) {
+                span.textContent = 'Done';
+                btn.classList.add('done-state');
+                // Change to Checkmark icon
+                svgContainer.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>';
+            } else {
+                span.textContent = 'Edit';
+                btn.classList.remove('done-state');
+                // Change back to Pencil icon
+                svgContainer.innerHTML = '<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>';
+            }
+        },
+        'inlineColorBtn': () => document.getElementById('inlineColorDropdown')?.classList.toggle('open'),
+        'inlineIconBtn': () => document.getElementById('inlineIconDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
         'settingsBtn': openSettings, 'closeSettings': closeSettings,
@@ -487,6 +588,22 @@ function setupEventListeners() {
         'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
+        'toggleFocusAreaCreate': (e) => {
+            const isOpen = document.getElementById('focusAreaCreateWrapper')?.classList.toggle('open');
+            e.currentTarget.classList.toggle('active', isOpen);
+            if (isOpen) {
+                FocusView.populateCategorySelects();
+                document.getElementById('focusAreaInput')?.focus();
+            }
+        },
+        'togglePlanCreate': (e) => {
+            const isOpen = document.getElementById('planCreateWrapper')?.classList.toggle('open');
+            e.currentTarget.classList.toggle('active', isOpen);
+        },
+        'categoryEditIconBtn': () => document.getElementById('categoryEditIconDropdown')?.classList.toggle('open'),
+        'categoryEditSave': saveCategoryFromModal,
+        'categoryEditCancel': () => document.getElementById('categoryEditModal').classList.remove('open'),
+        'closeCategoryEdit': () => document.getElementById('categoryEditModal').classList.remove('open'),
         'sessionEditSave': saveSessionFromModal, 'sessionEditCancel': () => document.getElementById('sessionEditModal').classList.remove('open'),
         'focusAreaEditSave': saveFocusAreaFromModal, 'focusAreaEditCancel': () => document.getElementById('focusAreaEditModal').classList.remove('open'),
         'shareXBtn': () => SettingsService.handleShare('x', 'intent', {}, notify),
@@ -499,6 +616,50 @@ function setupEventListeners() {
     Object.entries(clickMap).forEach(([id, fn]) => {
         const el = document.getElementById(id);
         if (el) el.onclick = fn;
+    });
+
+    // Category Select Listener
+    document.getElementById('focusAreaCategorySelect')?.addEventListener('change', (e) => {
+        const wrapper = document.getElementById('newCategoryWrapper');
+        if (wrapper) wrapper.style.display = e.target.value === '__new__' ? 'flex' : 'none';
+        if (e.target.value === '__new__') document.getElementById('newCategoryNameInput')?.focus();
+    });
+
+    // Inline Icon Selection
+    document.querySelectorAll('#inlineIconDropdown .icon-dot').forEach(dot => {
+        dot.onclick = (e) => {
+            e.stopPropagation();
+            const icon = dot.dataset.icon;
+            const display = document.getElementById('selectedIconDisplay');
+            const hidden = document.getElementById('newCategoryIconInput');
+            if (display) display.textContent = icon;
+            if (hidden) hidden.value = icon;
+            document.getElementById('inlineIconDropdown')?.classList.remove('open');
+        };
+    });
+
+    // Inline Color Selection
+    document.querySelectorAll('#inlineColorDropdown .color-dot').forEach(dot => {
+        dot.onclick = (e) => {
+            e.stopPropagation();
+            const color = dot.dataset.color;
+            state.selectedTaskColor = color;
+            const circle = document.getElementById('selectedColorCircle');
+            if (circle) circle.style.background = color;
+            document.querySelectorAll('#inlineColorDropdown .color-dot').forEach(d => d.classList.remove('active'));
+            dot.classList.add('active');
+            document.getElementById('inlineColorDropdown')?.classList.remove('open');
+        };
+    });
+
+    // Enter Key for Focus Area Input
+    document.getElementById('focusAreaInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addFocusArea();
+    });
+
+    // Enter Key for New Category Input
+    document.getElementById('newCategoryNameInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addFocusArea();
     });
 
     document.querySelectorAll('.mode-tab').forEach(tab => {
@@ -575,6 +736,15 @@ function setupEventListeners() {
         const orbitEl = document.getElementById('durationOrbit');
         if (orbitEl?.classList.contains('open') && !orbitEl.contains(e.target)) {
             orbitEl.classList.remove('open');
+        }
+
+        // 4. Auto-close Color & Icon Dropdowns
+        if (!e.target.closest('.inline-color-wrapper')) {
+            document.getElementById('inlineColorDropdown')?.classList.remove('open');
+        }
+        if (!e.target.closest('.inline-icon-wrapper')) {
+            document.getElementById('inlineIconDropdown')?.classList.remove('open');
+            document.getElementById('categoryEditIconDropdown')?.classList.remove('open');
         }
     });
 }

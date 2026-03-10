@@ -38,8 +38,15 @@ export class FocusView {
             return;
         }
 
-        const active = state.tasks.filter(t => !t.completed);
-        const completed = state.tasks.filter(t => t.completed);
+        const active = state.tasks.filter(t => {
+            const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
+            return !isComp;
+        });
+        const completed = state.tasks.filter(t => {
+            const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
+            return isComp;
+        });
+        
         const grouped = active.reduce((acc, t) => {
             const c = t.category || 'Uncategorized';
             if (!acc[c]) acc[c] = [];
@@ -47,8 +54,11 @@ export class FocusView {
             return acc;
         }, {});
 
-        const icons = { "Education & Personal Development": "🎓", "Health & Wellness": "💪", "Personal Life & Home": "🏠", "Work & Career": "💼", "Creative & Innovation": "🎨", "Completed": "✅", "Uncategorized": "📁" };
-        const order = ["Education & Personal Development", "Health & Wellness", "Personal Life & Home", "Work & Career", "Creative & Innovation", "Uncategorized"];
+        const order = state.categories.map(c => c.name);
+        const iconMap = state.categories.reduce((acc, c) => {
+            acc[c.name] = c.icon;
+            return acc;
+        }, { "Completed": "✅" });
         
         const activeCats = Object.keys(grouped).sort((a, b) => {
             const ia = order.indexOf(a), ib = order.indexOf(b);
@@ -58,13 +68,18 @@ export class FocusView {
         const categories = [...activeCats];
         if (completed.length > 0) categories.push('Completed');
 
+        // Reset active index if it's out of bounds
+        if (state.activeCategoryIndex >= categories.length) {
+            state.activeCategoryIndex = 0;
+        }
+
         categories.forEach((cat, idx) => {
             const isActive = idx === state.activeCategoryIndex;
-            const group = this._createCategoryGroup(cat, isActive, icons[cat], () => {
+            const group = this._createCategoryGroup(cat, isActive, iconMap[cat], () => {
                 state.activeCategoryIndex = (state.activeCategoryIndex === idx) ? -1 : idx;
                 if (callbacks.onStateChange) callbacks.onStateChange();
                 this.renderFocusAreas(callbacks);
-            });
+            }, callbacks);
 
             if (isActive) {
                 const content = group.querySelector('.focus-area-category-content');
@@ -77,22 +92,79 @@ export class FocusView {
         });
     }
 
-    static _createCategoryGroup(name, isActive, icon, toggleFn) {
+    static populateCategorySelects() {
+        const select = document.getElementById('focusAreaCategorySelect');
+        const editSelect = document.getElementById('focusAreaEditCategory');
+        if (!select) return;
+
+        const options = state.categories
+            .filter(c => !c.isDefault)
+            .map(c => `<option value="${c.name}">${c.icon} ${c.name}</option>`)
+            .join('');
+
+        const uncategorized = state.categories.find(c => c.isDefault) || { name: 'Uncategorized', icon: '📁' };
+        
+        const finalHtml = `
+            <option value="${uncategorized.name}">${uncategorized.icon} ${uncategorized.name}</option>
+            ${options}
+            <option value="__new__">+ Add New Category...</option>
+        `;
+        
+        select.innerHTML = finalHtml;
+        if (editSelect) editSelect.innerHTML = finalHtml;
+    }
+
+    static _createCategoryGroup(name, isActive, icon, toggleFn, callbacks = {}) {
         const group = document.createElement('div');
         group.className = `focus-area-category-group ${isActive ? 'active' : 'collapsed'}`;
+        group.dataset.category = name;
         
+        // Drop Target Logic
+        if (name !== 'Completed') {
+            group.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                group.classList.add('draggable-over');
+            });
+            group.addEventListener('dragleave', () => group.classList.remove('draggable-over'));
+            group.addEventListener('drop', (e) => {
+                e.preventDefault();
+                group.classList.remove('draggable-over');
+                const taskId = e.dataTransfer.getData('taskId');
+                if (taskId && callbacks.onMoveToCategory) {
+                    callbacks.onMoveToCategory(taskId, name);
+                }
+            });
+        }
+
         const header = document.createElement('div');
         header.className = `focus-area-category-header ${isActive ? 'active' : ''}`;
+        
+        const isDefault = state.categories.find(c => c.name === name)?.isDefault;
+        const editBtnHtml = (name !== 'Completed' && !isDefault) ? `
+            <button class="category-edit-btn" title="Edit Category">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
+            </button>
+        ` : '';
+
         header.innerHTML = `
             <div class="category-title-wrapper">
                 <span class="category-icon">${icon || '📁'}</span>
-                <span>${name}</span>
+                <span class="category-name">${name}</span>
+                ${editBtnHtml}
             </div>
             <svg class="category-chevron" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
             </svg>
         `;
-        header.onclick = toggleFn;
+        
+        header.onclick = (e) => {
+            if (e.target.closest('.category-edit-btn')) {
+                e.stopPropagation();
+                if (callbacks.onEditCategory) callbacks.onEditCategory(name);
+                return;
+            }
+            toggleFn();
+        };
         group.appendChild(header);
 
         const contentWrapper = document.createElement('div');
@@ -106,6 +178,17 @@ export class FocusView {
     static _createTaskItem(task, callbacks) {
         const item = document.createElement('sliding-card');
         item.setAttribute('variant', state.settings.cardVariant || 'glass');
+        item.setAttribute('draggable', 'true');
+        
+        // Drag Logic
+        item.addEventListener('dragstart', (e) => {
+            if (item.isOpen) { e.preventDefault(); return; } // Don't drag if menu is open
+            item.classList.add('is-dragging');
+            e.dataTransfer.setData('taskId', task.id);
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        item.addEventListener('dragend', () => item.classList.remove('is-dragging'));
+
         const todayTime = this._getTodayTimeForFocusArea(task.id);
         const totalTime = this._getTotalTimeForFocusArea(task.id);
 
@@ -122,6 +205,11 @@ export class FocusView {
             <button slot="menu" class="edit-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg><span>Edit</span></button>
             <button slot="menu" class="completed-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>${task.completed ? 'Undo' : 'Done'}</span></button>
             <button slot="menu" class="danger delete-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><span>Delete</span></button>
+            
+            <div class="drag-handle-vertical" slot="indicator">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.3;"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            </div>
+
             <button slot="indicator" class="focus-area-play-btn" style="color: ${task.color}">
                 <svg class="focus-area-ring" viewBox="0 0 100 100">
                     <circle class="focus-area-ring-bg" cx="50" cy="50" r="45"></circle>

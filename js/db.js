@@ -60,14 +60,41 @@ class DatabaseManager {
     }
 
     // High-level API
-    async insertFocusArea(area) { return this._send('insert_focus_area', area); }
+    async insertFocusArea(area) { 
+        // Force is_active to 1 (Active) unless explicitly completed
+        const isCompleted = (area.completed === true || area.completed === 1 || area.completed === 'true');
+        return this._send('insert_focus_area', {
+            id: area.id,
+            name: area.name,
+            color: area.color,
+            category: area.category,
+            is_active: isCompleted ? 0 : 1
+        }); 
+    }
+    async deleteFocusArea(id) { return this._send('delete_focus_area', { id }); }
     async insertSession(session) { return this._send('insert_session', session); }
     async insertAim(aim) { return this._send('insert_aim', aim); }
     async setSetting(key, value) { return this._send('set_setting', { key, value: JSON.stringify(value) }); }
     async setUserProfile(key, value) { return this._send('set_user_profile', { key, value: JSON.stringify(value) }); }
     async setAppState(key, value) { return this._send('set_app_state', { key, value: JSON.stringify(value) }); }
 
-    async getAllFocusAreas() { return this._send('get_all_focus_areas'); }
+    async getAllFocusAreas() { 
+        const rows = await this._send('get_all_focus_areas');
+        if (!rows) return [];
+        return rows.map(r => {
+            // is_active = 1 or true means ACTIVE (not completed)
+            // Anything else (0, null, false) is treated as COMPLETED
+            const isActive = (r.is_active === 1 || r.is_active === '1' || r.is_active === true || r.is_active === 'true');
+            return {
+                id: r.id,
+                name: r.name,
+                color: r.color,
+                category: r.category || 'Uncategorized',
+                completed: !isActive,
+                createdAt: r.created_at
+            };
+        });
+    }
     async getAllSessions() { 
         const rows = await this._send('get_all_sessions');
         if (!rows) return [];
@@ -128,6 +155,11 @@ class DatabaseManager {
             await this.setSetting(key, value);
         }
 
+        // Save Tasks
+        for (const task of state.tasks) {
+            await this.insertFocusArea(task);
+        }
+
         // Save Profile
         await this.setUserProfile('full_profile', {
             xp: state.xp,
@@ -139,8 +171,9 @@ class DatabaseManager {
             activeCategoryIndex: state.activeCategoryIndex
         });
 
-        // Save App State (Theme, UI, Timer)
+        // Save App State (Theme, UI, Timer, Categories)
         await this.setAppState('timer_state', state.timerState);
+        await this.setAppState('categories', state.categories);
         await this.setAppState('ui_state', {
             selectedTaskColor: state.selectedTaskColor,
             selectedFocusAreaIds: state.selectedFocusAreaIds
@@ -172,6 +205,7 @@ class DatabaseManager {
 
         await this.setAppState('theme', localStorage.getItem('flowtracker_theme') || 'dark');
         await this.setAppState('notification_prompt', localStorage.getItem('flowtracker_notification_prompt') || 'default');
+        await this.setAppState('categories', state.categories);
         
         await this.setAppState('ui_state', {
             lastSessionId: state.lastSessionId,

@@ -135,8 +135,13 @@ export class DashboardView {
         const el = document.getElementById(elementId);
         if (!el) return;
 
+        if (today === 0) {
+            el.innerHTML = '<span class="trend-neutral">Ready to start?</span>';
+            return;
+        }
+
         if (yesterday === 0) {
-            el.innerHTML = today > 0 ? '<span class="trend-up">+100% vs yesterday</span>' : '';
+            el.innerHTML = '<span class="trend-up">↑ 100% vs yesterday</span>';
             return;
         }
 

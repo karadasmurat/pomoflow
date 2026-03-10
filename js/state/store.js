@@ -94,6 +94,14 @@ export let state = {
     selectedTaskColor: '#58a6ff',
     editTaskColor: '#58a6ff',
     selectedFocusAreaIds: [],
+    categories: [
+        { id: 'edu', name: "Education & Personal Development", icon: "🎓" },
+        { id: 'health', name: "Health & Wellness", icon: "💪" },
+        { id: 'home', name: "Personal Life & Home", icon: "🏠" },
+        { id: 'work', name: "Work & Career", icon: "💼" },
+        { id: 'creative', name: "Creative & Innovation", icon: "🎨" },
+        { id: 'uncategorized', name: "Uncategorized", icon: "📁", isDefault: true }
+    ],
     xp: 0,
     totalXp: 0,
     level: 1,
