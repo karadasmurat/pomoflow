@@ -76,6 +76,25 @@ async function init() {
             state.tasks.forEach(t => t.completed = false);
             saveData();
         }
+
+        // DATA MIGRATION: Ensure Leisure & Entertainment category exists
+        if (!state.categories.find(c => c.name === 'Leisure & Entertainment')) {
+            state.categories.splice(5, 0, { id: 'leisure', name: "Leisure & Entertainment", icon: "🍿" });
+            
+            // If they don't have any tasks in this category, add the defaults
+            const hasLeisureTasks = state.tasks.some(t => t.category === 'Leisure & Entertainment');
+            if (!hasLeisureTasks) {
+                const leisureDefaults = DEFAULT_FOCUS_AREAS.filter(t => t.category === 'Leisure & Entertainment');
+                leisureDefaults.forEach((t, index) => {
+                    state.tasks.push({
+                        id: (Date.now() + index).toString(),
+                        name: t.name, category: t.category, color: t.color,
+                        completed: false, createdAt: new Date().toISOString()
+                    });
+                });
+            }
+            saveData();
+        }
     }
 
     setupEventListeners();

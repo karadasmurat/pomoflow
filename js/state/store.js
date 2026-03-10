@@ -41,7 +41,13 @@ export const DEFAULT_FOCUS_AREAS = [
     
     // Creative & Innovation
     { name: "Content Creation", category: "Creative & Innovation", color: "#ec4899" },
-    { name: "Side Projects", category: "Creative & Innovation", color: "#ec4899" }
+    { name: "Side Projects", category: "Creative & Innovation", color: "#ec4899" },
+
+    // Leisure & Entertainment
+    { name: "TV & Movies", category: "Leisure & Entertainment", color: "#eab308" },
+    { name: "Music & Podcasts", category: "Leisure & Entertainment", color: "#eab308" },
+    { name: "Gaming", category: "Leisure & Entertainment", color: "#eab308" },
+    { name: "Social Media & YouTube", category: "Leisure & Entertainment", color: "#eab308" }
 ];
 
 export const ACHIEVEMENTS = [
@@ -100,6 +106,7 @@ export let state = {
         { id: 'home', name: "Personal Life & Home", icon: "🏠" },
         { id: 'work', name: "Work & Career", icon: "💼" },
         { id: 'creative', name: "Creative & Innovation", icon: "🎨" },
+        { id: 'leisure', name: "Leisure & Entertainment", icon: "🍿" },
         { id: 'uncategorized', name: "Uncategorized", icon: "📁", isDefault: true }
     ],
     xp: 0,
