@@ -291,10 +291,18 @@ header {
     animation: avatar-victory 0.8s ease-out;
 }
 
-.logo svg {
+.logo svg,
+.logo-icon {
     width: 24px;
     height: 24px;
     fill: var(--primary);
+    flex-shrink: 0;
+}
+
+.theme-toggle svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .datetime {
@@ -354,17 +362,17 @@ header {
 
 .hamburger-btn {
     background: transparent;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 0 8px;
+    padding: 0;
     border-radius: 8px;
     transition: all 200ms ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 30px;
-    width: 36px;
+    height: 32px;
+    width: 32px;
     min-height: 0;
     position: relative;
     z-index: 3000;
@@ -372,7 +380,6 @@ header {
 
 .hamburger-btn:hover {
     color: var(--text-primary);
-    border-color: var(--text-secondary);
     background: var(--surface-elevated);
 }
 
@@ -427,31 +434,40 @@ header {
 
 .theme-toggle {
     background: transparent;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 0 8px;
+    padding: 0;
     border-radius: 8px;
     transition: all 200ms ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 30px;
-    width: 36px;
+    height: 32px;
+    width: 32px;
     min-height: 0;
 }
 
 .theme-toggle:hover {
     color: var(--text-primary);
-    border-color: var(--text-secondary);
     background: var(--surface-elevated);
 }
 
-.theme-toggle .sun-icon { display: none; }
-.theme-toggle .moon-icon { display: block; }
+.theme-toggle .sun-icon,
+.theme-toggle .moon-icon {
+    display: none;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
 
-.theme-toggle.dark .sun-icon { display: block; }
-.theme-toggle.dark .moon-icon { display: none; }
+/* Default (Dark Theme) */
+html:not([data-theme="light"]) .theme-toggle .sun-icon { display: block !important; }
+html:not([data-theme="light"]) .theme-toggle .moon-icon { display: none !important; }
+
+/* Light Theme */
+html[data-theme="light"] .theme-toggle .sun-icon { display: none !important; }
+html[data-theme="light"] .theme-toggle .moon-icon { display: block !important; }
 
 .main-content {
     display: flex;
