@@ -51,14 +51,42 @@ export const DEFAULT_FOCUS_AREAS = [
 ];
 
 export const ACHIEVEMENTS = [
-    { id: 'first_steps', name: 'First Steps', desc: 'Complete your first focus session', icon: '🌱', type: 'bronze' },
-    { id: 'habitual', name: 'Habitual', desc: '3-day focus streak', icon: '🔥', type: 'bronze' },
-    { id: 'deep_diver', name: 'Deep Diver', desc: '10 total hours focused', icon: '🌊', type: 'silver' },
-    { id: 'night_owl', name: 'Night Owl', desc: 'Complete a session between 12 AM - 4 AM', icon: '🦉', type: 'special', hidden: true },
-    { id: 'early_bird', name: 'Early Bird', desc: 'Start a session before 6 AM', icon: '🌅', type: 'special', hidden: true },
-    { id: 'socialite', name: 'Socialite', desc: 'Share your progress for the first time', icon: '📤', type: 'bronze' },
-    { id: 'architect', name: 'Architect', desc: 'Reach 10 unique focus targets', icon: '📐', type: 'silver' },
-    { id: 'unstoppable', name: 'Unstoppable', desc: '100 total hours focused', icon: '👑', type: 'gold' }
+    { id: 'first_steps', title: 'First Steps', desc: 'Complete your first focus session', icon: '🌱', check: (state) => state.sessions.length >= 1 },
+    { id: 'habitual', title: 'Habitual', desc: '3-day focus streak', icon: '🔥', check: (state) => {
+        if (state.sessions.length === 0) return false;
+        const getLogicalDate = (ts) => {
+            const shifted = new Date(new Date(ts).getTime() - (4 * 60 * 60 * 1000));
+            return shifted.toISOString().split('T')[0];
+        };
+        const dates = [...new Set(state.sessions.map(s => getLogicalDate(s.timestamp)))].sort((a, b) => b.localeCompare(a));
+        let streak = 0; 
+        const today = getLogicalDate(Date.now());
+        const yesterday = getLogicalDate(Date.now() - 86400000);
+        if (dates[0] !== today && dates[0] !== yesterday) return false;
+        for (let i = 0; i < dates.length; i++) {
+            if (i === 0) { streak = 1; continue; }
+            const prev = new Date(dates[i-1]);
+            const curr = new Date(dates[i]);
+            if (Math.round((prev - curr) / 86400000) === 1) streak++;
+            else break;
+        }
+        return streak >= 3;
+    }},
+    { id: 'deep_diver', title: 'Deep Diver', desc: '10 total hours focused', icon: '🌊', check: (state) => state.totalXp >= 600 },
+    { id: 'night_owl', title: 'Night Owl', desc: 'Complete a session between 12 AM - 4 AM', icon: '🦉', hidden: true, check: (state) => state.sessions.some(s => {
+        const h = new Date(s.timestamp).getHours();
+        return h >= 0 && h < 4;
+    })},
+    { id: 'early_bird', title: 'Early Bird', desc: 'Start a session before 6 AM', icon: '🌅', hidden: true, check: (state) => state.sessions.some(s => {
+        const h = new Date(s.timestamp).getHours();
+        return h >= 4 && h < 6;
+    })},
+    { id: 'socialite', title: 'Socialite', desc: 'Share your progress', icon: '📤', check: (state) => state.unlockedAchievements.includes('socialite') },
+    { id: 'architect', title: 'Architect', desc: 'Reach 10 unique focus targets', icon: '📐', check: (state) => state.aims.filter(a => {
+        const spent = state.sessions.filter(s => s.taskId === a.focusAreaId && (!a.deadline || a.timestamp <= a.deadline)).reduce((acc, s) => acc + s.duration, 0);
+        return spent >= a.targetMinutes * 60;
+    }).length >= 10 },
+    { id: 'unstoppable', title: 'Unstoppable', desc: '100 total hours focused', icon: '👑', check: (state) => state.totalXp >= 6000 }
 ];
 
 export let state = {

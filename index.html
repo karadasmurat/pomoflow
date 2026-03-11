@@ -73,111 +73,145 @@
         <main class="main-content">
             <div class="focus-area-overlay" id="focusAreaOverlay"></div>
             <aside class="panel focus-area-panel" id="focusAreaPanel">
-                <div class="panel-header">
-                    <div class="panel-header-content">
-                        <div class="panel-title">Focus Areas</div>
-                        <div class="panel-subtitle">Manage your deep work domains</div>
-                    </div>
-                    <div class="panel-header-actions">
-                        <button class="header-toggle-btn" id="toggleFocusAreaCreate" aria-label="Add new focus area">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <rect class="bar-v" x="11" y="5" width="2" height="14" rx="1" />
-                                <rect class="bar-h" x="5" y="11" width="14" height="2" rx="1" />
-                            </svg>
-                        </button>
-                        <div class="panel-close-container">
-                            <button class="panel-close" id="closeFocusAreaPanel" aria-label="Close focus areas">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                <div class="fa-panels" id="faPanels">
+                    <!-- PANEL 1: CATEGORIES -->
+                    <div class="fa-panel" id="faCatPanel">
+                        <div class="fa-header">
+                            <button class="fa-back-btn" id="closeFocusAreaPanel">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                            <div class="fa-title-area">
+                                <div class="fa-title">Focus Areas</div>
+                                <div class="fa-subtitle">Browse by category</div>
+                            </div>
+                            <button class="fa-back-btn" id="toggleFocusAreaCreate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                             </button>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="panel-section-list">
-                    <div class="panel-section-create-wrapper" id="focusAreaCreateWrapper">
-                        <div class="panel-section-create-container">
-                            <div class="panel-section-create">
 
-                            <div class="focus-area-input-container">
-                                <div class="focus-area-input-wrapper">
-                                    <input type="text" class="focus-area-input" id="focusAreaInput" placeholder="Enter Focus Area Title...">
-                                    <div class="category-icon-divider"></div>
-                                    <div class="inline-color-wrapper">
-                                        <button type="button" class="selected-color-btn" id="inlineColorBtn" aria-label="Choose color">
-                                            <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
-                                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                                        </button>
-                                        <div class="color-dropdown" id="inlineColorDropdown">
-                                            <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Primary Blue"></button>
-                                            <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8" aria-label="Sky Blue"></button>
-                                            <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1" aria-label="Indigo"></button>
-                                            <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7" aria-label="Violet"></button>
-                                            <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899" aria-label="Pink"></button>
-                                            <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316" aria-label="Vivid Orange"></button>
-                                            <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24" aria-label="Bright Yellow"></button>
-                                            <button type="button" class="color-dot" data-color="#64748b" style="background: #64748b" aria-label="Slate"></button>
+                        <!-- NEW: CREATION GRID WRAPPER -->
+                        <div class="fa-create-grid-wrapper" id="focusAreaCreateWrapper">
+                            <div class="fa-create-grid-inner">
+                                <div class="fa-create-section-header" id="faCreateHeader">Create Focus Area</div>
+                                <div class="panel-section-create-container" style="padding: 0 18px 20px;">
+                                    <div class="focus-area-input-container">
+                                        <div class="focus-area-input-wrapper">
+                                            <input type="text" class="focus-area-input" id="focusAreaInput" placeholder="New Focus Area Title...">
+                                            <div class="category-icon-divider"></div>
+                                            <div class="inline-color-wrapper">
+                                                <button type="button" class="selected-color-btn" id="inlineColorBtn">
+                                                    <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
+                                                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                                                </button>
+                                                <div class="color-dropdown" id="inlineColorDropdown">
+                                                    <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff"></button>
+                                                    <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8"></button>
+                                                    <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1"></button>
+                                                    <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7"></button>
+                                                    <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899"></button>
+                                                    <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316"></button>
+                                                    <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24"></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="focus-area-input-wrapper">
+                                            <select id="focusAreaCategorySelect" class="focus-area-category-select"></select>
+                                        </div>
+                                        <div id="newCategoryWrapper" class="focus-area-input-wrapper" style="display: none;">
+                                            <input type="text" id="newCategoryNameInput" class="focus-area-input" placeholder="New Category Name...">
+                                            <div class="category-icon-divider"></div>
+                                            <div class="inline-icon-wrapper">
+                                                <button type="button" class="selected-icon-btn" id="inlineIconBtn">
+                                                    <span id="selectedIconDisplay">📁</span>
+                                                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                                                </button>
+                                                <div class="icon-dropdown" id="inlineIconDropdown">
+                                                    <button type="button" class="icon-dot" data-icon="🎓">🎓</button>
+                                                    <button type="button" class="icon-dot" data-icon="💼">💼</button>
+                                                    <button type="button" class="icon-dot" data-icon="💪">💪</button>
+                                                    <button type="button" class="icon-dot" data-icon="🏠">🏠</button>
+                                                    <button type="button" class="icon-dot" data-icon="🎨">🎨</button>
+                                                    <button type="button" class="icon-dot" data-icon="🧪">🧪</button>
+                                                    <button type="button" class="icon-dot" data-icon="📚">📚</button>
+                                                    <button type="button" class="icon-dot" data-icon="🚀">🚀</button>
+                                                    <button type="button" class="icon-dot" data-icon="🧠">🧠</button>
+                                                    <button type="button" class="icon-dot" data-icon="🎯">🎯</button>
+                                                    <button type="button" class="icon-dot" data-icon="💻">💻</button>
+                                                    <button type="button" class="icon-dot" data-icon="📈">📈</button>
+                                                    <button type="button" class="icon-dot" data-icon="🔧">🔧</button>
+                                                    <button type="button" class="icon-dot" data-icon="🧹">🧹</button>
+                                                    <button type="button" class="icon-dot" data-icon="🛒">🛒</button>
+                                                </div>
+                                                <input type="hidden" id="newCategoryIconInput" value="📁">
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="focus-area-input-wrapper">
-                                    <select id="focusAreaCategorySelect" class="focus-area-category-select">
-                                        <!-- Will be populated dynamically -->
-                                    </select>
-                                </div>
-                                <div id="newCategoryWrapper" class="focus-area-input-wrapper new-category-fields" style="display: none;">
-                                    <input type="text" id="newCategoryNameInput" class="focus-area-input" placeholder="New Category Name...">
-                                    <div class="category-icon-divider"></div>
-                                    <div class="inline-icon-wrapper">
-                                        <button type="button" class="selected-icon-btn" id="inlineIconBtn" aria-label="Choose icon">
-                                            <span id="selectedIconDisplay">📁</span>
-                                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                                    <div class="fa-create-actions">
+                                        <button class="btn btn-secondary" id="cancelFocusAreaCreate">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            <span>Cancel</span>
                                         </button>
-                                        <div class="icon-dropdown" id="inlineIconDropdown">
-                                            <button type="button" class="icon-dot" data-icon="🎓">🎓</button>
-                                            <button type="button" class="icon-dot" data-icon="💼">💼</button>
-                                            <button type="button" class="icon-dot" data-icon="💪">💪</button>
-                                            <button type="button" class="icon-dot" data-icon="🏠">🏠</button>
-                                            <button type="button" class="icon-dot" data-icon="🎨">🎨</button>
-                                            <button type="button" class="icon-dot" data-icon="🧪">🧪</button>
-                                            <button type="button" class="icon-dot" data-icon="📚">📚</button>
-                                            <button type="button" class="icon-dot" data-icon="🚀">🚀</button>
-                                            <button type="button" class="icon-dot" data-icon="🧠">🧠</button>
-                                            <button type="button" class="icon-dot" data-icon="🎯">🎯</button>
-                                            <button type="button" class="icon-dot" data-icon="💻">💻</button>
-                                            <button type="button" class="icon-dot" data-icon="📈">📈</button>
-                                            <button type="button" class="icon-dot" data-icon="🔧">🔧</button>
-                                            <button type="button" class="icon-dot" data-icon="🧹">🧹</button>
-                                            <button type="button" class="icon-dot" data-icon="🛒">🛒</button>
-                                        </div>
-                                        <input type="hidden" id="newCategoryIconInput" value="📁">
+                                        <button class="btn btn-primary" id="addFocusAreaBtn">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                            <span id="addFocusAreaBtnText">Create</span>
+                                        </button>
                                     </div>
                                 </div>
-                                <button type="button" class="btn-add" id="addFocusAreaBtn" aria-label="Add focus area">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                                </button>
                             </div>
                         </div>
+
+                        <div class="fa-search-wrap">
+                            <svg class="fa-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input class="fa-search-input" id="faUnifiedSearch" placeholder="Search categories or tasks…" />
+                            <button class="fa-search-clear" id="faUnifiedClear" aria-label="Clear search">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+
+                        <div class="fa-body" id="faCatBody">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- PANEL 2: TASKS -->
+                    <div class="fa-panel" id="faTaskPanel">
+                        <div class="fa-header">
+                            <button class="fa-back-btn" id="faBackToCats">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                            <div class="fa-title-area">
+                                <div class="fa-title" id="faTaskPanelTitle">Tasks</div>
+                                <div class="fa-subtitle" id="faTaskPanelSub">Select a task</div>
+                            </div>
+                            <button class="fa-back-btn" id="toggleTaskPanelManagement">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
+                            </button>
+                        </div>
+
+                        <div class="fa-search-wrap">
+                            <svg class="fa-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input class="fa-search-input" id="faTaskSearch" placeholder="Search tasks in category…" />
+                        </div>
+
+                        <div class="fa-body fa-task-list" id="faTaskBody">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
                 </div>
 
-                    <div id="focusAreaSelectHeader" style="display: none;">
-                        <div class="focus-area-hint" id="focusAreaHint">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                            Click play to track time on a focus area
+                <!-- Context Menu (Bottom Sheet) -->
+                <div class="fa-ctx-overlay" id="faCtxOverlay"></div>
+                <div class="fa-ctx-drawer" id="faCtxDrawer">
+                    <div class="fa-ctx-handle"></div>
+                    <div class="fa-ctx-header">
+                        <div class="fa-ctx-icon" id="faCtxHeaderIcon"></div>
+                        <div class="fa-ctx-info">
+                            <div class="fa-ctx-title" id="faCtxHeaderTitle"></div>
+                            <div class="fa-ctx-subtitle" id="faCtxHeaderSub"></div>
                         </div>
                     </div>
-
-                    <div class="focus-area-list-container">
-                        <div class="list-management-bar">
-                            <h3 class="list-section-title">Your Categories</h3>
-                            <button id="toggleFocusAreaManagement" class="btn-management-toggle">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                                </svg>
-                                <span>Edit</span>
-                            </button>
-                        </div>
-                        <div class="focus-area-list" id="focusAreaList"></div>
+                    <div id="faCtxActions">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
             </aside>
@@ -766,50 +800,7 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="focusAreaEditModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Edit Focus Area</h2>
-                <button class="modal-close" id="closeFocusAreaEdit">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                </button>
-            </div>
-            <div class="session-edit-content">
-                <div class="session-edit-field">
-                    <label>Focus Area Name</label>
-                    <input type="text" id="focusAreaEditName" class="session-edit-input">
-                </div>
-                <div class="session-edit-field">
-                    <label>Category</label>
-                    <select id="focusAreaEditCategory" class="session-edit-input">
-                        <option value="Uncategorized">Uncategorized</option>
-                        <option value="Education & Personal Development">Education & Personal Development</option>
-                        <option value="Health & Wellness">Health & Wellness</option>
-                        <option value="Personal Life & Home">Personal Life & Home</option>
-                        <option value="Work & Career">Work & Career</option>
-                        <option value="Creative & Innovation">Creative & Innovation</option>
-                    </select>
-                </div>
-                <div class="session-edit-field">
-                    <label>Focus Area Color</label>
-                    <div class="color-picker" id="focusAreaEditColorPicker">
-                        <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff" aria-label="Primary Blue"></button>
-                        <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8" aria-label="Sky Blue"></button>
-                        <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1" aria-label="Indigo"></button>
-                        <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7" aria-label="Violet"></button>
-                        <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899" aria-label="Pink"></button>
-                        <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316" aria-label="Vivid Orange"></button>
-                        <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24" aria-label="Bright Yellow"></button>
-                        <button type="button" class="color-dot" data-color="#64748b" style="background: #64748b" aria-label="Slate"></button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelFocusAreaEdit">Cancel</button>
-                <button class="btn btn-primary" id="saveFocusAreaEdit">Save</button>
-            </div>
-        </div>
-    </div>
+
 
 
     <div id="categoryEditModal" class="modal-overlay">

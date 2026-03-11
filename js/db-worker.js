@@ -130,7 +130,7 @@ self.onmessage = async (e) => {
                 break;
             case 'insert_aim':
                 db.exec("INSERT OR REPLACE INTO aims (id, focus_area_id, target_minutes, target_date, is_completed) VALUES (?, ?, ?, ?, ?)", {
-                    bind: [payload.id, payload.goalId, payload.targetMinutes, payload.date, payload.is_completed ? 1 : 0]
+                    bind: [payload.id, payload.focusAreaId, payload.targetMinutes, payload.deadline, payload.completed ? 1 : 0]
                 });
                 break;
             case 'set_setting':

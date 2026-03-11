@@ -107,7 +107,18 @@ class DatabaseManager {
             xp: s.xp_earned
         }));
     }
-    async getAllAims() { return this._send('get_all_aims'); }
+    async getAllAims() { 
+        const rows = await this._send('get_all_aims');
+        if (!rows) return [];
+        return rows.map(a => ({
+            id: a.id,
+            focusAreaId: a.focus_area_id,
+            targetMinutes: a.target_minutes,
+            deadline: a.target_date,
+            completed: a.is_completed === 1 || a.is_completed === '1' || a.is_completed === true || a.is_completed === 'true',
+            createdAt: a.created_at
+        }));
+    }
     
     async _getKVTable(action) {
         const rows = await this._send(action);

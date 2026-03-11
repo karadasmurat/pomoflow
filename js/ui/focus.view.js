@@ -3,6 +3,11 @@ import { HistoryService } from '../services/history.service.js';
 import { FocusService } from '../services/focus.service.js';
 
 export class FocusView {
+    static activeCategory = null;
+    static unifiedSearchQuery = '';
+    static taskSearchQuery = '';
+    static callbacks = {};
+
     static formatDurationHM(seconds) {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
@@ -22,74 +27,277 @@ export class FocusView {
         if (headerAvatar) headerAvatar.textContent = state.avatar || '🦉';
         
         const personaCircle = document.getElementById('personaCircle');
-        const currentMoodLabel = document.getElementById('currentMoodLabel');
         if (personaCircle) personaCircle.textContent = state.avatar || '🦉';
         
         rankEl.textContent = FocusService.getRank(state.level);
     }
 
-    static renderFocusAreas(callbacks = {}) {
-        const list = document.getElementById('focusAreaList');
-        if (!list) return;
-        list.innerHTML = '';
+    static init(callbacks = {}) {
+        this.callbacks = callbacks;
+        const unifiedSearch = document.getElementById('faUnifiedSearch');
+        const unifiedClear = document.getElementById('faUnifiedClear');
+        const taskSearch = document.getElementById('faTaskSearch');
+        const backBtn = document.getElementById('faBackToCats');
 
-        if (state.tasks.length === 0) {
-            list.innerHTML = '<div class="empty-state"><p>No focus areas yet. Add one above!</p></div>';
+        if (unifiedSearch) {
+            unifiedSearch.oninput = (e) => {
+                this.unifiedSearchQuery = e.target.value.trim().toLowerCase();
+                if (unifiedClear) unifiedClear.classList.toggle('visible', this.unifiedSearchQuery.length > 0);
+                this.renderCategories(this.callbacks);
+            };
+        }
+
+        if (unifiedClear) {
+            unifiedClear.onclick = () => {
+                if (unifiedSearch) {
+                    unifiedSearch.value = '';
+                    this.unifiedSearchQuery = '';
+                    unifiedClear.classList.remove('visible');
+                    this.renderCategories(this.callbacks);
+                    unifiedSearch.focus();
+                }
+            };
+        }
+
+        if (taskSearch) {
+            taskSearch.oninput = (e) => {
+                this.taskSearchQuery = e.target.value.trim().toLowerCase();
+                if (this.activeCategory) {
+                    this.renderTasks(this.activeCategory, this.callbacks);
+                }
+            };
+        }
+
+        if (backBtn) {
+            backBtn.onclick = () => this.goBack();
+        }
+
+        this.renderFocusAreas(callbacks);
+    }
+
+    static renderFocusAreas(callbacks = this.callbacks) {
+        if (this.activeCategory) {
+            this.renderTasks(this.activeCategory, callbacks);
+        } else {
+            this.renderCategories(callbacks);
+        }
+    }
+
+    static renderCategories(callbacks = this.callbacks) {
+        const body = document.getElementById('faCatBody');
+        if (!body) return;
+        body.innerHTML = '';
+
+        const q = this.unifiedSearchQuery;
+        
+        // --- 1. DEFAULT STATE (No Query) ---
+        if (!q) {
+            const categories = [...state.categories];
+            const hasCompleted = state.tasks.some(t => t.completed);
+            if (hasCompleted) {
+                if (!categories.find(c => c.name === 'Completed')) {
+                    categories.push({ name: 'Completed', icon: '✅', isVirtual: true });
+                }
+            }
+
+            categories.forEach(cat => {
+                const count = state.tasks.filter(t => 
+                    (cat.name === 'Completed') ? t.completed : (t.category === cat.name && !t.completed)
+                ).length;
+                body.appendChild(this._createCategoryItem(cat, count, q, callbacks));
+            });
             return;
         }
 
-        const active = state.tasks.filter(t => {
-            const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
-            return !isComp;
-        });
-        const completed = state.tasks.filter(t => {
-            const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
-            return isComp;
-        });
-        
-        const grouped = active.reduce((acc, t) => {
-            const c = t.category || 'Uncategorized';
-            if (!acc[c]) acc[c] = [];
-            acc[c].push(t);
-            return acc;
-        }, {});
-
-        const order = state.categories.map(c => c.name);
-        const iconMap = state.categories.reduce((acc, c) => {
-            acc[c.name] = c.icon;
-            return acc;
-        }, { "Completed": "✅" });
-        
-        const activeCats = Object.keys(grouped).sort((a, b) => {
-            const ia = order.indexOf(a), ib = order.indexOf(b);
-            return (ia !== -1 && ib !== -1) ? ia - ib : (ia !== -1 ? -1 : (ib !== -1 ? 1 : a.localeCompare(b)));
-        });
-
-        const categories = [...activeCats];
-        if (completed.length > 0) categories.push('Completed');
-
-        // Reset active index if it's out of bounds
-        if (state.activeCategoryIndex >= categories.length) {
-            state.activeCategoryIndex = 0;
+        // --- 2. SEARCH STATE ---
+        const matchedCats = state.categories.filter(c => c.name.toLowerCase().includes(q));
+        if ('completed'.includes(q) && state.tasks.some(t => t.completed)) {
+            matchedCats.push({ name: 'Completed', icon: '✅', isVirtual: true });
         }
 
-        categories.forEach((cat, idx) => {
-            const isActive = idx === state.activeCategoryIndex;
-            const group = this._createCategoryGroup(cat, isActive, iconMap[cat], () => {
-                state.activeCategoryIndex = (state.activeCategoryIndex === idx) ? -1 : idx;
-                if (callbacks.onStateChange) callbacks.onStateChange();
-                this.renderFocusAreas(callbacks);
-            }, callbacks);
+        const matchedTasks = state.tasks.filter(t => 
+            t.name.toLowerCase().includes(q)
+        );
 
-            if (isActive) {
-                const content = group.querySelector('.focus-area-category-content');
-                const tasksToShow = cat === 'Completed' ? completed : grouped[cat];
-                if (tasksToShow) {
-                    tasksToShow.forEach(t => content.appendChild(this._createTaskItem(t, callbacks)));
-                }
+        if (matchedCats.length === 0 && matchedTasks.length === 0) {
+            body.innerHTML = `<div class="empty-state"><strong>No matches found</strong>Try a different search</div>`;
+            return;
+        }
+
+        // Section: Categories
+        if (matchedCats.length > 0) {
+            const label = document.createElement('div');
+            label.className = 'fa-results-label';
+            label.textContent = `Categories · ${matchedCats.length}`;
+            body.appendChild(label);
+
+            matchedCats.forEach(cat => {
+                const count = state.tasks.filter(t => 
+                    (cat.name === 'Completed') ? t.completed : (t.category === cat.name && !t.completed)
+                ).length;
+                
+                const item = this._createCategoryItem(cat, count, q, callbacks);
+                body.appendChild(item);
+            });
+        }
+
+        // Section: Focus Areas
+        if (matchedTasks.length > 0) {
+            const label = document.createElement('div');
+            label.className = 'fa-results-label';
+            label.textContent = `Focus Areas · ${matchedTasks.length}`;
+            body.appendChild(label);
+
+            matchedTasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'fa-cat-item'; 
+                
+                const isCurrent = state.timerState.activeTaskId === task.id;
+                const playIconHtml = `
+                    <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}" style="margin: 0; pointer-events: none;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            ${isCurrent ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
+                        </svg>
+                    </button>
+                `;
+
+                item.innerHTML = `
+                    <div class="fa-cat-icon">
+                        ${playIconHtml}
+                    </div>
+                    <div class="fa-cat-info">
+                        <div class="fa-cat-name" style="color: ${task.color}">${this._highlight(task.name, q)}</div>
+                        <div class="fa-cat-meta">${task.category}</div>
+                    </div>
+                    <button class="fa-more-btn" title="More Actions">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                    </button>
+                `;
+                
+                item.onclick = (e) => {
+                    const moreBtn = e.target.closest('.fa-more-btn');
+                    if (moreBtn) {
+                        e.stopPropagation();
+                        this._showTaskPopover(moreBtn, task, callbacks);
+                        return;
+                    }
+                    if (callbacks.onPlay) callbacks.onPlay(task);
+                };
+                body.appendChild(item);
+            });
+        }
+    }
+
+    static _createCategoryItem(cat, count, q, callbacks = this.callbacks) {
+        const item = document.createElement('div');
+        item.className = 'fa-cat-item';
+        
+        const isDefault = cat.isDefault || cat.isVirtual;
+        const moreBtnHtml = !isDefault ? `
+            <button class="fa-more-btn" title="Category Actions">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+        ` : '';
+
+        item.innerHTML = `
+            <div class="fa-cat-icon">${cat.icon || '📁'}</div>
+            <div class="fa-cat-info">
+                <div class="fa-cat-name">${this._highlight(cat.name, q)}</div>
+                <div class="fa-cat-meta">
+                    <span class="fa-cat-badge">${count}</span>
+                    <span>focus area${count !== 1 ? 's' : ''}</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                ${moreBtnHtml}
+                <svg class="fa-cat-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+        `;
+
+        item.onclick = (e) => {
+            const moreBtn = e.target.closest('.fa-more-btn');
+            if (moreBtn) {
+                e.stopPropagation();
+                this._showCategoryPopover(moreBtn, cat.name, callbacks);
+                return;
             }
-            list.appendChild(group);
+            this.drillInto(cat.name);
+        };
+
+        if (cat.name !== 'Completed') {
+            item.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                item.classList.add('draggable-over');
+            });
+            item.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                item.classList.add('draggable-over');
+            });
+            item.addEventListener('dragleave', () => {
+                item.classList.remove('draggable-over');
+            });
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+                item.classList.remove('draggable-over');
+                const taskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('text/plain');
+                if (taskId && callbacks.onMoveToCategory) {
+                    callbacks.onMoveToCategory(taskId, cat.name);
+                }
+            });
+        }
+        return item;
+    }
+
+    static drillInto(categoryName) {
+        this.activeCategory = categoryName;
+        this.taskSearchQuery = '';
+        const searchInput = document.getElementById('faTaskSearch');
+        if (searchInput) searchInput.value = '';
+
+        const cat = state.categories.find(c => c.name === categoryName) || { name: categoryName, icon: '✅' };
+        document.getElementById('faTaskPanelTitle').textContent = cat.name;
+        
+        const count = state.tasks.filter(t => 
+            (categoryName === 'Completed') ? t.completed : (t.category === categoryName && !t.completed)
+        ).length;
+        document.getElementById('faTaskPanelSub').textContent = `${count} focus area${count !== 1 ? 's' : ''}`;
+
+        this.renderTasks(categoryName, this.callbacks);
+        document.getElementById('faPanels').classList.add('show-tasks');
+    }
+
+    static goBack() {
+        this.activeCategory = null;
+        document.getElementById('faPanels').classList.remove('show-tasks');
+        this.renderCategories(this.callbacks);
+    }
+
+    static renderTasks(categoryName, callbacks = this.callbacks) {
+        const body = document.getElementById('faTaskBody');
+        if (!body) return;
+        body.innerHTML = '';
+
+        const q = this.taskSearchQuery;
+        const tasks = state.tasks.filter(t => 
+            (categoryName === 'Completed') ? t.completed : (t.category === categoryName && !t.completed)
+        ).filter(t => t.name.toLowerCase().includes(q));
+
+        if (tasks.length === 0) {
+            body.innerHTML = `<div class="empty-state"><strong>No tasks found</strong></div>`;
+            return;
+        }
+
+        tasks.forEach(task => {
+            const item = this._createTaskItem(task, callbacks);
+            body.appendChild(item);
         });
+    }
+
+    static _highlight(text, query) {
+        if (!query) return text;
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
     }
 
     static populateCategorySelects() {
@@ -114,111 +322,144 @@ export class FocusView {
         if (editSelect) editSelect.innerHTML = finalHtml;
     }
 
-    static _createCategoryGroup(name, isActive, icon, toggleFn, callbacks = {}) {
-        const group = document.createElement('div');
-        group.className = `focus-area-category-group ${isActive ? 'active' : 'collapsed'}`;
-        group.dataset.category = name;
-        
-        // Drop Target Logic
-        if (name !== 'Completed') {
-            group.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                group.classList.add('draggable-over');
-            });
-            group.addEventListener('dragleave', () => group.classList.remove('draggable-over'));
-            group.addEventListener('drop', (e) => {
-                e.preventDefault();
-                group.classList.remove('draggable-over');
-                const taskId = e.dataTransfer.getData('taskId');
-                if (taskId && callbacks.onMoveToCategory) {
-                    callbacks.onMoveToCategory(taskId, name);
-                }
-            });
-        }
+    static _showCategoryPopover(anchorEl, categoryName, callbacks) {
+        document.querySelectorAll('.fa-popover').forEach(p => p.remove());
 
-        const header = document.createElement('div');
-        header.className = `focus-area-category-header ${isActive ? 'active' : ''}`;
+        const popover = document.createElement('div');
+        popover.className = 'fa-popover';
         
-        const isDefault = state.categories.find(c => c.name === name)?.isDefault;
-        const editBtnHtml = (name !== 'Completed' && !isDefault) ? `
-            <button class="category-edit-btn" title="Edit Category">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
-            </button>
-        ` : '';
-
-        header.innerHTML = `
-            <div class="category-title-wrapper">
-                <span class="category-icon">${icon || '📁'}</span>
-                <span class="category-name">${name}</span>
-                ${editBtnHtml}
-            </div>
-            <svg class="category-chevron" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-            </svg>
-        `;
-        
-        header.onclick = (e) => {
-            if (e.target.closest('.category-edit-btn')) {
-                e.stopPropagation();
-                if (callbacks.onEditCategory) callbacks.onEditCategory(name);
-                return;
-            }
-            toggleFn();
+        const editBtn = document.createElement('button');
+        editBtn.className = 'fa-popover-item';
+        editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Rename</span>';
+        editBtn.onclick = () => {
+            popover.remove();
+            if (callbacks.onEditCategory) callbacks.onEditCategory(categoryName);
         };
-        group.appendChild(header);
 
-        const contentWrapper = document.createElement('div');
-        contentWrapper.className = 'focus-area-category-wrapper';
-        contentWrapper.innerHTML = '<div class="focus-area-category-content"></div>';
-        group.appendChild(contentWrapper);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'fa-popover-item danger';
+        deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><span>Delete</span>';
+        deleteBtn.onclick = () => {
+            popover.remove();
+            // Category deletion not fully implemented in app.js yet, but adding placeholder
+            alert('Category deletion is managed by editing focus areas.');
+        };
+
+        popover.appendChild(editBtn);
+        popover.appendChild(deleteBtn);
+        document.body.appendChild(popover);
+
+        const rect = anchorEl.getBoundingClientRect();
+        popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        popover.style.left = `${rect.right + window.scrollX - popover.offsetWidth}px`;
+
+        const closePopover = (e) => {
+            if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {
+                popover.remove();
+                document.removeEventListener('mousedown', closePopover);
+            }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closePopover), 0);
+    }
+
+    static _showTaskPopover(anchorEl, task, callbacks) {
+        document.querySelectorAll('.fa-popover').forEach(p => p.remove());
+
+        const popover = document.createElement('div');
+        popover.className = 'fa-popover';
         
-        return group;
+        const editBtn = document.createElement('button');
+        editBtn.className = 'fa-popover-item';
+        editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Edit</span>';
+        editBtn.onclick = () => {
+            popover.remove();
+            if (callbacks.onEdit) callbacks.onEdit(task);
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'fa-popover-item danger';
+        deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><span>Delete</span>';
+        deleteBtn.onclick = () => {
+            popover.remove();
+            if (callbacks.onDelete) callbacks.onDelete(task.id);
+        };
+
+        popover.appendChild(editBtn);
+        popover.appendChild(deleteBtn);
+        document.body.appendChild(popover);
+
+        const rect = anchorEl.getBoundingClientRect();
+        popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        popover.style.left = `${rect.right + window.scrollX - popover.offsetWidth}px`;
+
+        const closePopover = (e) => {
+            if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {
+                popover.remove();
+                document.removeEventListener('mousedown', closePopover);
+            }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closePopover), 0);
     }
 
     static _createTaskItem(task, callbacks) {
         const item = document.createElement('sliding-card');
         item.setAttribute('variant', state.settings.cardVariant || 'glass');
-        item.setAttribute('draggable', 'true');
         
-        // Drag Logic
-        item.addEventListener('dragstart', (e) => {
-            if (item.isOpen) { e.preventDefault(); return; } // Don't drag if menu is open
+        const panel = document.getElementById('faTaskPanel');
+        const isManagement = panel?.classList.contains('management-mode');
+        
+        if (isManagement) {
+            item.setAttribute('locked', '');
+            item.setAttribute('draggable', 'true');
+        } else {
+            item.setAttribute('draggable', 'false');
+        }
+
+        const handleDragStart = (e) => {
+            if (!isManagement) { e.preventDefault(); return; }
             item.classList.add('is-dragging');
+            document.body.classList.add('is-dragging-active');
             e.dataTransfer.setData('taskId', task.id);
+            e.dataTransfer.setData('text/plain', task.id);
             e.dataTransfer.effectAllowed = 'move';
+            if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(item, 24, 24);
+            document.querySelectorAll('.fa-cat-item').forEach(g => g.classList.add('can-drop-active'));
+        };
+
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', () => {
+            item.classList.remove('is-dragging');
+            document.body.classList.remove('is-dragging-active');
+            document.querySelectorAll('.can-drop-active').forEach(g => g.classList.remove('can-drop-active'));
         });
-        item.addEventListener('dragend', () => item.classList.remove('is-dragging'));
 
         const todayTime = this._getTodayTimeForFocusArea(task.id);
         const totalTime = this._getTotalTimeForFocusArea(task.id);
-
-        item.setAttribute('menu-width', '150px');
-        if (state.timerState.activeTaskId === task.id) item.setAttribute('active', '');
-
-        const clockIcon = '<svg viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.7;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
+        const isCurrent = state.timerState.activeTaskId === task.id;
         
-        const isBreak = state.timerState.mode !== 'work';
-        const modeClass = isBreak ? (state.timerState.mode === 'longBreak' ? 'long-break' : 'break') : 'work';
-        const sessionColor = isBreak ? 'var(--success)' : 'var(--danger)';
+        const playBtnHtml = !isManagement ? `
+            <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    ${isCurrent ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
+                </svg>
+            </button>
+        ` : '';
+
+        const clockIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px; opacity: 0.5;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
 
         item.innerHTML = `
-            <button slot="menu" class="edit-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg><span>Edit</span></button>
+            <button slot="menu" class="edit-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg><span>Edit</span></button>
             <button slot="menu" class="completed-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>${task.completed ? 'Undo' : 'Done'}</span></button>
             <button slot="menu" class="danger delete-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><span>Delete</span></button>
             
             <div class="drag-handle-vertical" slot="indicator">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.3;"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
             </div>
 
-            <button slot="indicator" class="focus-area-play-btn" style="color: ${task.color}">
-                <svg class="focus-area-ring" viewBox="0 0 100 100">
-                    <circle class="focus-area-ring-bg" cx="50" cy="50" r="45"></circle>
-                    <circle class="focus-area-ring-progress ${modeClass}" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7" id="focusAreaRing-${task.id}" style="stroke: ${sessionColor}"></circle>
-                </svg>
-                ${state.timerState.activeTaskId === task.id && state.timerState.isRunning ? '⏸' : '▶'}
-            </button>
+            ${playBtnHtml}
+
             <div class="focus-area-info">
-                <div class="focus-area-name" style="color: ${task.color}">${this._escapeHtml(task.name)}</div>
+                <div class="focus-area-name" style="color: ${task.color}">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</div>
                 <div class="focus-area-stats-row">
                     <span>${clockIcon}Today: ${this.formatDurationHM(todayTime)}</span>
                     <span class="stats-divider">|</span>
@@ -227,30 +468,18 @@ export class FocusView {
             </div>
         `;
 
-        // Task Selection Logic
         item.onclick = (e) => {
-            // Only trigger if we aren't clicking a specific button or sliding
+            if (isManagement) return;
             if (!e.target.closest('button') && !item.isOpen) {
                 if (callbacks.onPlay) callbacks.onPlay(task);
             }
         };
 
-        item.querySelector('.focus-area-play-btn').onclick = (e) => {
-            e.stopPropagation();
-            if (callbacks.onPlay) callbacks.onPlay(task);
-        };
-        item.querySelector('.edit-btn').onclick = () => {
-            item.isOpen = false;
-            if (callbacks.onEdit) callbacks.onEdit(task);
-        };
-        item.querySelector('.completed-btn').onclick = () => {
-            item.isOpen = false;
-            if (callbacks.onToggleComplete) callbacks.onToggleComplete(task.id);
-        };
-        item.querySelector('.delete-btn').onclick = () => {
-            item.isOpen = false;
-            if (callbacks.onDelete) callbacks.onDelete(task.id);
-        };
+        const playBtn = item.querySelector('.focus-area-play-btn');
+        if (playBtn) playBtn.onclick = (e) => { e.stopPropagation(); if (callbacks.onPlay) callbacks.onPlay(task); };
+        item.querySelector('.edit-btn').onclick = () => { item.isOpen = false; if (callbacks.onEdit) callbacks.onEdit(task); };
+        item.querySelector('.completed-btn').onclick = () => { item.isOpen = false; if (callbacks.onToggleComplete) callbacks.onToggleComplete(task.id); };
+        item.querySelector('.delete-btn').onclick = () => { item.isOpen = false; if (callbacks.onDelete) callbacks.onDelete(task.id); };
 
         return item;
     }
@@ -363,13 +592,6 @@ export class FocusView {
     static getActiveAimForFocusArea(focusAreaId) {
         const today = HistoryService.getLogicalDate();
         return state.aims.find(a => a.focusAreaId === focusAreaId && (!a.deadline || a.deadline >= today));
-    }
-
-    static parseDuration(val) {
-        val = val.toLowerCase().trim(); if (!val) return 0; let m = 0;
-        if (val.includes(':')) { const p = val.split(':'); m = (parseInt(p[0]) || 0) * 60 + (parseInt(p[1]) || 0); }
-        else if (val.includes('h')) { const p = val.split('h'); m += (parseFloat(p[0]) || 0) * 60; if (p[1]) m += parseFloat(p[1].replace('min', '').replace('m', '').trim()) || 0; }
-        else m = parseFloat(val) || 0; return Math.round(m);
     }
 
     static _escapeHtml(text) {

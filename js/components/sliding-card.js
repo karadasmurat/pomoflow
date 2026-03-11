@@ -14,7 +14,7 @@ class SlidingCard extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['menu-width', 'active', 'variant'];
+        return ['menu-width', 'active', 'variant', 'locked'];
     }
 
     get isOpen() { return this._isOpen; }
@@ -47,6 +47,9 @@ class SlidingCard extends HTMLElement {
         };
 
         wrapper.addEventListener('pointerdown', (e) => {
+            // Ignore all internal slide logic if the card is locked (Management Mode)
+            if (this.hasAttribute('locked')) return;
+            
             if (e.target.closest('.more-btn') || (e.button !== 0 && e.pointerType === 'mouse')) return;
             this.handleDragStart(e.clientX);
             const onMove = (me) => this.handleDragMove(me.clientX, me);
@@ -147,7 +150,7 @@ class SlidingCard extends HTMLElement {
                 .container {
                     position: relative; border-radius: var(--sc-radius);
                     overflow: visible !important; display: flex; align-items: stretch;
-                    margin: 4px 4px; /* Tight mobile margins */
+                    margin: 4px 4px;
                     background: transparent; will-change: transform;
                     padding: 2px;
                 }
@@ -156,21 +159,33 @@ class SlidingCard extends HTMLElement {
                     .container { margin: 8px 12px; }
                 }
 
-                /* THE CARD WRAPPER - BASE */
                 .slide-wrapper {
                     position: relative; width: 100%; height: auto; z-index: 2;
-                    min-height: 48px; /* High-density minimum */
+                    min-height: 48px;
                     display: flex; align-items: center; padding: 8px 16px; gap: 16px;
-                    box-sizing: border-box; cursor: pointer; user-select: none; touch-action: none;
+                    box-sizing: border-box; cursor: pointer; touch-action: none;
+                    user-select: none; -webkit-user-select: none;
                     background: var(--surface, #161b22);
                     border: none !important;
                     border-radius: var(--sc-radius) !important;
-                    /* THE ONLY ALLOWED SHADOW */
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
                     transition: transform 0.5s var(--sc-spring), scale 0.2s ease, background-color 0.2s ease;
                 }
 
-                /* VARIANTS - Background Overrides */
+                /* LOCKED STATE FOR DRAG & DROP */
+                :host([locked]) {
+                    pointer-events: auto !important;
+                }
+                :host([locked]) .slide-wrapper {
+                    cursor: grab !important;
+                    user-select: auto !important;
+                    -webkit-user-select: auto !important;
+                    touch-action: auto !important;
+                }
+                :host([locked]) .slide-wrapper:active {
+                    cursor: grabbing !important;
+                }
+
                 .container.variant-glass .slide-wrapper { background: rgba(255, 255, 255, 0.08) !important; backdrop-filter: blur(20px); }
                 .container.variant-bento .slide-wrapper { background: var(--surface-elevated, #21262d) !important; border-radius: calc(var(--sc-radius) * 1.5) !important; }
                 .container.variant-skeuo { 
@@ -181,18 +196,16 @@ class SlidingCard extends HTMLElement {
                 }
                 .container.variant-skeuo .slide-wrapper { background: var(--skeuo-face, #1c2128) !important; }
 
-                /* INTERACTION */
                 .slide-wrapper:hover { transform: translateY(-2px); }
                 .slide-wrapper.pressing { transform: translateY(0); scale: 0.985; }
                 :host([active]) .slide-wrapper { background: var(--primary-muted, rgba(88, 166, 255, 0.08)) !important; }
 
-                /* MENU UI */
                 .menu-container { 
                     position: absolute; top: 0; bottom: 0; right: 0; width: auto; 
                     display: flex; align-items: center; justify-content: flex-end; 
                     z-index: 1; 
-                    padding: 0 12px; /* Breathing room from right edge */
-                    gap: 6px;        /* Gap between buttons */
+                    padding: 0 12px;
+                    gap: 6px;
                     opacity: 0; transition: opacity 0.3s ease; 
                 }
                 :host([open]) .menu-container { opacity: 1; }
@@ -205,7 +218,7 @@ class SlidingCard extends HTMLElement {
                     padding: 2px 1px !important;
                     border: none !important;
                     background: rgba(255, 255, 255, 0.03) !important;
-                    width: 44px !important; /* Slightly increased for label fitting */
+                    width: 44px !important;
                     height: 44px !important;
                     display: flex !important;
                     flex-direction: column !important;
@@ -213,7 +226,7 @@ class SlidingCard extends HTMLElement {
                     justify-content: center !important;
                     border-radius: 8px !important;
                     color: var(--text-secondary) !important;
-                    font-size: 7px !important; /* Micro-font for absolute fit */
+                    font-size: 7px !important;
                     font-weight: 600 !important;
                     text-transform: uppercase !important;
                     letter-spacing: 0.1px !important;
