@@ -89,6 +89,7 @@ async function init() {
         onToggleComplete: (id) => toggleFocusAreaComplete(id),
         onDelete: (id) => deleteFocusArea(id),
         onEditCategory: (name) => openCategoryEditModal(name),
+        onDeleteCategory: (name) => deleteCategory(name),
         onMoveToCategory: (taskId, newCat) => moveTaskToCategory(taskId, newCat),
         onStateChange: () => saveData()
     });
@@ -194,6 +195,7 @@ function renderFocusAreas() {
         onToggleComplete: (id) => toggleFocusAreaComplete(id),
         onDelete: (id) => deleteFocusArea(id),
         onEditCategory: (name) => openCategoryEditModal(name),
+        onDeleteCategory: (name) => deleteCategory(name),
         onMoveToCategory: (taskId, newCat) => moveTaskToCategory(taskId, newCat),
         onStateChange: () => saveData()
     });
@@ -436,6 +438,9 @@ function saveSessionFromModal() {
 function openFocusAreaEditModal(t) {
     editingTaskId = t.id;
     
+    // Go back to the first drawer where the creation form is
+    FocusView.goBack();
+    
     document.getElementById('focusAreaInput').value = t.name;
     FocusView.populateCategorySelects();
     document.getElementById('focusAreaCategorySelect').value = t.category || 'Uncategorized';
@@ -504,6 +509,21 @@ function saveCategoryFromModal() {
         notify(`Category updated: ${newName} ✅`);
     }
     document.getElementById('categoryEditModal').classList.remove('open');
+}
+
+function deleteCategory(name) {
+    confirmAction(`Delete category "${name}"? Focus areas will be moved to Uncategorized.`).then(conf => {
+        if (conf) {
+            state.categories = state.categories.filter(c => c.name !== name);
+            state.tasks.forEach(t => {
+                if (t.category === name) t.category = 'Uncategorized';
+            });
+            saveData();
+            refreshUI();
+            FocusView.populateCategorySelects();
+            notify(`Category "${name}" deleted 🗑️`);
+        }
+    });
 }
 
 function moveTaskToCategory(taskId, newCat) {

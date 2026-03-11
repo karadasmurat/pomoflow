@@ -341,8 +341,7 @@ export class FocusView {
         deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><span>Delete</span>';
         deleteBtn.onclick = () => {
             popover.remove();
-            // Category deletion not fully implemented in app.js yet, but adding placeholder
-            alert('Category deletion is managed by editing focus areas.');
+            if (callbacks.onDeleteCategory) callbacks.onDeleteCategory(categoryName);
         };
 
         popover.appendChild(editBtn);
@@ -402,14 +401,13 @@ export class FocusView {
     }
 
     static _createTaskItem(task, callbacks) {
-        const item = document.createElement('sliding-card');
-        item.setAttribute('variant', state.settings.cardVariant || 'glass');
+        const item = document.createElement('div');
+        item.className = 'fa-cat-item';
         
         const panel = document.getElementById('faTaskPanel');
         const isManagement = panel?.classList.contains('management-mode');
         
         if (isManagement) {
-            item.setAttribute('locked', '');
             item.setAttribute('draggable', 'true');
         } else {
             item.setAttribute('draggable', 'false');
@@ -437,49 +435,44 @@ export class FocusView {
         const totalTime = this._getTotalTimeForFocusArea(task.id);
         const isCurrent = state.timerState.activeTaskId === task.id;
         
-        const playBtnHtml = !isManagement ? `
-            <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}">
+        const playIconHtml = `
+            <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}" style="margin: 0; pointer-events: none;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     ${isCurrent ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
                 </svg>
             </button>
-        ` : '';
-
-        const clockIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px; opacity: 0.5;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
+        `;
 
         item.innerHTML = `
-            <button slot="menu" class="edit-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg><span>Edit</span></button>
-            <button slot="menu" class="completed-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>${task.completed ? 'Undo' : 'Done'}</span></button>
-            <button slot="menu" class="danger delete-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><span>Delete</span></button>
-            
-            <div class="drag-handle-vertical" slot="indicator">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+            <div class="fa-cat-icon">
+                ${isManagement ? 
+                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>' : 
+                    playIconHtml
+                }
             </div>
-
-            ${playBtnHtml}
-
-            <div class="focus-area-info">
-                <div class="focus-area-name" style="color: ${task.color}">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</div>
-                <div class="focus-area-stats-row">
-                    <span>${clockIcon}Today: ${this.formatDurationHM(todayTime)}</span>
-                    <span class="stats-divider">|</span>
-                    <span>${clockIcon}Total: ${this.formatDurationHM(totalTime)}</span>
+            <div class="fa-cat-info">
+                <div class="fa-cat-name" style="color: ${task.color}">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</div>
+                <div class="fa-cat-meta">
+                    <span>Today: ${this.formatDurationHM(todayTime)}</span>
+                    <span style="opacity: 0.3;">|</span>
+                    <span>Total: ${this.formatDurationHM(totalTime)}</span>
                 </div>
             </div>
+            <button class="fa-more-btn" title="More Actions">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
         `;
 
         item.onclick = (e) => {
-            if (isManagement) return;
-            if (!e.target.closest('button') && !item.isOpen) {
-                if (callbacks.onPlay) callbacks.onPlay(task);
+            const moreBtn = e.target.closest('.fa-more-btn');
+            if (moreBtn) {
+                e.stopPropagation();
+                this._showTaskPopover(moreBtn, task, callbacks);
+                return;
             }
+            if (isManagement) return;
+            if (callbacks.onPlay) callbacks.onPlay(task);
         };
-
-        const playBtn = item.querySelector('.focus-area-play-btn');
-        if (playBtn) playBtn.onclick = (e) => { e.stopPropagation(); if (callbacks.onPlay) callbacks.onPlay(task); };
-        item.querySelector('.edit-btn').onclick = () => { item.isOpen = false; if (callbacks.onEdit) callbacks.onEdit(task); };
-        item.querySelector('.completed-btn').onclick = () => { item.isOpen = false; if (callbacks.onToggleComplete) callbacks.onToggleComplete(task.id); };
-        item.querySelector('.delete-btn').onclick = () => { item.isOpen = false; if (callbacks.onDelete) callbacks.onDelete(task.id); };
 
         return item;
     }
