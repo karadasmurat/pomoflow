@@ -1,844 +1,1601 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PomoFlow</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
-    <script src="coi-serviceworker.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PomoFlow — Invest your time intentionally</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #F0EFED;
+      --bg-card: #FAFAF8;
+      --ink: #1A1917;
+      --ink-mid: #6B6860;
+      --ink-soft: #A8A49E;
+      --rule: #E2DFD9;
+      --accent: #2D4A3E;
+      --accent-dim: #E6EDEA;
+      --white: #FFFFFF;
+      --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      --max: 1100px;
+      --pad: clamp(20px, 5vw, 72px);
+      --r: 6px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--f);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 100;
+      background: rgba(240, 239, 237, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .nav-cta {
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--ink);
+      color: #fff;
+      padding: 9px 18px;
+      border-radius: var(--r);
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+
+    .nav-cta:hover {
+      opacity: 0.8;
+    }
+
+    /* HERO */
+    .hero {
+      padding-top: 56px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-body {
+      flex: 1;
+      max-width: var(--max);
+      margin: 0 auto;
+      width: 100%;
+      padding: clamp(64px, 11vh, 120px) var(--pad) 0;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 5px 12px;
+      border-radius: 40px;
+      margin-bottom: 28px;
+    }
+
+    .eyebrow-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: clamp(32px, 4vw, 68px);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    h1 .muted {
+      color: var(--ink-soft);
+      font-weight: 300;
+    }
+
+    h1 .em {
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      max-width: 460px;
+      margin-bottom: 44px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      font-family: var(--f);
+      font-size: 15px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: var(--r);
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      font-family: var(--f);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--ink);
+    }
+
+    /* HERO CARD */
+    .hero-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+      position: sticky;
+      top: 80px;
+    }
+
+    .hero-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--rule);
+      background: #FAFAF8;
+    }
+
+    .card-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .card-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--rule);
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+    }
+
+    /* mini planner */
+    .planner {
+      padding: 16px;
+    }
+
+    .planner-week {
+      display: grid;
+      grid-template-columns: 26px repeat(7, 1fr);
+      font-size: 9px;
+      color: var(--ink-soft);
+    }
+
+    .pw-head {
+      padding: 0 2px 8px;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .pw-head.today {
+      color: var(--accent);
+    }
+
+    .pw-head.today::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin: 2px auto 0;
+    }
+
+    .pw-time-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pw-tl {
+      font-size: 8px;
+      color: #CCC;
+      height: 38px;
+      padding-top: 2px;
+    }
+
+    .pw-col {
+      position: relative;
+      height: 190px;
+      border-left: 1px solid #F2F0ED;
+    }
+
+    .pw-col.today-col {
+      background: #FAFDF9;
+    }
+
+    .pw-block {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      border-radius: 3px;
+      font-size: 7px;
+      font-weight: 600;
+      padding: 3px 4px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .c-green {
+      background: #DDE8DF;
+      color: #2D4A3E;
+      border: 1px solid #C4D9C8;
+    }
+
+    .c-amber {
+      background: #EDE8DD;
+      color: #5C4A2D;
+      border: 1px solid #D9C8A4;
+    }
+
+    .c-violet {
+      background: #E4DDEE;
+      color: #3D2D5C;
+      border: 1px solid #C4B4D9;
+    }
+
+    .pw-block.actual {
+      opacity: 0.5;
+    }
+
+    .pw-now {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 1.5px solid var(--accent);
+      z-index: 5;
+    }
+
+    .pw-now::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      left: -3px;
+      top: -4px;
+    }
+
+    .planner-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .planner-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .planner-stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .planner-stat-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+
+    /* TIMER CARD */
+    .timer-card-body {
+      padding: 32px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .timer-focus-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      border-radius: 40px;
+      padding: 5px 14px;
+    }
+
+    .timer-area-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .timer-area-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+
+    .timer-display {
+      font-size: 72px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .timer-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .timer-bar-track {
+      width: 100%;
+      height: 4px;
+      background: var(--rule);
+      border-radius: 2px;
+      margin-top: 4px;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      background: #6B9E78;
+      border-radius: 2px;
+    }
+
+    .timer-sessions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .timer-session {
+      width: 28px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--rule);
+    }
+
+    .timer-session.done {
+      background: #6B9E78;
+    }
+
+    .timer-session.active {
+      background: #6B9E78;
+      opacity: 0.4;
+    }
+
+    .timer-card-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FAFAF8;
+    }
+
+    .timer-stat-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .timer-stat-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      margin-top: 2px;
+    }
+
+    /* BELT */
+    .belt {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      background: var(--white);
+      overflow: hidden;
+      padding: 18px 0;
+      margin-top: clamp(60px, 10vh, 100px);
+    }
+
+    .belt-track {
+      display: flex;
+      gap: 0;
+      width: max-content;
+      animation: ticker 30s linear infinite;
+    }
+
+    .belt-item {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .belt-item::after {
+      content: '·';
+      color: var(--rule);
+    }
+
+    @keyframes ticker {
+      from {
+        transform: translateX(0);
+      }
+
+      to {
+        transform: translateX(-50%);
+      }
+    }
+
+    /* ATMOSPHERIC IMAGE BREAK */
+    .section-imgbreak {
+      position: relative;
+      height: clamp(500px, 70vh, 780px);
+      overflow: hidden;
+      background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80');
+      background-size: cover;
+      background-position: center 40%;
+      background-attachment: fixed;
+    }
+
+    .section-imgbreak::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+          rgba(20, 18, 15, 0.45) 0%,
+          rgba(20, 18, 15, 0.55) 100%);
+    }
+
+    .imgbreak-inner {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+      display: flex;
+      align-items: center;
+    }
+
+    .imgbreak-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 20px;
+    }
+
+    .imgbreak-quote {
+      font-size: clamp(28px, 3.5vw, 52px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .imgbreak-quote span {
+      color: rgba(255, 255, 255, 0.45);
+      font-weight: 300;
+    }
+
+    .imgbreak-body {
+      margin-top: 24px;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: rgba(255, 255, 255, 0.6);
+      max-width: 480px;
+    }
+
+    /* SECTION COMMONS */
+    .section {
+      padding: clamp(80px, 12vh, 140px) 0;
+    }
+
+    .section-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .section-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 3.2vw, 52px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+
+    h2 .muted {
+      color: var(--ink-soft);
+      font-weight: 300;
+    }
+
+    .section-lead {
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      max-width: 560px;
+    }
+
+    /* MANIFESTO */
+    .section-manifesto {
+      border-top: 1px solid var(--rule);
+      padding: clamp(80px, 12vh, 140px) 0;
+    }
+
+    .manifesto-block {
+      max-width: 780px;
+    }
+
+    .manifesto-line {
+      font-size: clamp(32px, 4vw, 64px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+    }
+
+    .manifesto-line.muted {
+      color: var(--ink-soft);
+      font-weight: 300;
+      margin-bottom: 32px;
+    }
+
+    .manifesto-body {
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      max-width: 560px;
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+    }
+
+    /* TENSION */
+    .section-tension {
+      border-top: 1px solid var(--rule);
+    }
+
+    .tension-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin-top: 56px;
+    }
+
+    @media (max-width: 860px) {
+      .tension-grid {
+        margin-top: 32px;
+      }
+
+      .tension-card {
+        padding: 28px 24px;
+      }
+    }
+
+    .tension-card {
+      border-radius: var(--r);
+      padding: 40px;
+    }
+
+    .tension-card.old {
+      background: #E8E6E1;
+      border: 1px solid #D4D0C8;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tension-card.old::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to bottom right,
+          transparent calc(50% - 0.75px),
+          rgba(107, 104, 96, 0.3) calc(50% - 0.75px),
+          rgba(107, 104, 96, 0.3) calc(50% + 0.75px),
+          transparent calc(50% + 0.75px));
+      pointer-events: none;
+    }
+
+    .tension-card.new {
+      background: var(--accent);
+    }
+
+    .tension-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+    }
+
+    .tension-card.old .tension-tag {
+      color: var(--ink-soft);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .tension-card.new .tension-tag {
+      color: rgba(255, 255, 255, 0.45);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .tension-statement {
+      font-size: clamp(20px, 2.2vw, 32px);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .tension-card.old .tension-statement {
+      color: var(--ink-mid);
+    }
+
+    .tension-card.new .tension-statement {
+      color: #fff;
+    }
+
+    .tension-body {
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .tension-card.old .tension-body {
+      color: var(--ink-soft);
+    }
+
+    .tension-card.new .tension-body {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .tension-question {
+      font-size: clamp(18px, 1.8vw, 26px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-top: 20px;
+      font-style: italic;
+    }
+
+    .tension-question.old-q {
+      color: var(--ink-soft);
+    }
+
+    .tension-question.new-q {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .tension-yes {
+      font-size: clamp(28px, 3vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+      line-height: 1;
+      margin-top: 8px;
+    }
+
+    /* HOW IT WORKS */
+    .section-how {
+      border-top: 1px solid var(--rule);
+      background: var(--white);
+    }
+
+    .how-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: end;
+      margin-bottom: 56px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .step {
+      background: var(--bg);
+      border-radius: var(--r);
+      padding: 32px 28px 36px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      background: var(--accent-dim);
+      display: inline-flex;
+      padding: 3px 10px;
+      border-radius: 40px;
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .step-body {
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--ink-mid);
+    }
+
+    /* VISIBILITY */
+    .section-visibility {
+      border-top: 1px solid var(--rule);
+      background: var(--white);
+    }
+
+    .vis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .vis-quote {
+      font-size: clamp(20px, 2.2vw, 32px);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      border-left: 3px solid var(--accent);
+      padding-left: 24px;
+      margin: 28px 0 32px;
+    }
+
+    .vis-quote .light {
+      font-weight: 300;
+      color: var(--ink-mid);
+    }
+
+    /* effort card */
+    .effort-card {
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 28px;
+    }
+
+    .effort-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .effort-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .effort-card-meta {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-soft);
+    }
+
+    .effort-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .effort-row-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    .effort-row-meta {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--ink-soft);
+    }
+
+    .effort-track {
+      height: 8px;
+      background: var(--rule);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .effort-planned {
+      position: absolute;
+      inset: 0;
+      border-radius: 4px;
+      border: 1.5px dashed #B8C9BB;
+      background: transparent;
+    }
+
+    .effort-actual {
+      height: 100%;
+      border-radius: 4px;
+    }
+
+    .ea1 {
+      background: #6B9E78;
+    }
+
+    .ea2 {
+      background: #9E8B6B;
+    }
+
+    .ea3 {
+      background: #8B6B9E;
+    }
+
+    .ea4 {
+      background: #6B8B9E;
+    }
+
+    .effort-legend {
+      display: flex;
+      gap: 18px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--rule);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-soft);
+    }
+
+    .legend-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ld-a {
+      width: 16px;
+      height: 6px;
+      border-radius: 3px;
+      background: #6B9E78;
+    }
+
+    .ld-p {
+      width: 16px;
+      height: 6px;
+      border-radius: 3px;
+      border: 1.5px dashed #B8C9BB;
+    }
+
+    /* PLANNER FEATURE */
+    .section-planner {
+      border-top: 1px solid var(--rule);
+    }
+
+    .planner-feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .planner-feature-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (max-width:860px) {
+      .planner-feature-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    /* CLOSING */
+    .section-closing {
+      border-top: 1px solid var(--rule);
+      background: var(--ink);
+      padding: clamp(100px, 16vh, 160px) 0;
+      text-align: center;
+    }
+
+    .closing-inner {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .closing-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 24px;
+    }
+
+    .closing-inner h2 {
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .closing-inner h2 .muted {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .closing-sub {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 48px;
+    }
+
+    .btn-light {
+      font-family: var(--f);
+      font-size: 15px;
+      font-weight: 700;
+      background: #fff;
+      color: var(--ink);
+      padding: 14px 32px;
+      border-radius: var(--r);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .btn-light:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--ink);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 28px var(--pad);
+    }
+
+    .footer-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-logo {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .footer-tagline {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .au {
+      opacity: 0;
+      animation: fadeUp 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .d1 {
+      animation-delay: 0.05s;
+    }
+
+    .d2 {
+      animation-delay: 0.15s;
+    }
+
+    .d3 {
+      animation-delay: 0.25s;
+    }
+
+    .d4 {
+      animation-delay: 0.38s;
+    }
+
+    .d5 {
+      animation-delay: 0.50s;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width:860px) {
+      .hero-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-card {
+        position: static;
+      }
+
+      .tension-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tension-card {
+        padding: 28px 24px;
+      }
+
+      .how-head {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-bottom: 32px;
+        padding-bottom: 28px;
+      }
+
+      .steps {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .vis-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .section {
+        padding: clamp(48px, 8vh, 80px) 0;
+      }
+    }
+
+    @media (max-width:560px) {
+      .nav-links {
+        display: none;
+      }
+
+      .footer-tagline {
+        display: none;
+      }
+
+      .section-closing {
+        padding: clamp(64px, 10vh, 100px) 0;
+      }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="app">
-        <!-- SVG Filters for Liquid Animations -->
-        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display: none;">
-            <defs>
-                <filter id="gooey">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
-                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 28 -10" result="goo" />
-                    <feBlend in="SourceGraphic" in2="goo" />
-                </filter>
-            </defs>
-        </svg>
-        <header>
-            <div class="header-left">
-                <div class="user-profile">
-                    <div class="user-avatar" id="headerAvatar">🦉</div>
-                    <div class="level-container" id="levelContainer">
-                        <div class="level-rank" id="userRank">Novice</div>
-                        <div class="level-xp-display"><span id="userXP">0</span> XP</div>
-                    </div>
-                </div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-logo" href="#">PomoFlow</a>
+      <div class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#visibility">The idea</a>
+        <a href="app.html" class="nav-cta">Get early access</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-body">
+      <div>
+        <div class="hero-eyebrow au d1">
+          <div class="eyebrow-dot"></div>Intentional focus
+        </div>
+        <h1 class="au d2">
+          You can't control<br>
+          <span class="muted">when it's finished.</span><br>
+          You <span class="em">can</span> control<br>
+          if you showed up.
+        </h1>
+        <p class="hero-sub au d3">PomoFlow tracks what you invest, not what you complete. Every session is proof of
+          progress — regardless of where the finish line sits.</p>
+        <div class="hero-actions au d4">
+          <a href="#" class="btn-primary">Get early access →</a>
+          <a href="#how" class="btn-secondary">See how it works ↓</a>
+        </div>
+      </div>
+
+      <div class="au d5">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <div class="card-dots">
+              <div class="card-dot"></div>
+              <div class="card-dot"></div>
+              <div class="card-dot"></div>
             </div>
-            
-            <div class="logo">
-                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                PomoFlow
+            <div class="card-title">Session in progress</div>
+            <div style="font-size:11px;color:var(--ink-soft);font-weight:500;">■ stop</div>
+          </div>
+          <div class="timer-card-body">
+            <div class="timer-focus-area">
+              <div class="timer-area-dot" style="background:#6B9E78;"></div>
+              <div class="timer-area-name">Deep Work</div>
             </div>
-
-            <div class="header-controls">
-                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                    <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
-                    <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
-                </button>
-                <div class="menu-container">
-                    <button class="hamburger-btn" id="menuBtn" aria-label="Open menu">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-                    </button>
-                    <div class="menu-dropdown" id="menuDropdown">
-                        <button class="menu-item" id="focusAreasNavBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-                            <span>Focus Areas</span>
-                        </button>
-                        <button class="menu-item" id="planNavBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
-                            <span>Focus Plan</span>
-                        </button>
-                        <button class="menu-item" id="settingsBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                            <span>Settings</span>
-                        </button>
-                        <a href="about.html" class="menu-item" style="text-decoration: none;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                            <span>About</span>
-                        </a>
-                    </div>
-                </div>
+            <div class="timer-display">20:14</div>
+            <div class="timer-label">Focus · Session 2 of 4</div>
+            <div class="timer-bar-track">
+              <div class="timer-bar-fill" style="width: 40%;"></div>
             </div>
-        </header>
-
-        <main class="main-content">
-            <div class="focus-area-overlay" id="focusAreaOverlay"></div>
-            <aside class="panel focus-area-panel" id="focusAreaPanel">
-                <div class="fa-panels" id="faPanels">
-                    <!-- PANEL 1: CATEGORIES -->
-                    <div class="fa-panel" id="faCatPanel">
-                        <div class="fa-header">
-                            <button class="fa-back-btn" id="closeFocusAreaPanel">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
-                            <div class="fa-title-area">
-                                <div class="fa-title">Focus Areas</div>
-                                <div class="fa-subtitle">Browse by category</div>
-                            </div>
-                            <button class="fa-back-btn" id="toggleFocusAreaCreate">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                            </button>
-                        </div>
-
-                        <!-- NEW: CREATION GRID WRAPPER -->
-                        <div class="fa-create-grid-wrapper" id="focusAreaCreateWrapper">
-                            <div class="fa-create-grid-inner">
-                                <div class="fa-create-section-header" id="faCreateHeader">Create Focus Area</div>
-                                <div class="panel-section-create-container" style="padding: 0 18px 20px;">
-                                    <div class="focus-area-input-container">
-                                        <div class="focus-area-input-wrapper">
-                                            <input type="text" class="focus-area-input" id="focusAreaInput" placeholder="New Focus Area Title...">
-                                            <div class="category-icon-divider"></div>
-                                            <div class="inline-color-wrapper">
-                                                <button type="button" class="selected-color-btn" id="inlineColorBtn">
-                                                    <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
-                                                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                                                </button>
-                                                <div class="color-dropdown" id="inlineColorDropdown">
-                                                    <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff"></button>
-                                                    <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8"></button>
-                                                    <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1"></button>
-                                                    <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7"></button>
-                                                    <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899"></button>
-                                                    <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316"></button>
-                                                    <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24"></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="focus-area-input-wrapper">
-                                            <select id="focusAreaCategorySelect" class="focus-area-category-select"></select>
-                                        </div>
-                                        <div id="newCategoryWrapper" class="focus-area-input-wrapper" style="display: none;">
-                                            <input type="text" id="newCategoryNameInput" class="focus-area-input" placeholder="New Category Name...">
-                                            <div class="category-icon-divider"></div>
-                                            <div class="inline-icon-wrapper">
-                                                <button type="button" class="selected-icon-btn" id="inlineIconBtn">
-                                                    <span id="selectedIconDisplay">📁</span>
-                                                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                                                </button>
-                                                <div class="icon-dropdown" id="inlineIconDropdown">
-                                                    <button type="button" class="icon-dot" data-icon="🎓">🎓</button>
-                                                    <button type="button" class="icon-dot" data-icon="💼">💼</button>
-                                                    <button type="button" class="icon-dot" data-icon="💪">💪</button>
-                                                    <button type="button" class="icon-dot" data-icon="🏠">🏠</button>
-                                                    <button type="button" class="icon-dot" data-icon="🎨">🎨</button>
-                                                    <button type="button" class="icon-dot" data-icon="🧪">🧪</button>
-                                                    <button type="button" class="icon-dot" data-icon="📚">📚</button>
-                                                    <button type="button" class="icon-dot" data-icon="🚀">🚀</button>
-                                                    <button type="button" class="icon-dot" data-icon="🧠">🧠</button>
-                                                    <button type="button" class="icon-dot" data-icon="🎯">🎯</button>
-                                                    <button type="button" class="icon-dot" data-icon="💻">💻</button>
-                                                    <button type="button" class="icon-dot" data-icon="📈">📈</button>
-                                                    <button type="button" class="icon-dot" data-icon="🔧">🔧</button>
-                                                    <button type="button" class="icon-dot" data-icon="🧹">🧹</button>
-                                                    <button type="button" class="icon-dot" data-icon="🛒">🛒</button>
-                                                </div>
-                                                <input type="hidden" id="newCategoryIconInput" value="📁">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="fa-create-actions">
-                                        <button class="btn btn-secondary" id="cancelFocusAreaCreate">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                            <span>Cancel</span>
-                                        </button>
-                                        <button class="btn btn-primary" id="addFocusAreaBtn">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                                            <span id="addFocusAreaBtnText">Create</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="fa-search-wrap">
-                            <svg class="fa-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input class="fa-search-input" id="faUnifiedSearch" placeholder="Search categories or tasks…" />
-                            <button class="fa-search-clear" id="faUnifiedClear" aria-label="Clear search">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-                        </div>
-
-                        <div class="fa-body" id="faCatBody">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-
-                    <!-- PANEL 2: TASKS -->
-                    <div class="fa-panel" id="faTaskPanel">
-                        <div class="fa-header">
-                            <button class="fa-back-btn" id="faBackToCats">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                            </button>
-                            <div class="fa-title-area">
-                                <div class="fa-title" id="faTaskPanelTitle">Tasks</div>
-                                <div class="fa-subtitle" id="faTaskPanelSub">Select a task</div>
-                            </div>
-                            <button class="fa-back-btn" id="toggleTaskPanelManagement">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
-                            </button>
-                        </div>
-
-                        <div class="fa-search-wrap">
-                            <svg class="fa-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input class="fa-search-input" id="faTaskSearch" placeholder="Search tasks in category…" />
-                        </div>
-
-                        <div class="fa-body fa-task-list" id="faTaskBody">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Context Menu (Bottom Sheet) -->
-                <div class="fa-ctx-overlay" id="faCtxOverlay"></div>
-                <div class="fa-ctx-drawer" id="faCtxDrawer">
-                    <div class="fa-ctx-handle"></div>
-                    <div class="fa-ctx-header">
-                        <div class="fa-ctx-icon" id="faCtxHeaderIcon"></div>
-                        <div class="fa-ctx-info">
-                            <div class="fa-ctx-title" id="faCtxHeaderTitle"></div>
-                            <div class="fa-ctx-subtitle" id="faCtxHeaderSub"></div>
-                        </div>
-                    </div>
-                    <div id="faCtxActions">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </aside>
-
-            <section class="panel timer-panel">
-                <div class="timer-share-wrapper">
-                    <div class="expand-group expand-down expand-vertical liquid-fab-container">
-                        <button class="expand-trigger share-btn liquid-fab-trigger" id="shareFocusBtn" title="Share your focus">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
-                        </button>
-                        <div class="expand-content share-card liquid-fab-content" id="shareMenu">
-                            <button class="action-icon-btn platform-x liquid-fab-item" id="shareXBtn" title="Post to X">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 7.719L22.424 21h-6.656l-5.212-6.817L4.95 21H1.64l7.73-8.235L1.248 2.25h6.826l4.704 6.152 5.466-6.152zM17.083 19.02h1.833L7.084 4.126H5.117L17.083 19.02z"/></svg>
-                            </button>
-                            <button class="action-icon-btn liquid-fab-item" id="shareCopyBtn" title="Copy status">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="notificationPrompt" class="notification-prompt" style="display: none;">
-                    <span class="notification-prompt-text">Enable notifications to get alerted when sessions end</span>
-                    <button class="notification-prompt-btn enable" id="enableNotifications">Enable</button>
-                    <button class="notification-prompt-btn deny" id="denyNotifications">Later</button>
-                </div>
-
-                <div id="toast" class="toast"></div>
-
-                <div class="timer-container" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                    <svg class="timer-ring" viewBox="0 0 100 100">
-                        <circle class="timer-ring-bg" cx="50" cy="50" r="45"/>
-                        <circle class="timer-ring-progress" id="timerProgress" cx="50" cy="50" r="45" 
-                                stroke-dasharray="282.7" stroke-dashoffset="0"/>
-                    </svg>
-                    <div class="timer-display">
-                        <div class="timer-time" id="timerTime">25:00</div>
-                        <div class="timer-mode" id="timerMode">Focus</div>
-                        <div class="timer-message" id="timerMessage"></div>
-                        <div class="session-progress" id="sessionProgress"></div>
-                    </div>
-
-                    <div class="timer-duration-shortcuts orbit" id="durationOrbit">
-                        <!-- Main Toggle at 3 o'clock -->
-                        <button class="duration-btn orbiter trigger" id="durationToggle" style="--angle: 90deg" aria-label="Quick timer settings">⏱️</button>
-                        
-                        <!-- Options that fan out from the right side -->
-                        <button class="duration-btn orbiter option" data-mins="10" style="--angle: 5deg">10</button>
-                        <button class="duration-btn orbiter option" data-mins="20" style="--angle: 30deg">20</button>
-                        <button class="duration-btn orbiter option" data-mins="30" style="--angle: 55deg">30</button>
-                        
-                        <button class="duration-btn orbiter option adj-btn" id="decDuration" style="--angle: 80deg">−</button>
-                        <button class="duration-btn orbiter option adj-btn" id="incDuration" style="--angle: 100deg">+</button>
-                        
-                        <button class="duration-btn orbiter option" data-mins="40" style="--angle: 125deg">40</button>
-                        <button class="duration-btn orbiter option" data-mins="50" style="--angle: 150deg">50</button>
-                        <button class="duration-btn orbiter option" data-mins="60" style="--angle: 175deg">60</button>
-                    </div>
-                </div>
-                <div aria-live="polite" id="timerAnnouncer"></div>
-
-                <div class="timer-focus-area-display">
-                    <div class="timer-focus-area-container">
-                        <div class="timer-focus-area-main-row">
-                            <span class="focus-area-question" id="focusAreaQuestion">What are you focusing on?</span>
-                            <button class="timer-focus-area-link" id="focusAreaLink">
-                                <span class="timer-focus-area-prefix" id="focusAreaPrefix" style="display: none;">Focusing on:</span>
-                                <span id="focusAreaText">
-                                    <span class="focus-area-add-icon">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                                        </svg>
-                                    </span>
-                                </span>
-                                <span class="focus-area-clear-icon" id="clearFocusArea" style="display: none;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                                </span>
-                            </button>
-                            </div>
-                        <div id="focusAreaProgressHUD" class="focus-area-progress-hud"></div>
-                    </div>
-                </div>
-
-                <div class="timer-controls">
-                    <button type="button" class="btn btn-primary" id="startPauseBtn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" id="playIcon"><path d="M8 5v14l11-7z"/></svg>
-                        <span id="startPauseText">Start</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="resetBtn" aria-label="Reset timer">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                        <span>Reset</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="skipBtn" aria-label="Skip session">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                        <span>Skip</span>
-                    </button>
-                </div>
-
-                <div class="keyboard-hint">
-                    <kbd>Space</kbd> Start/Pause &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>N</kbd> Skip &nbsp; <kbd>G</kbd> Focus Areas &nbsp; <kbd>P</kbd> Plan &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes
-                </div>
-            </section>
-
-            <section class="panel history-panel">
-                <div class="panel-header">
-                    <span>Activity Dashboard</span>
-                    <div class="panel-header-actions">
-                        <div class="history-filters">
-                            <button class="filter-btn active" data-filter="today">Today</button>
-                            <button class="filter-btn" data-filter="week">Week</button>
-                            <button class="filter-btn" data-filter="all">All</button>
-                        </div>
-                        <button id="clearHistoryBtn" class="clear-all-btn" aria-label="Clear history">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                            <span>Clear All</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="stats-bar compact momentum-tier">
-                    <div class="stat-item">
-                        <div class="stat-value" id="todayFocusTime">0:00</div>
-                        <div class="stat-label">Focus Time</div>
-                        <div class="stat-trend" id="focusTimeTrend"></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="todaySessions">0</div>
-                        <div class="stat-label">Sessions</div>
-                        <div class="stat-trend" id="sessionsTrend"></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="currentStreak">--</div>
-                        <div class="stat-label">Day Streak</div>
-                        <div class="stat-trend" id="streakTrend"></div>
-                    </div>
-                    <div class="stats-refresh-container">
-                        <span id="lastUpdatedLabel">Updated just now</span>
-                        <button id="manualRefreshBtn" class="refresh-btn" aria-label="Refresh metrics">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="history-content-grid">
-                    <div class="history-analytics-col">
-                        <div class="history-list-header">
-                            <div class="history-list-title">Focus Distribution</div>
-                            <div id="heroBadgeContainer"></div>
-                        </div>
-                        <div class="history-chart" id="historyChart"></div>
-                    </div>
-
-                    <div class="history-list-col">
-                        <div class="history-list-header">
-                            <span class="history-list-title">Activity Log</span>
-                            <div class="history-show-all-container">
-                                <button class="filter-btn" data-filter="showAll">Show All</button>
-                            </div>
-                        </div>
-                        <div class="history-list" id="historyList"></div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <div class="plan-overlay" id="planOverlay"></div>
-        <aside class="panel plan-panel" id="planPanel">
-            <div class="panel-header">
-                <div class="panel-header-content">
-                    <div class="panel-title">Focus Plan</div>
-                    <div class="panel-subtitle">Design your concentration milestones</div>
-                </div>
-                <div class="panel-header-actions">
-                    <button class="header-toggle-btn" id="togglePlanCreate" aria-label="Set new focus aim">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <rect class="bar-v" x="11" y="5" width="2" height="14" rx="1" />
-                            <rect class="bar-h" x="5" y="11" width="14" height="2" rx="1" />
-                        </svg>
-                    </button>
-                    <div class="panel-close-container">
-                        <button class="panel-close" id="closePlanPanel" aria-label="Close daily plan">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                        </button>
-                    </div>
-                </div>
+            <div class="timer-sessions">
+              <div class="timer-session done"></div>
+              <div class="timer-session active"></div>
+              <div class="timer-session"></div>
+              <div class="timer-session"></div>
             </div>
-
-            <div class="panel-section-list">
-                <div class="panel-section-create-wrapper" id="planCreateWrapper">
-                    <div class="panel-section-create-container">
-                        <div class="panel-section-create">
-                        <div class="aim-input-container">
-                            <div class="aim-input-row">
-                                <div class="custom-select" id="customFocusAreaSelect">
-                                    <button type="button" class="select-trigger" id="selectTrigger">
-                                        <span class="trigger-text">Select Focus Areas...</span>
-                                        <span class="selected-count-badge" id="selectedCountBadge" style="display: none;">0</span>
-                                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                                    </button>
-                                    <div class="select-dropdown" id="selectDropdown">
-                                        <div class="select-search-wrapper">
-                                            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                                            <input type="text" id="focusAreaSearchInput" class="select-search-input" placeholder="Search focus areas...">
-                                        </div>
-                                        <div class="select-options" id="selectOptions">
-                                            <!-- Options will be populated by JS -->
-                                        </div>
-                                        <div class="select-no-results" id="selectNoResults" style="display: none;">No results found</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="aim-options-row">
-                                <div class="aim-option-group">
-                                    <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="min or h:mm" maxlength="8">
-                                    <span class="aim-divider"></span>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
-                                    <select id="aimDeadlineSelect" class="aim-deadline-select">
-                                        <option value="infinite">Until Done</option>
-                                        <option value="today">Today</option>
-                                        <option value="tomorrow">Tomorrow</option>
-                                        <option value="week">End of Week</option>
-                                        <option value="custom">Pick Date...</option>
-                                    </select>
-                                    <input type="date" id="aimCustomDate" class="aim-custom-date" style="display: none;">
-                                </div>
-                            </div>
-                            <button type="button" class="btn-add" id="addAimBtn" aria-label="Save focus aim">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+          </div>
+          <div class="timer-card-footer">
+            <div class="timer-stat">
+              <div class="timer-stat-val">3</div>
+              <div class="timer-stat-label">sessions today</div>
             </div>
-
-                <div class="plan-sections">
-                    <div class="plan-section">
-                        <!-- Today list -->
-                        <div id="todayPlanList" class="plan-list"></div>
-                    </div>
-
-                    <div class="plan-section">
-                        <div class="focus-area-section-header">Reached Targets</div>
-                        <div id="pastPlanList" class="plan-list past"></div>
-                    </div>
-                </div>
+            <div class="timer-stat" style="text-align:center;">
+              <div class="timer-stat-val">1h 25m</div>
+              <div class="timer-stat-label">invested today</div>
             </div>
-        </aside>
-
-        <footer class="app-footer">
-            <div class="datetime" id="datetime"></div>
-            <div class="footer-links">
-                <a href="about.html" class="footer-link">About PomoFlow</a>
-                <span class="footer-separator">&bull;</span>
-                <span class="footer-copy">&copy; 2026 PomoFlow</span>
+            <div class="timer-stat" style="text-align:right;">
+              <div class="timer-stat-val">Deep Work</div>
+              <div class="timer-stat-label">current area</div>
             </div>
-        </footer>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <aside class="panel profile-panel" id="profilePanel">
-        <div class="panel-header">
-            <span>Your Profile</span>
-            <button class="panel-close" id="closeProfile" aria-label="Close profile">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            </button>
-        </div>
-
-        <div class="profile-content">
-            <div class="identity-section">
-                <div class="identity-slider" id="identitySlider">
-                    <!-- Current View -->
-                    <div class="identity-view active" id="currentIdentityView">
-                        <div class="persona-circle-wrapper">
-                            <div class="persona-circle" id="personaCircle">🦉</div>
-                            <button class="persona-edit-badge" id="editPersonaBtn" title="Change persona">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.25L17.81 9.94l-3.25-3.25L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.25 3.25 1.83-1.83z"/></svg>
-                            </button>
-                        </div>
-                        <div class="persona-info">
-                            <div class="persona-name-row">
-                                <span class="persona-mood-label" id="currentMoodLabel">Sage</span>
-                                <button class="share-btn" id="shareMoodBtn" title="Share your current mood">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
-                                    <span>Share</span>
-                                </button>
-                            </div>
-                            <div class="persona-tagline">Your focus companion</div>
-                        </div>
-                    </div>
-
-                    <!-- Selection Grid View -->
-                    <div class="identity-selection" id="personaSelectionView">
-                        <div class="selection-header">
-                            <button class="back-btn" id="cancelPersonaEdit">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-                                <span>Back</span>
-                            </button>
-                            <span>Choose a Persona</span>
-                        </div>
-                        <div class="avatar-grid" id="avatarGrid">
-                            <!-- Animals -->
-                            <button class="avatar-option" data-avatar="🦉" title="Sage">
-                                <span class="avatar-emoji">🦉</span>
-                                <span class="avatar-mood">Sage</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🦊" title="Agile">
-                                <span class="avatar-emoji">🦊</span>
-                                <span class="avatar-mood">Agile</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🐼" title="Zen">
-                                <span class="avatar-emoji">🐼</span>
-                                <span class="avatar-mood">Zen</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🦁" title="Persistent">
-                                <span class="avatar-emoji">🦁</span>
-                                <span class="avatar-mood">Persistent</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🐯" title="Focused">
-                                <span class="avatar-emoji">🐯</span>
-                                <span class="avatar-mood">Focused</span>
-                            </button>
-                            <!-- Tech/Space -->
-                            <button class="avatar-option" data-avatar="🤖" title="Productive">
-                                <span class="avatar-emoji">🤖</span>
-                                <span class="avatar-mood">Productive</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🚀" title="Ambitious">
-                                <span class="avatar-emoji">🚀</span>
-                                <span class="avatar-mood">Ambitious</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="👾" title="Creative">
-                                <span class="avatar-emoji">👾</span>
-                                <span class="avatar-mood">Creative</span>
-                            </button>
-                            <!-- Zen/Focus -->
-                            <button class="avatar-option" data-avatar="🧘" title="Mindful">
-                                <span class="avatar-emoji">🧘</span>
-                                <span class="avatar-mood">Mindful</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🎯" title="Precise">
-                                <span class="avatar-emoji">🎯</span>
-                                <span class="avatar-mood">Precise</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="💎" title="Resilient">
-                                <span class="avatar-emoji">💎</span>
-                                <span class="avatar-mood">Resilient</span>
-                            </button>
-                            <button class="avatar-option" data-avatar="🔥" title="Energy">
-                                <span class="avatar-emoji">🔥</span>
-                                <span class="avatar-mood">Energy</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-label">Achievements</div>
-                <div class="achievements-grid" id="achievementsGrid">
-                    <!-- Will be populated by JS -->
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <div class="modal-overlay" id="settingsOverlay"></div>
-    <aside class="panel settings-panel" id="settingsPanel">
-        <div class="panel-header">
-            <span>Settings</span>
-            <button class="panel-close" id="closeSettings" aria-label="Close settings">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            </button>
-        </div>
-
-        <div class="settings-tabs" id="settingsTabs">
-            <button class="settings-tab active" data-tab="general" title="General Settings">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                <span>General</span>
-            </button>
-            <button class="settings-tab" data-tab="sharing" title="Sharing Templates">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
-                <span>Sharing</span>
-            </button>
-            <button class="settings-tab" data-tab="data" title="Data Management">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
-                <span>Data</span>
-            </button>
-        </div>
-
-        <div class="settings-content">
-            <div class="settings-section active" id="tab-general">
-                <div class="setting-group">
-                    <div class="setting-label">
-                        <div class="setting-label-row">
-                            <span>Work Duration</span>
-                            <span class="setting-value" id="workDurationValue">25 min</span>
-                        </div>
-                    </div>
-                    <input type="range" class="setting-slider" id="workDuration" min="1" max="60" value="25">
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-label">
-                        <div class="setting-label-row">
-                            <span>Short Break</span>
-                            <span class="setting-value" id="shortBreakDurationValue">5 min</span>
-                        </div>
-                    </div>
-                    <input type="range" class="setting-slider" id="shortBreakDuration" min="1" max="30" value="5">
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-label">
-                        <div class="setting-label-row">
-                            <span>Long Break</span>
-                            <span class="setting-value" id="longBreakDurationValue">15 min</span>
-                        </div>
-                    </div>
-                    <input type="range" class="setting-slider" id="longBreakDuration" min="1" max="60" value="15">
-                </div>
-
-                <div class="setting-group">
-                    <label class="setting-label">
-                        <span>Sessions Before Long Break</span>
-                        <input type="number" class="setting-input" id="sessionsBeforeLongBreak" min="1" max="10" value="4">
-                    </label>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-row">
-                        <label class="setting-label">Auto-start Breaks</label>
-                        <div class="setting-toggle" id="autoStartBreaks" role="switch" aria-checked="false"></div>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-row">
-                        <label class="setting-label">Auto-start Work Sessions</label>
-                        <div class="setting-toggle" id="autoStartWork" role="switch" aria-checked="false"></div>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-row">
-                        <label class="setting-label">12h Time Format</label>
-                        <div class="setting-toggle" id="timeFormat" role="switch" aria-checked="false"></div>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <label class="setting-label">Notifications</label>
-                    <div class="setting-row" style="gap: 12px; margin-top: 8px;">
-                        <button class="filter-btn" id="requestNotifyManual" style="flex: 1; justify-content: center;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5z"/></svg>
-                            Enable Push
-                        </button>
-                        <button class="filter-btn" id="testNotify" style="flex: 1; justify-content: center;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.58 4.08L6.15 2.65C3.75 4.48 2.17 7.3 2.03 10.5h2c.15-2.65 1.51-4.97 3.55-6.42zm12.39 6.42h2c-.15-3.2-1.73-6.02-4.12-7.85l-1.42 1.43c2.02 1.45 3.39 3.77 3.54 6.42zM18 11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5zm-6 11c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2z"/></svg>
-                            Test
-                        </button>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <label class="setting-label">Card Style</label>
-                    <div class="filter-group" id="cardVariantSelect" style="margin-top: 8px;">
-                        <button class="filter-btn active" data-variant="glass">Glass</button>
-                        <button class="filter-btn" data-variant="bento">Bento</button>
-                        <button class="filter-btn" data-variant="skeuo">Skeuo</button>
-                        <button class="filter-btn" data-variant="flat">Flat</button>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-label">
-                        <div class="setting-label-row">
-                            <span>Sound Volume</span>
-                            <span class="setting-value" id="soundVolumeValue">70%</span>
-                        </div>
-                    </div>
-                    <input type="range" class="setting-slider" id="soundVolume" min="0" max="100" value="70">
-                </div>
-            </div>
-
-            <div class="settings-section" id="tab-sharing">
-                <div class="setting-group">
-                    <div class="setting-label">Sharing Templates</div>
-                    <div class="template-help">Placeholders: {focusArea}, {duration}, {time}, {xp}</div>
-                    
-                    <div class="template-field">
-                        <label>Setting Intent</label>
-                        <textarea id="templateIntent" class="setting-textarea" rows="2" placeholder="Focusing on: {focusArea}..."></textarea>
-                    </div>
-                    
-                    <div class="template-field">
-                        <label>Session Complete</label>
-                        <textarea id="templateSession" class="setting-textarea" rows="2" placeholder="Session complete: {focusArea}..."></textarea>
-                    </div>
-                    
-                    <div class="template-field">
-                        <label>Focus Area Reached</label>
-                        <textarea id="templateMilestone" class="setting-textarea" rows="2" placeholder="Focus area target reached: {focusArea}..."></textarea>
-                    </div>
-
-                    <div class="template-field">
-                        <label>Current Mood</label>
-                        <textarea id="templateMood" class="setting-textarea" rows="4" placeholder="Current Mood: {avatar} {mood}..."></textarea>
-                    </div>
-                    </div>
-
-            </div>
-
-            <div class="settings-section" id="tab-data">
-                <div class="setting-group">
-                    <label class="setting-label">Data Management</label>
-                    <div class="data-buttons">
-                        <button class="btn btn-secondary" id="exportData">Export Data</button>
-                        <div class="import-wrapper">
-                            <input type="file" id="importFile" accept=".json" style="display: none;">
-                            <button class="btn btn-secondary" id="importData">Import Data</button>
-                        </div>
-                    </div>
-                    <button class="btn btn-secondary" id="restoreDefaults" style="width: 100%; margin-top: 12px; justify-content: center;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-                        Restore Default Areas
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel-footer">
-            <button class="btn-save" id="saveSettings" style="width: 100%;">Save & Close</button>
-        </div>
-    </aside>
-
-    <div class="modal-overlay" id="confirmModal">
-        <div class="modal confirm-modal">
-            <div class="confirm-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-            </div>
-            <div class="confirm-message" id="confirmMessage"></div>
-            <div class="confirm-buttons">
-                <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
-                <button class="btn btn-danger" id="confirmOk">Confirm</button>
-            </div>
-        </div>
+    <div class="belt">
+      <div class="belt-track">
+        <div class="belt-item">Time invested, made visible</div>
+        <div class="belt-item">Shrink deadline anxiety</div>
+        <div class="belt-item">Intentional effort, planned ahead</div>
+        <div class="belt-item">See where your effort actually went</div>
+        <div class="belt-item">Built-in Pomodoro timer</div>
+        <div class="belt-item">No guilt. Just clarity.</div>
+        <div class="belt-item">Name what matters, give it a color</div>
+        <div class="belt-item">Planned vs. actual, side by side</div>
+        <div class="belt-item">Time invested, made visible</div>
+        <div class="belt-item">Shrink deadline anxiety</div>
+        <div class="belt-item">Intentional effort, planned ahead</div>
+        <div class="belt-item">See where your effort actually went</div>
+        <div class="belt-item">Built-in Pomodoro timer</div>
+        <div class="belt-item">No guilt. Just clarity.</div>
+        <div class="belt-item">Name what matters, give it a color</div>
+        <div class="belt-item">Planned vs. actual, side by side</div>
+      </div>
     </div>
+  </section>
 
-    <div class="modal-overlay" id="importModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Import Data</h2>
-                <button class="modal-close" id="closeImport">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                </button>
-            </div>
-            <div class="import-info" id="importInfo"></div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="importReplace">Replace All</button>
-                <button class="btn btn-primary" id="importMerge">Merge</button>
-            </div>
-        </div>
+  <!-- MANIFESTO OVER IMAGE -->
+  <section class="section-imgbreak">
+    <div class="imgbreak-inner reveal">
+      <div class="imgbreak-text">
+        <div class="imgbreak-eyebrow">The output and the path</div>
+        <div class="imgbreak-quote">The output matters.<br><span>And the path to it needs to be<br>visible, honest, and
+            sustainable.</span></div>
+        <p class="imgbreak-body">The deadline is real. The thesis, the recital, the project — these things have finish
+          lines and the finish lines matter. What PomoFlow adds isn't a different goal. It's clarity about the path.</p>
+      </div>
     </div>
+  </section>
 
-    <div class="modal-overlay" id="sessionEditModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Edit Session</h2>
-                <button class="modal-close" id="closeSessionEdit">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                </button>
-            </div>
-            <div class="session-edit-content">
-                <div class="session-edit-field">
-                    <label>Focus Area Name</label>
-                    <div id="sessionEditFocusAreaName" class="session-edit-focus-area-name"></div>
-                </div>
-                <div class="session-edit-field">
-                    <label>Duration (minutes)</label>
-                    <input type="number" id="sessionEditDuration" class="session-edit-input" min="1" max="480">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelSessionEdit">Cancel</button>
-                <button class="btn btn-primary" id="saveSessionEdit">Save</button>
-            </div>
+  <!-- TENSION -->
+  <section class="section section-tension" id="how">
+    <div class="section-inner">
+      <div class="reveal">
+        <div class="section-eyebrow">A different measure</div>
+        <h2>The only metric<br><span class="muted">shouldn't be done.</span></h2>
+      </div>
+      <div class="tension-grid">
+        <div class="tension-card old reveal">
+          <div class="tension-tag">The incomplete picture</div>
+          <div class="tension-statement">Done or not done. That's the whole story.</div>
+          <p class="tension-body">When the only thing that counts is finishing, everything before the finish line feels
+            like falling behind. The work becomes invisible.</p>
+          <div class="tension-question old-q">did you finish?</div>
         </div>
-    </div>
-
-
-
-
-    <div id="categoryEditModal" class="modal-overlay">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Edit Category</h2>
-                <button class="modal-close" id="closeCategoryEdit">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                </button>
-            </div>
-            <div class="session-edit-content">
-                <div class="focus-area-input-container" style="margin-bottom: 0;">
-                    <div class="focus-area-input-wrapper">
-                        <input type="text" id="categoryEditName" class="focus-area-input" placeholder="Category Name...">
-                        <div class="category-icon-divider"></div>
-                        <div class="inline-icon-wrapper">
-                            <button type="button" class="selected-icon-btn" id="categoryEditIconBtn" aria-label="Choose icon">
-                                <span id="categoryEditIconDisplay">📁</span>
-                                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                            </button>
-                            <div class="icon-dropdown" id="categoryEditIconDropdown">
-                                <!-- Populated via script -->
-                            </div>
-                            <input type="hidden" id="categoryEditIconInput" value="📁">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelCategoryEdit">Cancel</button>
-                <button class="btn btn-primary" id="saveCategoryEdit">Save Changes</button>
-            </div>
+        <div class="tension-card new reveal">
+          <div class="tension-tag">The fuller picture</div>
+          <div class="tension-statement">Give this three hours of honest effort by Friday.</div>
+          <p class="tension-body">A commitment you can actually keep. That's a question you can always answer:</p>
+          <div class="tension-question new-q">did you show up?</div>
+          <div class="tension-yes">yes.</div>
         </div>
+      </div>
     </div>
+  </section>
+  <section class="section section-how">
+    <div class="section-inner">
+      <div class="how-head reveal">
+        <div>
+          <div class="section-eyebrow">The loop</div>
+          <h2>Four steps.<br><span class="muted">At your pace.</span></h2>
+        </div>
+        <p class="section-lead">Progress isn't built in marathons. It's built in honest, repeated acts of showing up.
+          Small yeses, repeated daily, compound into real progress.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num">01 — Define</div>
+          <div class="step-title">Name what matters</div>
+          <p class="step-body">Define what deserves your attention. Add the areas of work, study, or life you want to
+            invest in and give each a color. These aren't just labels — they're a declaration of what you're choosing to
+            show up for.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">02 — Commit</div>
+          <div class="step-title">Set your intent</div>
+          <p class="step-body">Before the timer starts, name where this block of time is going. That single conscious
+            choice — made before the work begins — is where busy becomes purposeful.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">03 — Focus</div>
+          <div class="step-title">Show up fully</div>
+          <p class="step-body">Work. Rest. Repeat. Your only job is to be present for the session you committed to.
+            Progress is built in honest, repeated acts of showing up.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">04 — Reflect</div>
+          <div class="step-title">See where you went</div>
+          <p class="step-body">Review how your effort is flowing across focus areas — not to judge, but to understand.
+            One honest look is worth more than a week of good intentions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <script type="module" src="js/components/progress-pill.js"></script>
-    <script type="module" src="js/components/progress-compact.js"></script>
-    <script type="module" src="js/components/sliding-card.js"></script>
-    <script type="module" src="js/app.js"></script>
+  <!-- VISIBILITY -->
+  <section class="section section-visibility" id="visibility">
+    <div class="section-inner">
+      <div class="vis-grid">
+        <div class="reveal">
+          <div class="section-eyebrow">Why it works</div>
+          <h2>Focus is only half of it.</h2>
+          <div class="vis-quote">The sessions build the focus.<br><span class="light">The visibility shrinks the
+              anxiety.</span></div>
+          <p class="section-lead">That background dread before a deadline — it's not about the work. It's about not
+            knowing where you stand. PomoFlow makes that visible. Not a log of minutes — a map of where your effort is
+            actually going.</p>
+        </div>
+        <div class="reveal">
+          <div class="effort-card">
+            <div class="effort-card-header">
+              <div class="effort-card-title">This week's effort</div>
+              <div class="effort-card-meta">Wed · mid-week</div>
+            </div>
+            <div class="effort-rows">
+              <div class="effort-row">
+                <div class="effort-row-head"><span>Deep Work</span><span class="effort-row-meta">3.5h / 6h</span></div>
+                <div class="effort-track">
+                  <div class="effort-planned" style="width:100%;"></div>
+                  <div class="effort-actual ea1" style="width:58%;"></div>
+                </div>
+              </div>
+              <div class="effort-row">
+                <div class="effort-row-head"><span>Research</span><span class="effort-row-meta">4h / 4h</span></div>
+                <div class="effort-track">
+                  <div class="effort-planned" style="width:67%;"></div>
+                  <div class="effort-actual ea2" style="width:67%;"></div>
+                </div>
+              </div>
+              <div class="effort-row">
+                <div class="effort-row-head"><span>Creative</span><span class="effort-row-meta">0.5h / 3h</span></div>
+                <div class="effort-track">
+                  <div class="effort-planned" style="width:50%;"></div>
+                  <div class="effort-actual ea3" style="width:8%;"></div>
+                </div>
+              </div>
+              <div class="effort-row">
+                <div class="effort-row-head"><span>Admin</span><span class="effort-row-meta">1h / 2h</span></div>
+                <div class="effort-track">
+                  <div class="effort-planned" style="width:33%;"></div>
+                  <div class="effort-actual ea4" style="width:17%;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="effort-legend">
+              <div class="legend-dot">
+                <div class="ld-a"></div>Logged
+              </div>
+              <div class="legend-dot">
+                <div class="ld-p"></div>Planned
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANNER FEATURE -->
+  <section class="section section-planner" id="planner">
+    <div class="section-inner">
+      <div class="planner-feature-grid reveal">
+        <div>
+          <div class="section-eyebrow">The Focus Planner</div>
+          <h2>Your effort, distributed<br><span class="muted">across what matters.</span></h2>
+          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what
+            matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
+          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.
+          </p>
+        </div>
+        <div class="planner-feature-card">
+          <div class="hero-card-header">
+            <div class="card-dots">
+              <div class="card-dot"></div>
+              <div class="card-dot"></div>
+              <div class="card-dot"></div>
+            </div>
+            <div class="card-title">Focus Planner · Mar 10–16</div>
+            <div style="font-size:11px;color:var(--ink-soft);font-weight:500;">All ▾</div>
+          </div>
+          <div class="planner">
+            <div class="planner-week">
+              <div></div>
+              <div class="pw-head">M<br>10</div>
+              <div class="pw-head today">T<br>11</div>
+              <div class="pw-head">W<br>12</div>
+              <div class="pw-head">T<br>13</div>
+              <div class="pw-head">F<br>14</div>
+              <div class="pw-head">S<br>15</div>
+              <div class="pw-head">S<br>16</div>
+              <div class="pw-time-col">
+                <div class="pw-tl">8a</div>
+                <div class="pw-tl">10a</div>
+                <div class="pw-tl">12p</div>
+                <div class="pw-tl">2p</div>
+                <div class="pw-tl">4p</div>
+              </div>
+              <div class="pw-col">
+                <div class="pw-block c-green" style="top:38px;height:62px;">Deep Work</div>
+                <div class="pw-block c-green actual" style="top:42px;height:50px;"></div>
+              </div>
+              <div class="pw-col today-col">
+                <div class="pw-now" style="top:90px;"></div>
+                <div class="pw-block c-amber" style="top:0;height:48px;">Research</div>
+                <div class="pw-block c-amber actual" style="top:4px;height:38px;"></div>
+                <div class="pw-block c-green" style="top:108px;height:42px;"></div>
+              </div>
+              <div class="pw-col">
+                <div class="pw-block c-violet" style="top:72px;height:48px;">Creative</div>
+                <div class="pw-block c-green" style="top:140px;height:38px;"></div>
+              </div>
+              <div class="pw-col">
+                <div class="pw-block c-amber" style="top:0;height:38px;"></div>
+                <div class="pw-block c-green" style="top:72px;height:48px;"></div>
+              </div>
+              <div class="pw-col">
+                <div class="pw-block c-violet" style="top:38px;height:56px;"></div>
+              </div>
+              <div class="pw-col"></div>
+              <div class="pw-col" style="border-right:none;"></div>
+            </div>
+          </div>
+          <div class="planner-footer">
+            <div class="planner-stat">
+              <div class="planner-stat-val">8.5h</div>
+              <div class="planner-stat-label">logged this week</div>
+            </div>
+            <div class="planner-stat" style="text-align:right;">
+              <div class="planner-stat-val">14h</div>
+              <div class="planner-stat-label">planned this week</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING -->
+  <section class="section-closing">
+    <div class="closing-inner reveal">
+      <div class="closing-eyebrow">Your intention. Your pace. Your progress.</div>
+      <h2>From checking off tasks<br><span class="muted">to investing in what matters.</span></h2>
+      <p class="closing-sub">One session at a time. One honest effort at a time.</p>
+      <a href="app.html" class="btn-light">Get early access →</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-logo">PomoFlow</span>
+      <span class="footer-tagline">Designed for intentional focus.</span>
+      <span class="footer-copy">© 2026 PomoFlow</span>
+    </div>
+  </footer>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 90);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
 </body>
+
 </html>

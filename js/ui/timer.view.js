@@ -52,11 +52,11 @@ export class TimerView {
     static _updateControls(startPauseText, playIcon) {
         if (state.timerState.isRunning) {
             if (startPauseText) startPauseText.textContent = 'Pause';
-            if (playIcon) playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+            if (playIcon) playIcon.innerHTML = '<path d="M80,48h48V208H80Zm48,0V208h48V48Z"></path>';
             document.body.classList.add('timer-running');
         } else {
             if (startPauseText) startPauseText.textContent = 'Start';
-            if (playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            if (playIcon) playIcon.innerHTML = '<path d="M228.44,112.64l-144-88A16,16,0,0,0,60,38.62V217.38a16,16,0,0,0,24.44,13.34l144-88A16,16,0,0,0,228.44,112.64Z"></path>';
             document.body.classList.remove('timer-running');
         }
     }
@@ -100,7 +100,7 @@ export class TimerView {
             }
             if (questionEl) questionEl.textContent = 'What are you focusing on?';
             if (textEl) {
-                const addIcon = '<span class="focus-area-add-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>';
+                const addIcon = '<span class="focus-area-add-icon"><svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg></span>';
                 if (textEl.innerHTML !== addIcon) textEl.innerHTML = addIcon;
                 textEl.style.color = '';
                 textEl.title = '';

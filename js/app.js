@@ -215,7 +215,7 @@ async function addFocusArea() {
         btn.disabled = true;
         btn.classList.add('loading');
         const actionText = editingTaskId ? 'Saving...' : 'Creating...';
-        btn.innerHTML = `<svg class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg><span>${actionText}</span>`;
+        btn.innerHTML = `<svg class="spinner" width="14" height="14" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"><path d="M216,128a88,88,0,1,1-42.69-75.69"></path></svg><span>${actionText}</span>`;
 
         const catSelect = document.getElementById('focusAreaCategorySelect');
         let cat = catSelect.value;
@@ -654,9 +654,9 @@ function setupEventListeners() {
             btn.classList.toggle('active', isManagement);
             
             if (isManagement) {
-                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L104,194.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>';
             } else {
-                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>';
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg>';
             }
             refreshUI();
         },

@@ -155,8 +155,8 @@ export class FocusView {
                 const isCurrent = state.timerState.activeTaskId === task.id;
                 const playIconHtml = `
                     <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}" style="margin: 0; pointer-events: none;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            ${isCurrent ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
+                        <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
+                            ${isCurrent ? '<path d="M80,48h48V208H80Zm48,0V208h48V48Z"></path>' : '<path d="M228.44,112.64l-144-88A16,16,0,0,0,60,38.62V217.38a16,16,0,0,0,24.44,13.34l144-88A16,16,0,0,0,228.44,112.64Z"></path>'}
                         </svg>
                     </button>
                 `;
@@ -170,7 +170,7 @@ export class FocusView {
                         <div class="fa-cat-meta">${task.category}</div>
                     </div>
                     <button class="fa-more-btn" title="More Actions">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor"><path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"></path></svg>
                     </button>
                 `;
                 
@@ -195,12 +195,12 @@ export class FocusView {
         const isDefault = cat.isDefault || cat.isVirtual;
         const moreBtnHtml = !isDefault ? `
             <button class="fa-more-btn" title="Category Actions">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor"><path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"></path></svg>
             </button>
         ` : '';
 
         item.innerHTML = `
-            <div class="fa-cat-icon">${cat.icon || '📁'}</div>
+            <div class="fa-cat-icon">${cat.icon === '📁' || !cat.icon ? '<svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M216,72H131.31L104,44.69A15.86,15.86,0,0,0,92.69,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72Zm0,128H40V56H92.69L120,83.31A15.86,15.86,0,0,0,131.31,88H216Z"></path></svg>' : cat.icon}</div>
             <div class="fa-cat-info">
                 <div class="fa-cat-name">${this._highlight(cat.name, q)}</div>
                 <div class="fa-cat-meta">
@@ -210,7 +210,7 @@ export class FocusView {
             </div>
             <div style="display: flex; align-items: center; gap: 4px;">
                 ${moreBtnHtml}
-                <svg class="fa-cat-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg class="fa-cat-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="24" viewBox="0 0 256 256"><polyline points="96 48 176 128 96 208" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
             </div>
         `;
 
@@ -330,7 +330,7 @@ export class FocusView {
         
         const editBtn = document.createElement('button');
         editBtn.className = 'fa-popover-item';
-        editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Rename</span>';
+        editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg><span>Rename</span>';
         editBtn.onclick = () => {
             popover.remove();
             if (callbacks.onEditCategory) callbacks.onEditCategory(categoryName);
@@ -338,7 +338,7 @@ export class FocusView {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
-        deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><span>Delete</span>';
+        deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg><span>Delete</span>';
         deleteBtn.onclick = () => {
             popover.remove();
             if (callbacks.onDeleteCategory) callbacks.onDeleteCategory(categoryName);
@@ -369,7 +369,7 @@ export class FocusView {
         
         const editBtn = document.createElement('button');
         editBtn.className = 'fa-popover-item';
-        editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Edit</span>';
+        editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg><span>Edit</span>';
         editBtn.onclick = () => {
             popover.remove();
             if (callbacks.onEdit) callbacks.onEdit(task);
@@ -377,7 +377,7 @@ export class FocusView {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
-        deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg><span>Delete</span>';
+        deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg><span>Delete</span>';
         deleteBtn.onclick = () => {
             popover.remove();
             if (callbacks.onDelete) callbacks.onDelete(task.id);
@@ -437,8 +437,8 @@ export class FocusView {
         
         const playIconHtml = `
             <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}" style="margin: 0; pointer-events: none;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    ${isCurrent ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
+                    ${isCurrent ? '<path d="M80,48h48V208H80Zm48,0V208h48V48Z"></path>' : '<path d="M228.44,112.64l-144-88A16,16,0,0,0,60,38.62V217.38a16,16,0,0,0,24.44,13.34l144-88A16,16,0,0,0,228.44,112.64Z"></path>'}
                 </svg>
             </button>
         `;
@@ -446,7 +446,7 @@ export class FocusView {
         item.innerHTML = `
             <div class="fa-cat-icon">
                 ${isManagement ? 
-                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>' : 
+                    '<svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" style="opacity: 0.6;"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg>' : 
                     playIconHtml
                 }
             </div>
@@ -459,7 +459,7 @@ export class FocusView {
                 </div>
             </div>
             <button class="fa-more-btn" title="More Actions">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor"><path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"></path></svg>
             </button>
         `;
 
@@ -523,11 +523,11 @@ export class FocusView {
             item.className = `plan-aim-item ${reached ? 'reached' : ''} ${exp && !reached ? 'expired' : ''}`;
             item.setAttribute('menu-width', reached ? '150px' : '100px');
 
-            const editIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
-            const deleteIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-            const shareIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>';
-            const budgetIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>';
-            const againIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 4V7c3.31 0 6 2.69 6 6 0 2.97-2.17 5.43-5 5.91v2.02c3.95-.49 7-3.85 7-7.93 0-4.42-3.58-8-8-8zm-6 8c0-2.97 2.17-5.43 5-5.91V5.07c-3.95.49-7 3.85-7 7.93 0 4.42 3.58 8 8 8v-4c-3.31 0-6-2.69-6-6z"/></svg>';
+            const editIcon = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg>';
+            const deleteIcon = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg>';
+            const shareIcon = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M216,128a32,32,0,1,0-48,27.75V156a8,8,0,0,0,8,8h32a8,8,0,0,0,8-8V155.75A32.06,32.06,0,0,0,216,128ZM184,144a16,16,0,1,1,16-16A16,16,0,0,1,184,144ZM72,128a32,32,0,1,0-48,27.75V156a8,8,0,0,0,8,8H64a8,8,0,0,0,8-8V155.75A32.06,32.06,0,0,0,72,128ZM40,144a16,16,0,1,1,16-16A16,16,0,0,1,40,144Zm176,16a32,32,0,1,0-48,27.75V188a8,8,0,0,0,8,8h32a8,8,0,0,0,8-8v-.25A32.06,32.06,0,0,0,216,160Zm-32,16a16,16,0,1,1,16-16A16,16,0,0,1,184,176ZM72,160a32,32,0,1,0-48,27.75V188a8,8,0,0,0,8,8H64a8,8,0,0,0,8-8v-.25A32.06,32.06,0,0,0,72,160ZM40,176a16,16,0,1,1,16-16A16,16,0,0,1,40,176Z"></path></svg>';
+            const budgetIcon = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm36-88a4,4,0,0,1-4,4H132v28h20a4,4,0,0,1,0,8H132v12a8,8,0,0,1-16,0V176H96a4,4,0,0,1,0-8h20V140H96a4,4,0,0,1,0-8h20V104a8,8,0,0,1,16,0v28h28A4,4,0,0,1,164,132Z"></path></svg>';
+            const againIcon = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M240,128a112.12,112.12,0,0,1-112,112A111.09,111.09,0,0,1,41.48,200H64a12,12,0,0,0,0-24H16a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V216.52A135,135,0,0,0,128,264c75,0,136-61,136-136S203,128-128,128,128A12.06,12.06,0,0,0,240,128ZM128,16a112,112,0,0,1,86.52,40H192a12,12,0,0,0,0,24h48a12,12,0,0,0,12-12V24a12,12,0,0,0-24,0V43.48A135.25,135.25,0,0,0,128,0,136,136,0,0,0,0,136a12,12,0,0,0,24,0A112.12,112.12,0,0,1,128,16Z"></path></svg>';
 
             item.innerHTML = `
                 ${reached ? `

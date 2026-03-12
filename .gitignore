@@ -33,9 +33,7 @@ temp/
 .parcel-cache/
 
 # Documentation
-SPEC.md
-AGENTS.md
-ARCHITECTURE.md
+docs/
 GEMINI.md
 
 # SQLite Vendor

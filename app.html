@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PomoFlow</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="coi-serviceworker.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- SVG Filters for Liquid Animations -->
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display: none;">
+            <defs>
+                <filter id="gooey">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 28 -10" result="goo" />
+                    <feBlend in="SourceGraphic" in2="goo" />
+                </filter>
+            </defs>
+        </svg>
+        <header>
+            <div class="header-left">
+                <div class="user-profile">
+                    <div class="user-avatar" id="headerAvatar">🦉</div>
+                    <div class="level-container" id="levelContainer">
+                        <div class="level-rank" id="userRank">Novice</div>
+                        <div class="level-xp-display"><span id="userXP">0</span> XP</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 256 256" width="24" height="24" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                PomoFlow
+            </div>
+
+            <div class="header-controls">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <svg class="sun-icon" viewBox="0 0 256 256" fill="currentColor"><path d="M128,72a56,56,0,1,0,56,56A56.06,56.06,0,0,0,128,72Zm0,88a32,32,0,1,1,32-32A32,32,0,0,1,128,160ZM128,52a12,12,0,0,0,12-12V24a12,12,0,0,0-24,0V40A12,12,0,0,0,128,52Zm0,152a12,12,0,0,0-12,12v16a12,12,0,0,0,24,0V216A12,12,0,0,0,128,204ZM74.26,74.26a12,12,0,0,0,0-17L62.94,45.94a12,12,0,0,0-17,17L57.25,74.26A12,12,0,0,0,74.26,74.26Zm124.48,124.48a12,12,0,0,0,0,17l11.32,11.32a12,12,0,0,0,17-17l-11.32-11.32A12,12,0,0,0,198.74,198.74ZM52,128a12,12,0,0,0-12-12H24a12,12,0,0,0,0,24H40A12,12,0,0,0,52,128Zm180-12H216a12,12,0,0,0,0,24h16a12,12,0,0,0,0-24ZM74.26,181.74l-11.31,11.32a12,12,0,1,0,17,17l11.32-11.32a12,12,0,0,0-17-17Zm124.48-124.48,11.32-11.32a12,12,0,0,0-17-17L181.74,40.26a12,12,0,0,0,17,17Z"></path></svg>
+                    <svg class="moon-icon" viewBox="0 0 256 256" fill="currentColor"><path d="M235.54,150.21a12,12,0,0,1-11.49,16c-8.88,0-17.58-1.38-25.77-4a100.1,100.1,0,0,1-66.78-66.77,100.06,100.06,0,0,1,4-115.77,12,12,0,0,1,16-11.49,116.19,116.19,0,0,0,84,182Z"></path></svg>
+                </button>
+                <div class="menu-container">
+                    <button class="hamburger-btn" id="menuBtn" aria-label="Open menu">
+                        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"></path></svg>
+                    </button>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <button class="menu-item" id="focusAreasNavBtn">
+                            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M32,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H40A8,8,0,0,1,32,64Zm184,56H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"></path></svg>
+                            <span>Focus Areas</span>
+                        </button>
+                        <button class="menu-item" id="planNavBtn">
+                            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z"></path></svg>
+                            <span>Focus Plan</span>
+                        </button>
+                        <button class="menu-item" id="settingsBtn">
+                            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M233,111.41l-22.1-4.42a100,100,0,0,0-4.66-11.24l13.6-18.13a8,8,0,0,0-1.1-10.45l-19.8-19.8a8,8,0,0,0-10.45-1.1l-18.13,13.6a100,100,0,0,0-11.24-4.66l-4.42-22.1A8,8,0,0,0,136.79,16H119.21a8,8,0,0,0-7.92,6.41l-4.42,22.1a100,100,0,0,0-11.24,4.66L77.5,35.57a8,8,0,0,0-10.45,1.1L47.25,56.47a8,8,0,0,0-1.1,10.45l13.6,18.13a100,100,0,0,0-4.66,11.24l-22.1,4.42A8,8,0,0,0,26.58,119.21v17.58a8,8,0,0,0,6.41,7.92l22.1,4.42a100,100,0,0,0,4.66,11.24l-13.6,18.13a8,8,0,0,0,1.1,10.45l19.8,19.8a8,8,0,0,0,10.45,1.1l18.13-13.6a100,100,0,0,0,11.24,4.66l4.42,22.1A8,8,0,0,0,119.21,240h17.58a8,8,0,0,0,7.92-6.41l4.42-22.1a100,100,0,0,0,11.24-4.66l18.13,13.6a8,8,0,0,0,10.45-1.1l19.8-19.8a8,8,0,0,0,1.1-10.45l-13.6-18.13a100,100,0,0,0,4.66-11.24l22.1-4.42a8,8,0,0,0,6.41-7.92V119.21A8,8,0,0,0,233,111.41ZM128,160a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+                            <span>Settings</span>
+                        </button>
+                        <a href="about.html" class="menu-item" style="text-decoration: none;">
+                            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8H120a8,8,0,0,1,0-16h8V124h-8a8,8,0,0,1,0-16h16a8,8,0,0,1,8,8v48A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"></path></svg>
+                            <span>About</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="focus-area-overlay" id="focusAreaOverlay"></div>
+            <aside class="panel focus-area-panel" id="focusAreaPanel">
+                <div class="fa-panels" id="faPanels">
+                    <!-- PANEL 1: CATEGORIES -->
+                    <div class="fa-panel" id="faCatPanel">
+                        <div class="fa-header">
+                            <button class="fa-back-btn" id="closeFocusAreaPanel">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="24" viewBox="0 0 256 256"><line x1="200" y1="56" x2="56" y2="200" stroke-linecap="round" stroke-linejoin="round"></line><line x1="56" y1="56" x2="200" y2="200" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                            </button>
+                            <div class="fa-title-area">
+                                <div class="fa-title">Focus Areas</div>
+                                <div class="fa-subtitle">Browse by category</div>
+                            </div>
+                            <button class="fa-back-btn" id="toggleFocusAreaCreate">
+                                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg>
+                            </button>
+                        </div>
+
+                        <!-- NEW: CREATION GRID WRAPPER -->
+                        <div class="fa-create-grid-wrapper" id="focusAreaCreateWrapper">
+                            <div class="fa-create-grid-inner">
+                                <div class="fa-create-section-header" id="faCreateHeader">Create Focus Area</div>
+                                <div class="panel-section-create-container" style="padding: 0 18px 20px;">
+                                    <div class="focus-area-input-container">
+                                        <div class="focus-area-input-wrapper">
+                                            <input type="text" class="focus-area-input" id="focusAreaInput" placeholder="New Focus Area Title...">
+                                            <div class="category-icon-divider"></div>
+                                            <div class="inline-color-wrapper">
+                                                <button type="button" class="selected-color-btn" id="inlineColorBtn">
+                                                    <span class="selected-color-circle" id="selectedColorCircle" style="background: #58a6ff"></span>
+                                                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                                                </button>
+                                                <div class="color-dropdown" id="inlineColorDropdown">
+                                                    <button type="button" class="color-dot active" data-color="#58a6ff" style="background: #58a6ff"></button>
+                                                    <button type="button" class="color-dot" data-color="#38bdf8" style="background: #38bdf8"></button>
+                                                    <button type="button" class="color-dot" data-color="#6366f1" style="background: #6366f1"></button>
+                                                    <button type="button" class="color-dot" data-color="#a855f7" style="background: #a855f7"></button>
+                                                    <button type="button" class="color-dot" data-color="#ec4899" style="background: #ec4899"></button>
+                                                    <button type="button" class="color-dot" data-color="#f97316" style="background: #f97316"></button>
+                                                    <button type="button" class="color-dot" data-color="#fbbf24" style="background: #fbbf24"></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="focus-area-input-wrapper">
+                                            <select id="focusAreaCategorySelect" class="focus-area-category-select"></select>
+                                        </div>
+                                        <div id="newCategoryWrapper" class="focus-area-input-wrapper" style="display: none;">
+                                            <input type="text" id="newCategoryNameInput" class="focus-area-input" placeholder="New Category Name...">
+                                            <div class="category-icon-divider"></div>
+                                            <div class="inline-icon-wrapper">
+                                                <button type="button" class="selected-icon-btn" id="inlineIconBtn">
+                                                    <span id="selectedIconDisplay">📁</span>
+                                                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                                                </button>
+                                                <div class="icon-dropdown" id="inlineIconDropdown">
+                                                    <button type="button" class="icon-dot" data-icon="🎓">🎓</button>
+                                                    <button type="button" class="icon-dot" data-icon="💼">💼</button>
+                                                    <button type="button" class="icon-dot" data-icon="💪">💪</button>
+                                                    <button type="button" class="icon-dot" data-icon="🏠">🏠</button>
+                                                    <button type="button" class="icon-dot" data-icon="🎨">🎨</button>
+                                                    <button type="button" class="icon-dot" data-icon="🧪">🧪</button>
+                                                    <button type="button" class="icon-dot" data-icon="📚">📚</button>
+                                                    <button type="button" class="icon-dot" data-icon="🚀">🚀</button>
+                                                    <button type="button" class="icon-dot" data-icon="🧠">🧠</button>
+                                                    <button type="button" class="icon-dot" data-icon="🎯">🎯</button>
+                                                    <button type="button" class="icon-dot" data-icon="💻">💻</button>
+                                                    <button type="button" class="icon-dot" data-icon="📈">📈</button>
+                                                    <button type="button" class="icon-dot" data-icon="🔧">🔧</button>
+                                                    <button type="button" class="icon-dot" data-icon="🧹">🧹</button>
+                                                    <button type="button" class="icon-dot" data-icon="🛒">🛒</button>
+                                                </div>
+                                                <input type="hidden" id="newCategoryIconInput" value="📁">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="fa-create-actions">
+                                        <button class="btn btn-secondary" id="cancelFocusAreaCreate">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="24" viewBox="0 0 256 256"><line x1="200" y1="56" x2="56" y2="200" stroke-linecap="round" stroke-linejoin="round"></line><line x1="56" y1="56" x2="200" y2="200" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                                            <span>Cancel</span>
+                                        </button>
+                                        <button class="btn btn-primary" id="addFocusAreaBtn">
+                                            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg>
+                                            <span id="addFocusAreaBtnText">Create</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fa-search-wrap">
+                            <svg class="fa-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="20" viewBox="0 0 256 256"><circle cx="116" cy="116" r="84" stroke-linecap="round" stroke-linejoin="round"></circle><line x1="175.4" y1="175.4" x2="224" y2="224" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                            <input class="fa-search-input" id="faUnifiedSearch" placeholder="Search categories or tasks…" />
+                            <button class="fa-search-clear" id="faUnifiedClear" aria-label="Clear search">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="24" viewBox="0 0 256 256"><line x1="200" y1="56" x2="56" y2="200" stroke-linecap="round" stroke-linejoin="round"></line><line x1="56" y1="56" x2="200" y2="200" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                            </button>
+                        </div>
+
+                        <div class="fa-body" id="faCatBody">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- PANEL 2: TASKS -->
+                    <div class="fa-panel" id="faTaskPanel">
+                        <div class="fa-header">
+                            <button class="fa-back-btn" id="faBackToCats">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="24" viewBox="0 0 256 256"><polyline points="160 208 80 128 160 48" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+                            </button>
+                            <div class="fa-title-area">
+                                <div class="fa-title" id="faTaskPanelTitle">Tasks</div>
+                                <div class="fa-subtitle" id="faTaskPanelSub">Select a task</div>
+                            </div>
+                            <button class="fa-back-btn" id="toggleTaskPanelManagement">
+                                <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="fa-search-wrap">
+                            <svg class="fa-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="20" viewBox="0 0 256 256"><circle cx="116" cy="116" r="84" stroke-linecap="round" stroke-linejoin="round"></circle><line x1="175.4" y1="175.4" x2="224" y2="224" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                            <input class="fa-search-input" id="faTaskSearch" placeholder="Search tasks in category…" />
+                        </div>
+
+                        <div class="fa-body fa-task-list" id="faTaskBody">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Menu (Bottom Sheet) -->
+                <div class="fa-ctx-overlay" id="faCtxOverlay"></div>
+                <div class="fa-ctx-drawer" id="faCtxDrawer">
+                    <div class="fa-ctx-handle"></div>
+                    <div class="fa-ctx-header">
+                        <div class="fa-ctx-icon" id="faCtxHeaderIcon"></div>
+                        <div class="fa-ctx-info">
+                            <div class="fa-ctx-title" id="faCtxHeaderTitle"></div>
+                            <div class="fa-ctx-subtitle" id="faCtxHeaderSub"></div>
+                        </div>
+                    </div>
+                    <div id="faCtxActions">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </aside>
+
+            <section class="panel timer-panel">
+                <div class="timer-share-wrapper">
+                    <div class="expand-group expand-down expand-vertical liquid-fab-container">
+                        <button class="expand-trigger share-btn liquid-fab-trigger" id="shareFocusBtn" title="Share your focus">
+                            <svg width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><path d="M216,128a32,32,0,1,0-48,27.75V156a8,8,0,0,0,8,8h32a8,8,0,0,0,8-8V155.75A32.06,32.06,0,0,0,216,128Zm-32,16a16,16,0,1,1,16-16A16,16,0,0,1,184,144ZM72,128a32,32,0,1,0-48,27.75V156a8,8,0,0,0,8,8H64a8,8,0,0,0,8-8V155.75A32.06,32.06,0,0,0,72,128ZM40,144a16,16,0,1,1,16-16A16,16,0,0,1,40,144Zm176,16a32,32,0,1,0-48,27.75V188a8,8,0,0,0,8,8h32a8,8,0,0,0,8-8v-.25A32.06,32.06,0,0,0,216,160Zm-32,16a16,16,0,1,1,16-16A16,16,0,0,1,184,176ZM72,160a32,32,0,1,0-48,27.75V188a8,8,0,0,0,8,8H64a8,8,0,0,0,8-8v-.25A32.06,32.06,0,0,0,72,160ZM40,176a16,16,0,1,1,16-16A16,16,0,0,1,40,176Z"></path></svg>
+                        </button>
+                        <div class="expand-content share-card liquid-fab-content" id="shareMenu">
+                            <button class="action-icon-btn platform-x liquid-fab-item" id="shareXBtn" title="Post to X">
+                                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M214.75,211.71l-62.6-84.55,66.23-74.67a8,8,0,0,0-12-10.58L145.45,110.8,92.67,39.54A8,8,0,0,0,86.25,36H40a8,8,0,0,0-6.41,12.79l61.5,83.06L29.3,206.51a8,8,0,1,0,12,10.58l60.11-67.76,53.48,72.23A8,8,0,0,0,161.3,225h53.45a8,8,0,0,0,6.41-12.79ZM164.39,209l-49-66.24L51.34,52h24l40.3,54.46,63.15,85.34Z"></path></svg>
+                            </button>
+                            <button class="action-icon-btn liquid-fab-item" id="shareCopyBtn" title="Copy status">
+                                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M216,32H88a16,16,0,0,0-16,16V72H48A16,16,0,0,0,32,88V208a16,16,0,0,0,16,16H168a16,16,0,0,0,16-16V184h24a16,16,0,0,0,16-16V48A16,16,0,0,0,216,32ZM168,208H48V88H168V208Zm48-40H184V88a16,16,0,0,0-16-16H88V48H216V168Z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="notificationPrompt" class="notification-prompt" style="display: none;">
+                    <span class="notification-prompt-text">Enable notifications to get alerted when sessions end</span>
+                    <button class="notification-prompt-btn enable" id="enableNotifications">Enable</button>
+                    <button class="notification-prompt-btn deny" id="denyNotifications">Later</button>
+                </div>
+
+                <div id="toast" class="toast"></div>
+
+                <div class="timer-container" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                    <svg class="timer-ring" viewBox="0 0 100 100">
+                        <circle class="timer-ring-bg" cx="50" cy="50" r="45"/>
+                        <circle class="timer-ring-progress" id="timerProgress" cx="50" cy="50" r="45" 
+                                stroke-dasharray="282.7" stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="timer-display">
+                        <div class="timer-time" id="timerTime">25:00</div>
+                        <div class="timer-mode" id="timerMode">Focus</div>
+                        <div class="timer-message" id="timerMessage"></div>
+                        <div class="session-progress" id="sessionProgress"></div>
+                    </div>
+
+                    <div class="timer-duration-shortcuts orbit" id="durationOrbit">
+                        <!-- Main Toggle at 3 o'clock -->
+                        <button class="duration-btn orbiter trigger" id="durationToggle" style="--angle: 90deg" aria-label="Quick timer settings">⏱️</button>
+                        
+                        <!-- Options that fan out from the right side -->
+                        <button class="duration-btn orbiter option" data-mins="10" style="--angle: 5deg">10</button>
+                        <button class="duration-btn orbiter option" data-mins="20" style="--angle: 30deg">20</button>
+                        <button class="duration-btn orbiter option" data-mins="30" style="--angle: 55deg">30</button>
+                        
+                        <button class="duration-btn orbiter option adj-btn" id="decDuration" style="--angle: 80deg">−</button>
+                        <button class="duration-btn orbiter option adj-btn" id="incDuration" style="--angle: 100deg">+</button>
+                        
+                        <button class="duration-btn orbiter option" data-mins="40" style="--angle: 125deg">40</button>
+                        <button class="duration-btn orbiter option" data-mins="50" style="--angle: 150deg">50</button>
+                        <button class="duration-btn orbiter option" data-mins="60" style="--angle: 175deg">60</button>
+                    </div>
+                </div>
+                <div aria-live="polite" id="timerAnnouncer"></div>
+
+                <div class="timer-focus-area-display">
+                    <div class="timer-focus-area-container">
+                        <div class="timer-focus-area-main-row">
+                            <span class="focus-area-question" id="focusAreaQuestion">What are you focusing on?</span>
+                            <button class="timer-focus-area-link" id="focusAreaLink">
+                                <span class="timer-focus-area-prefix" id="focusAreaPrefix" style="display: none;">Focusing on:</span>
+                                <span id="focusAreaText">
+                                    <span class="focus-area-add-icon">
+                                        <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg>
+                                    </span>
+                                </span>
+                                <span class="focus-area-clear-icon" id="clearFocusArea" style="display: none;">
+                                    <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+                                </span>
+                            </button>
+                            </div>
+                        <div id="focusAreaProgressHUD" class="focus-area-progress-hud"></div>
+                    </div>
+                </div>
+
+                <div class="timer-controls">
+                    <button type="button" class="btn btn-primary" id="startPauseBtn">
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" id="playIcon"><path d="M228.44,112.64l-144-88A16,16,0,0,0,60,38.62V217.38a16,16,0,0,0,24.44,13.34l144-88A16,16,0,0,0,228.44,112.64Z"></path></svg>
+                        <span id="startPauseText">Start</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="resetBtn" aria-label="Reset timer">
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M240,128a112.12,112.12,0,0,1-112,112A111.09,111.09,0,0,1,41.48,200H64a12,12,0,0,0,0-24H16a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V216.52A135,135,0,0,0,128,264c75,0,136-61,136-136S203,128-128,128,128A12.06,12.06,0,0,0,240,128ZM128,16a112,112,0,0,1,86.52,40H192a12,12,0,0,0,0,24h48a12,12,0,0,0,12-12V24a12,12,0,0,0-24,0V43.48A135.25,135.25,0,0,0,128,0,136,136,0,0,0,0,136a12,12,0,0,0,24,0A112.12,112.12,0,0,1,128,16Z"></path></svg>
+                        <span>Reset</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="skipBtn" aria-label="Skip session">
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32a12,12,0,0,0-12,12V115L62.44,28.62A16,16,0,0,0,36,42V214a16,16,0,0,0,26.44,13.38L196,141v71a12,12,0,0,0,24,0V44A12,12,0,0,0,208,32Z"></path></svg>
+                        <span>Skip</span>
+                    </button>
+                </div>
+
+                <div class="keyboard-hint">
+                    <kbd>Space</kbd> Start/Pause &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>N</kbd> Skip &nbsp; <kbd>G</kbd> Focus Areas &nbsp; <kbd>P</kbd> Plan &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes
+                </div>
+            </section>
+
+            <section class="panel history-panel">
+                <div class="panel-header">
+                    <span>Activity Dashboard</span>
+                    <div class="panel-header-actions">
+                        <div class="history-filters">
+                            <button class="filter-btn active" data-filter="today">Today</button>
+                            <button class="filter-btn" data-filter="week">Week</button>
+                            <button class="filter-btn" data-filter="all">All</button>
+                        </div>
+                        <button id="clearHistoryBtn" class="clear-all-btn" aria-label="Clear history">
+                            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg>
+                            <span>Clear All</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-bar compact momentum-tier">
+                    <div class="stat-item">
+                        <div class="stat-value" id="todayFocusTime">0:00</div>
+                        <div class="stat-label">Focus Time</div>
+                        <div class="stat-trend" id="focusTimeTrend"></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="todaySessions">0</div>
+                        <div class="stat-label">Sessions</div>
+                        <div class="stat-trend" id="sessionsTrend"></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="currentStreak">--</div>
+                        <div class="stat-label">Day Streak</div>
+                        <div class="stat-trend" id="streakTrend"></div>
+                    </div>
+                    <div class="stats-refresh-container">
+                        <span id="lastUpdatedLabel">Updated just now</span>
+                        <button id="manualRefreshBtn" class="refresh-btn" aria-label="Refresh metrics">
+                            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M240,128a112.12,112.12,0,0,1-112,112A111.09,111.09,0,0,1,41.48,200H64a12,12,0,0,0,0-24H16a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V216.52A135,135,0,0,0,128,264c75,0,136-61,136-136S203,128-128,128,128A12.06,12.06,0,0,0,240,128ZM128,16a112,112,0,0,1,86.52,40H192a12,12,0,0,0,0,24h48a12,12,0,0,0,12-12V24a12,12,0,0,0-24,0V43.48A135.25,135.25,0,0,0,128,0,136,136,0,0,0,0,136a12,12,0,0,0,24,0A112.12,112.12,0,0,1,128,16Z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="history-content-grid">
+                    <div class="history-analytics-col">
+                        <div class="history-list-header">
+                            <div class="history-list-title">Focus Distribution</div>
+                            <div id="heroBadgeContainer"></div>
+                        </div>
+                        <div class="history-chart" id="historyChart"></div>
+                    </div>
+
+                    <div class="history-list-col">
+                        <div class="history-list-header">
+                            <span class="history-list-title">Activity Log</span>
+                            <div class="history-show-all-container">
+                                <button class="filter-btn" data-filter="showAll">Show All</button>
+                            </div>
+                        </div>
+                        <div class="history-list" id="historyList"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div class="plan-overlay" id="planOverlay"></div>
+        <aside class="panel plan-panel" id="planPanel">
+            <div class="panel-header">
+                <div class="panel-header-content">
+                    <div class="panel-title">Focus Plan</div>
+                    <div class="panel-subtitle">Design your concentration milestones</div>
+                </div>
+                <div class="panel-header-actions">
+                    <button class="header-toggle-btn" id="togglePlanCreate" aria-label="Set new focus aim">
+                        <svg width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg>
+                    </button>
+                    <div class="panel-close-container">
+                        <button class="panel-close" id="closePlanPanel" aria-label="Close daily plan">
+                            <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section-list">
+                <div class="panel-section-create-wrapper" id="planCreateWrapper">
+                    <div class="panel-section-create-container">
+                        <div class="panel-section-create">
+                        <div class="aim-input-container">
+                            <div class="aim-input-row">
+                                <div class="custom-select" id="customFocusAreaSelect">
+                                    <button type="button" class="select-trigger" id="selectTrigger">
+                                        <span class="trigger-text">Select Focus Areas...</span>
+                                        <span class="selected-count-badge" id="selectedCountBadge" style="display: none;">0</span>
+                                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                                    </button>
+                                    <div class="select-dropdown" id="selectDropdown">
+                                        <div class="select-search-wrapper">
+                                            <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="20" viewBox="0 0 256 256"><circle cx="116" cy="116" r="84" stroke-linecap="round" stroke-linejoin="round"></circle><line x1="175.4" y1="175.4" x2="224" y2="224" stroke-linecap="round" stroke-linejoin="round"></line></svg>
+                                            <input type="text" id="focusAreaSearchInput" class="select-search-input" placeholder="Search focus areas...">
+                                        </div>
+                                        <div class="select-options" id="selectOptions">
+                                            <!-- Options will be populated by JS -->
+                                        </div>
+                                        <div class="select-no-results" id="selectNoResults" style="display: none;">No results found</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="aim-options-row">
+                                <div class="aim-option-group">
+                                    <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="min or h:mm" maxlength="8">
+                                    <span class="aim-divider"></span>
+                                    <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" style="opacity: 0.6;"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z"></path></svg>
+                                    <select id="aimDeadlineSelect" class="aim-deadline-select">
+                                        <option value="infinite">Until Done</option>
+                                        <option value="today">Today</option>
+                                        <option value="tomorrow">Tomorrow</option>
+                                        <option value="week">End of Week</option>
+                                        <option value="custom">Pick Date...</option>
+                                    </select>
+                                    <input type="date" id="aimCustomDate" class="aim-custom-date" style="display: none;">
+                                </div>
+                            </div>
+                            <button type="button" class="btn-add" id="addAimBtn" aria-label="Save focus aim">
+                                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208,24H72A32,32,0,0,0,40,56V224a8,8,0,0,0,8,8H192a8,8,0,0,0,8-8V192h8a32,32,0,0,0,32-32V56A32,32,0,0,0,208,24Zm-24,184H56V56a16,16,0,0,1,16-16H184V208Zm40-48a16,16,0,0,1-16,16h-8V40h8a16,16,0,0,1,16,16Z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <div class="plan-sections">
+                    <div class="plan-section">
+                        <!-- Today list -->
+                        <div id="todayPlanList" class="plan-list"></div>
+                    </div>
+
+                    <div class="plan-section">
+                        <div class="focus-area-section-header">Reached Targets</div>
+                        <div id="pastPlanList" class="plan-list past"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <footer class="app-footer">
+            <div class="datetime" id="datetime"></div>
+            <div class="footer-links">
+                <a href="about.html" class="footer-link">About PomoFlow</a>
+                <span class="footer-separator">&bull;</span>
+                <span class="footer-copy">&copy; 2026 PomoFlow</span>
+            </div>
+        </footer>
+    </div>
+
+    <aside class="panel profile-panel" id="profilePanel">
+        <div class="panel-header">
+            <span>Your Profile</span>
+            <button class="panel-close" id="closeProfile" aria-label="Close profile">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+            </button>
+        </div>
+
+        <div class="profile-content">
+            <div class="identity-section">
+                <div class="identity-slider" id="identitySlider">
+                    <!-- Current View -->
+                    <div class="identity-view active" id="currentIdentityView">
+                        <div class="persona-circle-wrapper">
+                            <div class="persona-circle" id="personaCircle">🦉</div>
+                            <button class="persona-edit-badge" id="editPersonaBtn" title="Change persona">
+                                <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg>
+                            </button>
+                        </div>
+                        <div class="persona-info">
+                            <div class="persona-name-row">
+                                <span class="persona-mood-label" id="currentMoodLabel">Sage</span>
+                                <button class="share-btn" id="shareMoodBtn" title="Share your current mood">
+                                    <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8H120a8,8,0,0,1,0-16h8V124h-8a8,8,0,0,1,0-16h16a8,8,0,0,1,8,8v48A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"></path></svg>
+                                    <span>Share</span>
+                                </button>
+                            </div>
+                            <div class="persona-tagline">Your focus companion</div>
+                        </div>
+                    </div>
+
+                    <!-- Selection Grid View -->
+                    <div class="identity-selection" id="personaSelectionView">
+                        <div class="selection-header">
+                            <button class="back-btn" id="cancelPersonaEdit">
+                                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path></svg>
+                                <span>Back</span>
+                            </button>
+                            <span>Choose a Persona</span>
+                        </div>
+                        <div class="avatar-grid" id="avatarGrid">
+                            <!-- Animals -->
+                            <button class="avatar-option" data-avatar="🦉" title="Sage">
+                                <span class="avatar-emoji">🦉</span>
+                                <span class="avatar-mood">Sage</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🦊" title="Agile">
+                                <span class="avatar-emoji">🦊</span>
+                                <span class="avatar-mood">Agile</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🐼" title="Zen">
+                                <span class="avatar-emoji">🐼</span>
+                                <span class="avatar-mood">Zen</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🦁" title="Persistent">
+                                <span class="avatar-emoji">🦁</span>
+                                <span class="avatar-mood">Persistent</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🐯" title="Focused">
+                                <span class="avatar-emoji">🐯</span>
+                                <span class="avatar-mood">Focused</span>
+                            </button>
+                            <!-- Tech/Space -->
+                            <button class="avatar-option" data-avatar="🤖" title="Productive">
+                                <span class="avatar-emoji">🤖</span>
+                                <span class="avatar-mood">Productive</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🚀" title="Ambitious">
+                                <span class="avatar-emoji">🚀</span>
+                                <span class="avatar-mood">Ambitious</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="👾" title="Creative">
+                                <span class="avatar-emoji">👾</span>
+                                <span class="avatar-mood">Creative</span>
+                            </button>
+                            <!-- Zen/Focus -->
+                            <button class="avatar-option" data-avatar="🧘" title="Mindful">
+                                <span class="avatar-emoji">🧘</span>
+                                <span class="avatar-mood">Mindful</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🎯" title="Precise">
+                                <span class="avatar-emoji">🎯</span>
+                                <span class="avatar-mood">Precise</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="💎" title="Resilient">
+                                <span class="avatar-emoji">💎</span>
+                                <span class="avatar-mood">Resilient</span>
+                            </button>
+                            <button class="avatar-option" data-avatar="🔥" title="Energy">
+                                <span class="avatar-emoji">🔥</span>
+                                <span class="avatar-mood">Energy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Achievements</div>
+                <div class="achievements-grid" id="achievementsGrid">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="modal-overlay" id="settingsOverlay"></div>
+    <aside class="panel settings-panel" id="settingsPanel">
+        <div class="panel-header">
+            <span>Settings</span>
+            <button class="panel-close" id="closeSettings" aria-label="Close settings">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+            </button>
+        </div>
+
+        <div class="settings-tabs" id="settingsTabs">
+            <button class="settings-tab active" data-tab="general" title="General Settings">
+                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M233,111.41l-22.1-4.42a100,100,0,0,0-4.66-11.24l13.6-18.13a8,8,0,0,0-1.1-10.45l-19.8-19.8a8,8,0,0,0-10.45-1.1l-18.13,13.6a100,100,0,0,0-11.24-4.66l-4.42-22.1A8,8,0,0,0,136.79,16H119.21a8,8,0,0,0-7.92,6.41l-4.42,22.1a100,100,0,0,0-11.24,4.66L77.5,35.57a8,8,0,0,0-10.45,1.1L47.25,56.47a8,8,0,0,0-1.1,10.45l13.6,18.13a100,100,0,0,0-4.66,11.24l-22.1,4.42A8,8,0,0,0,26.58,119.21v17.58a8,8,0,0,0,6.41,7.92l22.1,4.42a100,100,0,0,0,4.66,11.24l-13.6,18.13a8,8,0,0,0,1.1,10.45l19.8,19.8a8,8,0,0,0,10.45,1.1l18.13-13.6a100,100,0,0,0,11.24,4.66l4.42,22.1A8,8,0,0,0,119.21,240h17.58a8,8,0,0,0,7.92-6.41l4.42-22.1a100,100,0,0,0,11.24-4.66l18.13,13.6a8,8,0,0,0,10.45-1.1l19.8-19.8a8,8,0,0,0,1.1-10.45l-13.6-18.13a100,100,0,0,0,4.66-11.24l22.1-4.42a8,8,0,0,0,6.41-7.92V119.21A8,8,0,0,0,233,111.41ZM128,160a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+                <span>General</span>
+            </button>
+            <button class="settings-tab" data-tab="sharing" title="Sharing Templates">
+                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8H120a8,8,0,0,1,0-16h8V124h-8a8,8,0,0,1,0-16h16a8,8,0,0,1,8,8v48A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"></path></svg>
+                <span>Sharing</span>
+            </button>
+            <button class="settings-tab" data-tab="data" title="Data Management">
+                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg>
+                <span>Data</span>
+            </button>
+        </div>
+
+        <div class="settings-content">
+            <div class="settings-section active" id="tab-general">
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Work Duration</span>
+                            <span class="setting-value" id="workDurationValue">25 min</span>
+                        </div>
+                    </div>
+                    <input type="range" class="setting-slider" id="workDuration" min="1" max="60" value="25">
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Short Break</span>
+                            <span class="setting-value" id="shortBreakDurationValue">5 min</span>
+                        </div>
+                    </div>
+                    <input type="range" class="setting-slider" id="shortBreakDuration" min="1" max="30" value="5">
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Long Break</span>
+                            <span class="setting-value" id="longBreakDurationValue">15 min</span>
+                        </div>
+                    </div>
+                    <input type="range" class="setting-slider" id="longBreakDuration" min="1" max="60" value="15">
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">
+                        <span>Sessions Before Long Break</span>
+                        <input type="number" class="setting-input" id="sessionsBeforeLongBreak" min="1" max="10" value="4">
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <label class="setting-label">Auto-start Breaks</label>
+                        <div class="setting-toggle" id="autoStartBreaks" role="switch" aria-checked="false"></div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <label class="setting-label">Auto-start Work Sessions</label>
+                        <div class="setting-toggle" id="autoStartWork" role="switch" aria-checked="false"></div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <label class="setting-label">12h Time Format</label>
+                        <div class="setting-toggle" id="timeFormat" role="switch" aria-checked="false"></div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Notifications</label>
+                    <div class="setting-row" style="gap: 12px; margin-top: 8px;">
+                        <button class="filter-btn" id="requestNotifyManual" style="flex: 1; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,1,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path></svg>
+                            Enable Push
+                        </button>
+                        <button class="filter-btn" id="testNotify" style="flex: 1; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,1,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path></svg>
+                            Test
+                        </button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Card Style</label>
+                    <div class="filter-group" id="cardVariantSelect" style="margin-top: 8px;">
+                        <button class="filter-btn active" data-variant="glass">Glass</button>
+                        <button class="filter-btn" data-variant="bento">Bento</button>
+                        <button class="filter-btn" data-variant="skeuo">Skeuo</button>
+                        <button class="filter-btn" data-variant="flat">Flat</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <div class="setting-label-row">
+                            <span>Sound Volume</span>
+                            <span class="setting-value" id="soundVolumeValue">70%</span>
+                        </div>
+                    </div>
+                    <input type="range" class="setting-slider" id="soundVolume" min="0" max="100" value="70">
+                </div>
+            </div>
+
+            <div class="settings-section" id="tab-sharing">
+                <div class="setting-group">
+                    <div class="setting-label">Sharing Templates</div>
+                    <div class="template-help">Placeholders: {focusArea}, {duration}, {time}, {xp}</div>
+                    
+                    <div class="template-field">
+                        <label>Setting Intent</label>
+                        <textarea id="templateIntent" class="setting-textarea" rows="2" placeholder="Focusing on: {focusArea}..."></textarea>
+                    </div>
+                    
+                    <div class="template-field">
+                        <label>Session Complete</label>
+                        <textarea id="templateSession" class="setting-textarea" rows="2" placeholder="Session complete: {focusArea}..."></textarea>
+                    </div>
+                    
+                    <div class="template-field">
+                        <label>Focus Area Reached</label>
+                        <textarea id="templateMilestone" class="setting-textarea" rows="2" placeholder="Focus area target reached: {focusArea}..."></textarea>
+                    </div>
+
+                    <div class="template-field">
+                        <label>Current Mood</label>
+                        <textarea id="templateMood" class="setting-textarea" rows="4" placeholder="Current Mood: {avatar} {mood}..."></textarea>
+                    </div>
+                    </div>
+
+            </div>
+
+            <div class="settings-section" id="tab-data">
+                <div class="setting-group">
+                    <label class="setting-label">Data Management</label>
+                    <div class="data-buttons">
+                        <button class="btn btn-secondary" id="exportData">Export Data</button>
+                        <div class="import-wrapper">
+                            <input type="file" id="importFile" accept=".json" style="display: none;">
+                            <button class="btn btn-secondary" id="importData">Import Data</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" id="restoreDefaults" style="width: 100%; margin-top: 12px; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" style="margin-right: 8px;"><path d="M240,128a112.12,112.12,0,0,1-112,112A111.09,111.09,0,0,1,41.48,200H64a12,12,0,0,0,0-24H16a12,12,0,0,0-12,12v48a12,12,0,0,0,24,0V216.52A135,135,0,0,0,128,264c75,0,136-61,136-136S203,128-128,128,128A12.06,12.06,0,0,0,240,128ZM128,16a112,112,0,0,1,86.52,40H192a12,12,0,0,0,0,24h48a12,12,0,0,0,12-12V24a12,12,0,0,0-24,0V43.48A135.25,135.25,0,0,0,128,0,136,136,0,0,0,0,136a12,12,0,0,0,24,0A112.12,112.12,0,0,1,128,16Z"></path></svg>
+                        Restore Default Areas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <button class="btn-save" id="saveSettings" style="width: 100%;">Save & Close</button>
+        </div>
+    </aside>
+
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal confirm-modal">
+            <div class="confirm-icon">
+                <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M236.8,188.09,149.35,36.22a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.34,24.34,0,0,0,40.55,224h174.9a24.34,24.34,0,0,0,21.35-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"></path></svg>
+            </div>
+            <div class="confirm-message" id="confirmMessage"></div>
+            <div class="confirm-buttons">
+                <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+                <button class="btn btn-danger" id="confirmOk">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Import Data</h2>
+                <button class="modal-close" id="closeImport">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+                </button>
+            </div>
+            <div class="import-info" id="importInfo"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="importReplace">Replace All</button>
+                <button class="btn btn-primary" id="importMerge">Merge</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="sessionEditModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Session</h2>
+                <button class="modal-close" id="closeSessionEdit">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+                </button>
+            </div>
+            <div class="session-edit-content">
+                <div class="session-edit-field">
+                    <label>Focus Area Name</label>
+                    <div id="sessionEditFocusAreaName" class="session-edit-focus-area-name"></div>
+                </div>
+                <div class="session-edit-field">
+                    <label>Duration (minutes)</label>
+                    <input type="number" id="sessionEditDuration" class="session-edit-input" min="1" max="480">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSessionEdit">Cancel</button>
+                <button class="btn btn-primary" id="saveSessionEdit">Save</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="categoryEditModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Category</h2>
+                <button class="modal-close" id="closeCategoryEdit">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path></svg>
+                </button>
+            </div>
+            <div class="session-edit-content">
+                <div class="focus-area-input-container" style="margin-bottom: 0;">
+                    <div class="focus-area-input-wrapper">
+                        <input type="text" id="categoryEditName" class="focus-area-input" placeholder="Category Name...">
+                        <div class="category-icon-divider"></div>
+                        <div class="inline-icon-wrapper">
+                            <button type="button" class="selected-icon-btn" id="categoryEditIconBtn" aria-label="Choose icon">
+                                <span id="categoryEditIconDisplay">📁</span>
+                                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                            </button>
+                            <div class="icon-dropdown" id="categoryEditIconDropdown">
+                                <!-- Populated via script -->
+                            </div>
+                            <input type="hidden" id="categoryEditIconInput" value="📁">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelCategoryEdit">Cancel</button>
+                <button class="btn btn-primary" id="saveCategoryEdit">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/components/progress-pill.js"></script>
+    <script type="module" src="js/components/progress-compact.js"></script>
+    <script type="module" src="js/components/sliding-card.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

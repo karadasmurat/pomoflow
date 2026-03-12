@@ -245,7 +245,7 @@ class SlidingCard extends HTMLElement {
                     <slot name="indicator"></slot>
                     <div class="main-content"><slot></slot></div>
                     <button class="more-btn" id="moreBtn" aria-label="Toggle actions" aria-haspopup="true" aria-expanded="false">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM1.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm13 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"></path></svg>
                     </button>
                 </div>
             </div>
