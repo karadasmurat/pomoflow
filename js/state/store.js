@@ -1,14 +1,3 @@
-export const STORAGE_KEYS = {
-    TASKS: 'flowtracker_tasks',
-    SESSIONS: 'flowtracker_sessions',
-    AIMS: 'flowtracker_aims',
-    SETTINGS: 'flowtracker_settings',
-    STATE: 'flowtracker_state',
-    VERSION: 'flowtracker_version',
-    NOTIFICATION_PROMPT: 'flowtracker_notification_prompt',
-    PROFILE: 'flowtracker_profile'
-};
-
 export const CURRENT_VERSION = 1;
 
 export const DEFAULT_FOCUS_AREAS = [

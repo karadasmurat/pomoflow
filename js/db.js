@@ -236,46 +236,6 @@ class DatabaseManager {
             selectedFocusAreaIds: state.selectedFocusAreaIds
         });
     }
-
-    async migrateFromLocalStorage(state) {
-        console.log('Starting FINAL migration to SQLite...');
-        
-        // Migrate Tasks
-        for (const task of state.tasks) { await this.insertFocusArea(task); }
-        // Migrate Sessions
-        for (const session of state.sessions) { await this.insertSession(session); }
-        // Migrate Aims
-        for (const aim of state.aims) { await this.insertAim(aim); }
-        // Migrate Settings
-        for (const [key, value] of Object.entries(state.settings)) { await this.setSetting(key, value); }
-        
-        // Migrate Profile & Meta
-        await this.setUserProfile('full_profile', {
-            xp: state.xp,
-            totalXp: state.totalXp,
-            level: state.level,
-            avatar: state.avatar,
-            unlockedAchievements: state.unlockedAchievements,
-            collapsedCategories: state.collapsedCategories,
-            activeCategoryIndex: state.activeCategoryIndex
-        });
-
-        await this.setAppState('theme', localStorage.getItem('flowtracker_theme') || 'dark');
-        await this.setAppState('notification_prompt', localStorage.getItem('flowtracker_notification_prompt') || 'default');
-        await this.setAppState('categories', state.categories);
-        
-        await this.setAppState('ui_state', {
-            lastSessionId: state.lastSessionId,
-            lastTaskId: state.lastTaskId,
-            selectedTaskColor: state.selectedTaskColor,
-            editTaskColor: state.editTaskColor,
-            selectedFocusAreaIds: state.selectedFocusAreaIds
-        });
-
-        await this.setAppState('migrated', true);
-
-        console.log('Migration to SQLite complete!');
-    }
 }
 
 export const dbManager = new DatabaseManager();

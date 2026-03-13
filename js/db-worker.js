@@ -9,7 +9,7 @@ const SQLITE_WASM_URL = 'sqlite3.js';
 let db = null;
 let sqlite3 = null;
 
-async function init(purge = false) {
+async function init() {
     try {
         // Load the SQLite3 loader script
         importScripts(SQLITE_WASM_URL);
@@ -29,7 +29,7 @@ async function init(purge = false) {
             console.warn('OPFS support not found in sqlite3 object, falling back to transient/memory storage');
         }
 
-        // Create Tables with enhanced schema
+        // Create Tables with definitive schema
         db.exec(`
             CREATE TABLE IF NOT EXISTS focus_areas (
                 id TEXT PRIMARY KEY,
@@ -119,19 +119,7 @@ async function init(purge = false) {
                 END;
             `);
         }
-
-        // Migration: Add new columns if they don't exist
-        for (const table of tables) {
-            try { db.exec(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); } catch(e) {}
-            try { db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at DATETIME`); } catch(e) {}
-            try { db.exec(`ALTER TABLE ${table} ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`); } catch(e) {}
-            try { db.exec(`ALTER TABLE ${table} ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`); } catch(e) {}
-        }
         
-        // Special migration for sessions
-        try { db.exec("ALTER TABLE sessions ADD COLUMN task_name TEXT"); } catch(e) {}
-        try { db.exec("ALTER TABLE sessions ADD COLUMN task_color TEXT"); } catch(e) {}
-
         return true;
     } catch (err) {
         console.error('Failed to initialize SQLite:', err);
@@ -143,7 +131,7 @@ self.onmessage = async (e) => {
     const { action, payload, requestId } = e.data;
 
     if (action === 'init') {
-        const success = await init(payload ? payload.purge : false);
+        const success = await init();
         self.postMessage({ action: 'init_result', success, requestId });
         return;
     }

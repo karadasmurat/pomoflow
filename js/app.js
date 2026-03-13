@@ -3,7 +3,7 @@
  * This file coordinates Domain Services and UI Views.
  */
 
-import { state, mutations, STORAGE_KEYS, CURRENT_VERSION, DEFAULT_FOCUS_AREAS, ACHIEVEMENTS } from './state/store.js';
+import { state, mutations, CURRENT_VERSION, DEFAULT_FOCUS_AREAS, ACHIEVEMENTS } from './state/store.js';
 import { timer } from './engine/timer.js';
 import { dbManager } from './db.js';
 import { HistoryService } from './services/history.service.js';
@@ -27,14 +27,10 @@ async function init() {
 
     if (dbManager.initialized) {
         const fullState = await dbManager.getFullState();
-        if (!fullState.appState?.migrated) {
-            loadLegacyData();
-            await dbManager.migrateFromLocalStorage(state);
-            purgeLocalStorage();
-        } else {
-            if (fullState.tasks.length > 0) state.tasks = fullState.tasks;
-            if (fullState.sessions.length > 0) state.sessions = fullState.sessions;
-            if (fullState.aims.length > 0) state.aims = fullState.aims;
+        if (fullState) {
+            if (fullState.tasks?.length > 0) state.tasks = fullState.tasks;
+            if (fullState.sessions?.length > 0) state.sessions = fullState.sessions;
+            if (fullState.aims?.length > 0) state.aims = fullState.aims;
             if (fullState.settings) state.settings = { ...state.settings, ...fullState.settings };
 
             if (fullState.profile?.full_profile) {
@@ -58,8 +54,6 @@ async function init() {
                 }
             }
         }
-    } else {
-        loadLegacyData();
     }
 
     if (state.tasks.length === 0) {
@@ -809,12 +803,8 @@ function moveTaskToCategory(taskId, newCat) {
 function saveData() { 
     if (dbManager.initialized) {
         dbManager.saveFullState(state).catch(e => console.error('Failed to save to DB:', e));
-    } else {
-        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
     }
 }
-function loadLegacyData() { try { const t = localStorage.getItem(STORAGE_KEYS.TASKS); if (t) state.tasks = JSON.parse(t); } catch(e) {} }
-function purgeLocalStorage() { Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k)); }
 
 function updateDateTime() {
     const el = document.getElementById('datetime'); if (!el) return;
