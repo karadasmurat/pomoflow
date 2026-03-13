@@ -25,6 +25,44 @@ export class TimerView {
         this._updateOrbiters();
         this._updateActiveTask(textEl, prefixEl);
         this._updateProgress(timerProgress);
+        this._updateMessage();
+    }
+
+    static _updateMessage() {
+        const messageEl = document.getElementById('timerMessage');
+        const container = document.querySelector('.timer-display');
+        
+        if (!messageEl || !container) return;
+
+        // Show post-session message if timer is not running and we just finished (at 0:00)
+        const isFinishedState = !state.timerState.isRunning && (state.timerState.remainingTime <= 0);
+        const hasFinishedData = state.timerState.lastSessionFinishedAt;
+        
+        if (isFinishedState && hasFinishedData) {
+            const mode = state.timerState.mode;
+            let status = '';
+            let action = '';
+
+            if (mode === 'shortBreak' || mode === 'longBreak') {
+                status = `Finished ${state.timerState.lastSessionTaskName || 'Focus'} at ${state.timerState.lastSessionFinishedAt}`;
+                action = 'Ready for a break?';
+            } else if (mode === 'work' && state.timerState.sessionCount > 0) {
+                status = `Break Finished at ${state.timerState.lastSessionFinishedAt}`;
+                action = 'Ready for a focus session?';
+            }
+
+            if (status && action) {
+                messageEl.innerHTML = `
+                    <div class="msg-status">${status}</div>
+                    <div class="msg-action">${action}</div>
+                `;
+                container.classList.add('has-message');
+            } else {
+                container.classList.remove('has-message');
+            }
+        } else {
+            container.classList.remove('has-message');
+        }
     }
 
     static _updateSessionDots() {
@@ -52,7 +90,7 @@ export class TimerView {
     static _updateControls(startPauseText, playIcon) {
         if (state.timerState.isRunning) {
             if (startPauseText) startPauseText.textContent = 'Pause';
-            if (playIcon) playIcon.innerHTML = '<path d="M80,48h48V208H80Zm48,0V208h48V48Z"></path>';
+            if (playIcon) playIcon.innerHTML = '<path d="M200,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h24A16,16,0,0,1,200,48ZM96,32H72A16,16,0,0,0,56,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"></path>';
             document.body.classList.add('timer-running');
         } else {
             if (startPauseText) startPauseText.textContent = 'Start';
@@ -113,6 +151,17 @@ export class TimerView {
 
     static _updateProgress(timerProgress) {
         if (!timerProgress) return;
+        
+        // Update accent color variables based on mode
+        const container = timerProgress.closest('.timer-container');
+        if (container) {
+            const mode = state.timerState.mode;
+            const accent = mode === 'work' ? 'var(--danger)' : 'var(--success)';
+            const glow = mode === 'work' ? 'var(--danger-glow)' : 'var(--success-glow)';
+            container.style.setProperty('--timer-accent', accent);
+            container.style.setProperty('--timer-accent-glow', glow);
+        }
+
         const total = state.timerState.totalTime;
         const remaining = state.timerState.remainingTime;
         const progress = total > 0 ? (1 - (remaining / total)) * 282.7 : 0;

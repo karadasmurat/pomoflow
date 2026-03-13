@@ -24,6 +24,12 @@ export class TimerService {
         }
     }
 
+    static getModeDuration(mode) {
+        if (mode === 'shortBreak') return state.settings.shortBreakDuration;
+        if (mode === 'longBreak') return state.settings.longBreakDuration;
+        return state.settings.workDuration;
+    }
+
     static handleSessionEnd(skipped = false) {
         const currentMode = state.timerState.mode;
         const wasWork = currentMode === 'work';

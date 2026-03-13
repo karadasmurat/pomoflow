@@ -10,8 +10,9 @@ import { HistoryService } from './services/history.service.js';
 import { FocusService } from './services/focus.service.js';
 import { TimerService } from './services/timer.service.js';
 import { SettingsService } from './services/settings.service.js';
-import { TimerView } from './ui/timer.view.js';
+import { uuidv7 } from './utils/uuid.js';
 import { FocusView } from './ui/focus.view.js';
+import { TimerView } from './ui/timer.view.js';
 import { DashboardView } from './ui/dashboard.view.js';
 
 let currentFilter = 'today';
@@ -62,10 +63,12 @@ async function init() {
     }
 
     if (state.tasks.length === 0) {
+        const now = new Date().toISOString();
         state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
-            id: (Date.now() + index).toString(),
+            id: uuidv7(),
             name: t.name, category: t.category, color: t.color,
-            completed: false, createdAt: new Date().toISOString(),
+            completed: false, 
+            createdAt: now, created_at: now, updated_at: now,
             totalTime: 0
         }));
         saveData();
@@ -116,8 +119,10 @@ function toggleTimer() {
     if (state.timerState.isRunning) {
         timer.stop();
     } else {
-        if (!state.timerState.activeTaskId && state.timerState.mode === 'work') {
-            return notify('Select focus area first 🎯');
+        // If timer is at 0:00, it means a session just finished. 
+        // Reset to the current mode's duration before starting.
+        if (state.timerState.remainingTime <= 0) {
+            timer.applyMode(state.timerState.mode);
         }
         timer.start();
     }
@@ -132,6 +137,13 @@ function resetTimer() {
 }
 
 function handleSessionComplete(isSkip = false) {
+    // Stop any active timer worker first to prevent race conditions or overwriting state
+    timer.stop();
+
+    const activeTask = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+    const finishTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: state.settings.use12Hour });
+    
+    // Save session BEFORE updating timer state to 0:00 to ensure we catch the actual time spent
     if (state.timerState.mode === 'work' && !isSkip) {
         saveSession();
         checkAchievements();
@@ -143,19 +155,16 @@ function handleSessionComplete(isSkip = false) {
         mode: nextMode,
         sessionCount,
         cycleStation,
-        isRunning: false
+        isRunning: false,
+        remainingTime: isSkip ? TimerService.getModeDuration(nextMode) * 60 : 0, 
+        lastSessionFinishedAt: !isSkip ? finishTime : null,
+        lastSessionTaskName: !isSkip && wasWork ? (activeTask ? activeTask.name : 'Focus Area') : null
     });
 
-    timer.applyMode(nextMode);
-    
     if (!isSkip) {
         const title = wasWork ? 'Focus Session Finished!' : 'Break Finished!';
         const body = wasWork ? 'Time for a break!' : 'Ready to focus?';
         SettingsService.sendNotification(title, body);
-        
-        if (nextMode === 'work' ? state.settings.autoStartWork : state.settings.autoStartBreaks) {
-            setTimeout(() => { if (state.timerState.remainingTime <= 0) timer.applyMode(state.timerState.mode); timer.start(); }, 1500);
-        }
     }
     
     refreshUI();
@@ -164,21 +173,32 @@ function handleSessionComplete(isSkip = false) {
 
 function saveSession() {
     const activeTask = state.tasks.find(t => t.id === state.timerState.activeTaskId);
-    if (!activeTask) return;
+    
+    // Use actual time elapsed
+    const duration = state.timerState.totalTime - Math.max(0, state.timerState.remainingTime);
+    if (duration <= 0) return; // Don't save empty sessions
 
-    const duration = state.timerState.totalTime;
+    const now = new Date().toISOString();
     const session = {
-        id: Date.now().toString(),
-        taskId: activeTask.id,
-        taskName: activeTask.name,
-        taskColor: activeTask.color,
+        id: uuidv7(),
+        taskId: activeTask ? activeTask.id : null,
+        taskName: activeTask ? activeTask.name : 'Uncategorized Session',
+        taskCategory: activeTask ? activeTask.category : 'Uncategorized',
+        taskColor: activeTask ? activeTask.color : '#94a3b8', // Slate-400 for uncategorized
         duration: duration,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
+        created_at: now,
+        updated_at: now,
         xp: Math.floor(duration / 60)
     };
 
     state.sessions.unshift(session);
-    addXP(session.xp);
+    FocusService.addXP(session.xp);
+    
+    if (dbManager.initialized) {
+        dbManager.insertSession(session).catch(e => console.error('Failed to save session:', e));
+    }
+    
     saveData();
 }
 
@@ -231,7 +251,7 @@ async function addFocusArea() {
             }
             
             if (!state.categories.find(c => c.name.toLowerCase() === newName.toLowerCase())) {
-                state.categories.push({ id: Date.now().toString(), name: newName, icon: newIcon });
+                state.categories.push({ id: uuidv7(), name: newName, icon: newIcon });
                 FocusView.populateCategorySelects();
             }
             cat = newName;
@@ -250,6 +270,7 @@ async function addFocusArea() {
                 task.name = name;
                 task.category = cat;
                 task.color = state.selectedTaskColor;
+                task.updated_at = new Date().toISOString();
             }
         } else {
             task = FocusService.addFocusArea(name, cat, state.selectedTaskColor);
@@ -300,7 +321,9 @@ function toggleFocusAreaComplete(id) {
     const t = state.tasks.find(x => x.id === id);
     if (t) {
         const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
+        const now = new Date().toISOString();
         t.completed = !isComp;
+        t.updated_at = now;
         if (t.completed && state.timerState.activeTaskId === id) state.timerState.activeTaskId = null;
         saveData(); renderFocusAreas();
         notify(t.completed ? 'Focus area completed! ✅' : 'Focus area reactivated 🔄');
@@ -324,6 +347,7 @@ function deleteSession(id) {
     confirmAction('Delete session record?').then(conf => {
         if (conf) {
             state.sessions = state.sessions.filter(s => s.id !== id);
+            if (dbManager.initialized) dbManager.deleteSession(id);
             saveData(); refreshUI();
             notify('Session deleted 🗑️');
         }
@@ -334,7 +358,11 @@ function renderPlan() {
     FocusView.renderPlan({
         onEditAim: (id) => editAim(id),
         onGoAgain: (a) => goAgain(a),
-        onDeleteAim: (id) => { state.aims = state.aims.filter(x => x.id !== id); saveData(); renderPlan(); notify('Aim removed 🗑️'); },
+        onDeleteAim: (id) => { 
+            state.aims = state.aims.filter(x => x.id !== id); 
+            if (dbManager.initialized) dbManager.deleteAim(id);
+            saveData(); renderPlan(); notify('Aim removed 🗑️'); 
+        },
         onShare: (name, mins) => SettingsService.handleShare('x', 'milestone', { focusArea: name, duration: mins }, notify)
     });
 }
@@ -354,21 +382,146 @@ function addAim() {
         else if (type === 'custom') date = document.getElementById('aimCustomDate').value;
     }
 
+    const now = new Date().toISOString();
     state.selectedFocusAreaIds.forEach(id => {
         const ex = FocusView.getActiveAimForFocusArea(id);
-        if (ex) { ex.targetMinutes = mins; ex.deadline = date; }
-        else state.aims.push({ id: Date.now() + '-' + id, focusAreaId: id, targetMinutes: mins, createdAt: new Date().toISOString(), deadline: date });
+        if (ex) { 
+            ex.targetMinutes = mins; 
+            ex.deadline = date; 
+            ex.updated_at = now;
+            if (dbManager.initialized) dbManager.insertAim(ex).catch(e => console.error('Failed to save aim:', e));
+        } else {
+            const newAim = { 
+                id: uuidv7(), 
+                focusAreaId: id, 
+                targetMinutes: mins, 
+                createdAt: now, 
+                created_at: now,
+                updated_at: now,
+                deadline: date 
+            };
+            state.aims.push(newAim);
+            if (dbManager.initialized) dbManager.insertAim(newAim).catch(e => console.error('Failed to save aim:', e));
+        }
     });
 
-    state.selectedFocusAreaIds = []; updateCustomSelectUI();
-    document.getElementById('planCreateWrapper')?.classList.remove('open');
+    state.selectedFocusAreaIds = []; 
+    updateCustomSelectUI();
+    const wrapper = document.getElementById('planCreateWrapper');
+    if (wrapper) {
+        wrapper.classList.remove('open');
+        const btn = document.getElementById('togglePlanCreate');
+        if (btn) btn.classList.remove('active');
+    }
     renderPlan(); renderFocusAreas(); notify('Aim added 🎯'); saveData();
 }
 
-function addXP(amt, bonus = false) {
-    const { leveledUp, level, oldTotalXp } = FocusService.addXP(amt);
-    if (leveledUp) notify(`LEVEL UP! Level ${level} 🎉`);
-    FocusView.updateLevelUI(oldTotalXp);
+function editAim(id) {
+    const aim = state.aims.find(a => a.id === id);
+    if (!aim) return;
+    
+    state.selectedFocusAreaIds = [aim.focusAreaId];
+    updateCustomSelectUI();
+    
+    document.getElementById('aimDurationInput').value = aim.targetMinutes;
+    if (aim.deadline) {
+        document.getElementById('aimDeadlineSelect').value = 'custom';
+        const customDateInput = document.getElementById('aimCustomDate');
+        if (customDateInput) {
+            customDateInput.value = aim.deadline;
+            customDateInput.style.display = 'block';
+        }
+    } else {
+        document.getElementById('aimDeadlineSelect').value = 'infinite';
+    }
+    
+    const wrapper = document.getElementById('planCreateWrapper');
+    if (wrapper) {
+        wrapper.classList.add('open');
+        document.getElementById('togglePlanCreate')?.classList.add('active');
+    }
+}
+
+function goAgain(aim) {
+    const now = new Date().toISOString();
+    const newAim = {
+        ...aim,
+        id: uuidv7(),
+        createdAt: now,
+        created_at: now,
+        updated_at: now
+    };
+    state.aims.push(newAim);
+    saveData();
+    renderPlan();
+    notify('Aim renewed! 🎯');
+}
+
+function populateCustomFocusAreaSelect() {
+    const container = document.getElementById('selectOptions');
+    const noResults = document.getElementById('selectNoResults');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    const activeTasks = state.tasks.filter(t => !t.completed);
+    
+    if (activeTasks.length === 0) {
+        noResults.style.display = 'block';
+        return;
+    }
+    
+    noResults.style.display = 'none';
+    activeTasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = 'select-option';
+        if (state.selectedFocusAreaIds.includes(task.id)) item.classList.add('selected');
+        
+        item.innerHTML = `
+            <div class="option-color" style="background: ${task.color}"></div>
+            <div class="option-info">
+                <div class="option-name">${task.name}</div>
+                <div class="option-meta">${task.category || 'Uncategorized'}</div>
+            </div>
+            <div class="option-check">
+                <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L104,194.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>
+            </div>
+        `;
+        
+        item.onclick = () => {
+            const idx = state.selectedFocusAreaIds.indexOf(task.id);
+            if (idx === -1) state.selectedFocusAreaIds.push(task.id);
+            else state.selectedFocusAreaIds.splice(idx, 1);
+            
+            item.classList.toggle('selected');
+            updateCustomSelectUI();
+            
+            // Auto-close on selection to avoid covering the form
+            document.getElementById('selectDropdown')?.classList.remove('open');
+        };
+        
+        container.appendChild(item);
+    });
+}
+
+function updateCustomSelectUI() {
+    const badge = document.getElementById('selectedCountBadge');
+    const count = state.selectedFocusAreaIds.length;
+    
+    if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+    
+    const triggerText = document.querySelector('#selectTrigger span:not(.selected-count-badge)');
+    if (triggerText) {
+        if (count === 0) triggerText.textContent = 'Select Focus Areas...';
+        else if (count === 1) {
+            const task = state.tasks.find(t => t.id === state.selectedFocusAreaIds[0]);
+            triggerText.textContent = task ? task.name : '1 Area Selected';
+        } else {
+            triggerText.textContent = `${count} Areas Selected`;
+        }
+    }
 }
 
 // --- 4. NAVIGATION & MODALS ---
@@ -378,16 +531,58 @@ function openFocusAreas() {
     document.getElementById('focusAreaPanel').classList.add('open'); 
     document.getElementById('focusAreaOverlay').classList.add('open'); 
 }
-function closeFocusAreas() { document.getElementById('focusAreaPanel').classList.remove('open'); document.getElementById('focusAreaOverlay').classList.remove('open'); }
+function closeFocusAreas() { 
+    document.getElementById('focusAreaPanel').classList.remove('open'); 
+    document.getElementById('focusAreaOverlay').classList.remove('open');
+    document.getElementById('focusAreaCreateWrapper')?.classList.remove('open');
+    document.getElementById('toggleFocusAreaCreate')?.classList.remove('active');
+}
 
 function openPlan() { 
     closeFocusAreas(); populateCustomFocusAreaSelect();
     document.getElementById('planPanel').classList.add('open'); document.getElementById('planOverlay').classList.add('open'); 
 }
-function closePlan() { document.getElementById('planPanel').classList.remove('open'); document.getElementById('planOverlay').classList.remove('open'); }
+function closePlan() { 
+    document.getElementById('planPanel').classList.remove('open'); 
+    document.getElementById('planOverlay').classList.remove('open'); 
+    document.getElementById('planCreateWrapper')?.classList.remove('open');
+    document.getElementById('togglePlanCreate')?.classList.remove('active');
+}
 
 function openProfile() { closeFocusAreas(); closePlan(); renderAchievements(); document.getElementById('profilePanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('open'); }
-function closeProfile() { document.getElementById('profilePanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open'); }
+function closeProfile() { 
+    document.getElementById('profilePanel').classList.remove('open'); 
+    document.getElementById('settingsOverlay').classList.remove('open'); 
+    togglePersonaEdit(false);
+}
+
+function togglePersonaEdit(isEditing) {
+    const slider = document.getElementById('identitySlider');
+    slider?.classList.toggle('editing', isEditing);
+}
+
+function updatePersona(avatar, mood) {
+    state.avatar = avatar;
+    updateProfileUI();
+    togglePersonaEdit(false);
+    saveData();
+    notify(`Persona changed to ${mood} ${avatar} ✨`);
+}
+
+function updateProfileUI() {
+    const avatar = state.avatar || '🦉';
+    const circle = document.getElementById('personaCircle');
+    const headerAvatar = document.getElementById('headerAvatar');
+    const moodLabel = document.getElementById('currentMoodLabel');
+    
+    if (circle) circle.textContent = avatar;
+    if (headerAvatar) headerAvatar.textContent = avatar;
+    
+    const option = document.querySelector(`.avatar-option[data-avatar="${avatar}"]`);
+    if (option && moodLabel) {
+        moodLabel.textContent = option.querySelector('.avatar-mood')?.textContent || option.title;
+    }
+}
 
 function openSettings() {
     closeFocusAreas(); closePlan();
@@ -402,6 +597,79 @@ function openSettings() {
     document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.variant === variant);
     });
+}
+
+function toggleOrbit() {
+    const orbit = document.getElementById('durationOrbit');
+    const container = orbit?.closest('.timer-container');
+    if (orbit) {
+        const isOpen = orbit.classList.toggle('open');
+        container?.classList.toggle('orbit-open', isOpen);
+    }
+}
+
+function closeOrbit() {
+    const orbit = document.getElementById('durationOrbit');
+    const container = orbit?.closest('.timer-container');
+    orbit?.classList.remove('open');
+    container?.classList.remove('orbit-open');
+}
+
+function setDurationFromOrbit(mins) {
+    const mode = state.timerState.mode;
+    const wasRunning = state.timerState.isRunning;
+    const oldTotal = state.timerState.totalTime;
+    const newTotal = mins * 60;
+    const diff = newTotal - oldTotal;
+
+    // Update settings for future sessions
+    if (mode === 'work') mutations.updateSettings({ workDuration: mins });
+    else if (mode === 'shortBreak') mutations.updateSettings({ shortBreakDuration: mins });
+    else mutations.updateSettings({ longBreakDuration: mins });
+    
+    // Adjust current session without losing progress
+    const newRemaining = Math.max(0, state.timerState.remainingTime + diff);
+    mutations.updateTimer({ 
+        totalTime: newTotal,
+        remainingTime: newRemaining
+    });
+
+    // Recalculate background worker target if running
+    if (wasRunning) timer.start();
+    
+    saveData();
+    refreshUI();
+}
+
+function adjustDuration(delta) {
+    const mode = state.timerState.mode;
+    const wasRunning = state.timerState.isRunning;
+    const oldTotal = state.timerState.totalTime;
+    let current;
+    
+    if (mode === 'work') current = state.settings.workDuration;
+    else if (mode === 'shortBreak') current = state.settings.shortBreakDuration;
+    else current = state.settings.longBreakDuration;
+
+    const next = Math.max(1, current + delta);
+    const newTotal = next * 60;
+    const diff = newTotal - oldTotal;
+
+    if (mode === 'work') mutations.updateSettings({ workDuration: next });
+    else if (mode === 'shortBreak') mutations.updateSettings({ shortBreakDuration: next });
+    else mutations.updateSettings({ longBreakDuration: next });
+    
+    // Adjust current session without losing progress
+    const newRemaining = Math.max(0, state.timerState.remainingTime + diff);
+    mutations.updateTimer({ 
+        totalTime: newTotal,
+        remainingTime: newRemaining
+    });
+
+    if (wasRunning) timer.start();
+    
+    saveData();
+    refreshUI();
 }
 
 function closeSettings() {
@@ -554,12 +822,24 @@ function updateDateTime() {
     el.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: state.settings.use12Hour });
 }
 
-function notify(msg) {
+function notify(msg, type = '') {
     const toast = document.createElement('div');
-    toast.className = 'toast show';
-    toast.textContent = msg;
+    toast.className = `toast show ${type}`;
+    
+    toast.innerHTML = `
+        <div class="toast-content">${msg}</div>
+        <div class="toast-progress-container">
+            <div class="toast-progress"></div>
+        </div>
+    `;
+    
     document.body.appendChild(toast);
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+    
+    // Auto-remove after 5s (matching animation)
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }
 
 function confirmAction(msg) {
@@ -662,11 +942,19 @@ function setupEventListeners() {
         },
         'inlineColorBtn': () => document.getElementById('inlineColorDropdown')?.classList.toggle('open'),
         'inlineIconBtn': () => document.getElementById('inlineIconDropdown')?.classList.toggle('open'),
+        'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
         'settingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
         'headerAvatar': openProfile, 'closeProfile': closeProfile,
+        'editPersonaBtn': () => togglePersonaEdit(true),
+        'cancelPersonaEdit': () => togglePersonaEdit(false),
+        'shareMoodBtn': () => {
+            const avatar = state.avatar || '🦉';
+            const mood = document.getElementById('currentMoodLabel')?.textContent || 'Sage';
+            SettingsService.handleShare('x', 'mood', { avatar, mood }, notify);
+        },
         'focusAreasNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openFocusAreas(); },
         'closeFocusAreaPanel': closeFocusAreas,
         'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
@@ -697,8 +985,28 @@ function setupEventListeners() {
             editingTaskId = null;
         },
         'togglePlanCreate': (e) => {
-            const isOpen = document.getElementById('planCreateWrapper')?.classList.toggle('open');
-            e.currentTarget.classList.toggle('active', isOpen);
+            const wrapper = document.getElementById('planCreateWrapper');
+            const isOpen = wrapper?.classList.toggle('open');
+            const btn = document.getElementById('togglePlanCreate');
+            if (btn) btn.classList.toggle('active', isOpen);
+            if (isOpen) {
+                // Reset form when opening
+                state.selectedFocusAreaIds = [];
+                updateCustomSelectUI();
+                document.getElementById('aimDurationInput').value = '';
+                document.getElementById('aimDeadlineSelect').value = 'infinite';
+                const customDate = document.getElementById('aimCustomDate');
+                if (customDate) customDate.style.display = 'none';
+                populateCustomFocusAreaSelect();
+            }
+        },
+        'cancelPlanCreate': () => {
+            const wrapper = document.getElementById('planCreateWrapper');
+            wrapper?.classList.remove('open');
+            const btn = document.getElementById('togglePlanCreate');
+            if (btn) btn.classList.remove('active');
+            state.selectedFocusAreaIds = [];
+            updateCustomSelectUI();
         },
         'categoryEditIconBtn': () => document.getElementById('categoryEditIconDropdown')?.classList.toggle('open'),
         'saveCategoryEdit': saveCategoryFromModal,
@@ -707,6 +1015,12 @@ function setupEventListeners() {
         'saveSessionEdit': saveSessionFromModal, 'cancelSessionEdit': () => document.getElementById('sessionEditModal').classList.remove('open'),
         'shareXBtn': () => SettingsService.handleShare('x', 'intent', {}, notify),
         'shareCopyBtn': () => SettingsService.handleShare('copy', 'intent', {}, notify),
+        'shareFocusBtn': () => {
+            document.querySelector('.expand-group')?.classList.toggle('open');
+        },
+        'durationToggle': toggleOrbit,
+        'incDuration': () => adjustDuration(1),
+        'decDuration': () => adjustDuration(-1),
         'focusAreaLink': openFocusAreas, 
         'clearFocusArea': (e) => { e.stopPropagation(); mutations.updateTimer({ activeTaskId: null }); refreshUI(); saveData(); },
         'focusAreaOverlay': closeFocusAreas, 'planOverlay': closePlan
@@ -717,10 +1031,76 @@ function setupEventListeners() {
         if (el) el.onclick = fn;
     });
 
+    // Orbit option buttons
+    document.querySelectorAll('.orbiter.option[data-mins]').forEach(btn => {
+        btn.onclick = () => {
+            const mins = parseInt(btn.dataset.mins);
+            if (mins) setDurationFromOrbit(mins);
+            closeOrbit();
+        };
+    });
+
+    // Avatar selection
+    document.querySelectorAll('.avatar-option').forEach(btn => {
+        btn.onclick = () => {
+            const avatar = btn.dataset.avatar;
+            const mood = btn.querySelector('.avatar-mood')?.textContent || btn.title;
+            updatePersona(avatar, mood);
+        };
+    });
+
+    // Global click listener to close dropdowns/menus when clicking outside
+    document.addEventListener('click', (e) => {
+        // Close share menu
+        const shareGroup = document.querySelector('.expand-group');
+        if (shareGroup?.classList.contains('open') && !shareGroup.contains(e.target)) {
+            shareGroup.classList.remove('open');
+        }
+
+        // Close orbit menu
+        const orbit = document.getElementById('durationOrbit');
+        if (orbit?.classList.contains('open') && !orbit.contains(e.target)) {
+            closeOrbit();
+        }
+
+        // Close navigation menu
+        const menuDropdown = document.getElementById('menuDropdown');
+        const menuBtn = document.getElementById('menuBtn');
+        if (menuDropdown?.classList.contains('open') && !menuDropdown.contains(e.target) && !menuBtn?.contains(e.target)) {
+            menuDropdown.classList.remove('open');
+        }
+
+        // Close focus area select dropdown
+        const selectDropdown = document.getElementById('selectDropdown');
+        const selectTrigger = document.getElementById('selectTrigger');
+        if (selectDropdown?.classList.contains('open') && !selectDropdown.contains(e.target) && !selectTrigger?.contains(e.target)) {
+            selectDropdown.classList.remove('open');
+        }
+    });
+
     document.getElementById('focusAreaCategorySelect')?.addEventListener('change', (e) => {
         const wrapper = document.getElementById('newCategoryWrapper');
         if (wrapper) wrapper.style.display = e.target.value === '__new__' ? 'flex' : 'none';
         if (e.target.value === '__new__') document.getElementById('newCategoryNameInput')?.focus();
+    });
+
+    document.getElementById('focusAreaSearchInput')?.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('#selectOptions .select-option').forEach(opt => {
+            const name = opt.querySelector('.option-name').textContent.toLowerCase();
+            const cat = opt.querySelector('.option-meta').textContent.toLowerCase();
+            const match = name.includes(q) || cat.includes(q);
+            opt.style.display = match ? 'flex' : 'none';
+            if (match) visible++;
+        });
+        const noResults = document.getElementById('selectNoResults');
+        if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+    });
+
+    document.getElementById('aimDeadlineSelect')?.addEventListener('change', (e) => {
+        const customDate = document.getElementById('aimCustomDate');
+        if (customDate) customDate.style.display = e.target.value === 'custom' ? 'block' : 'none';
     });
 
     document.querySelectorAll('#inlineIconDropdown .icon-dot').forEach(dot => {
@@ -751,6 +1131,7 @@ function setupEventListeners() {
 
 function refreshUI() {
     renderFocusAreas();
+    DashboardView.updateStats();
     DashboardView.renderHistory(currentFilter, { 
         showAllHistory, 
         callbacks: { 
@@ -762,6 +1143,7 @@ function refreshUI() {
     renderPlan();
     TimerView.updateDisplay();
     FocusView.updateLevelUI();
+    updateProfileUI();
 }
 
 (async () => { await init(); })();

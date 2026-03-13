@@ -29,7 +29,7 @@ async function init(purge = false) {
             console.warn('OPFS support not found in sqlite3 object, falling back to transient/memory storage');
         }
 
-        // Create Tables
+        // Create Tables with enhanced schema
         db.exec(`
             CREATE TABLE IF NOT EXISTS focus_areas (
                 id TEXT PRIMARY KEY,
@@ -37,16 +37,22 @@ async function init(purge = false) {
                 color TEXT DEFAULT '#58a6ff',
                 category TEXT DEFAULT 'Uncategorized',
                 is_active INTEGER DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0,
+                deleted_at DATETIME
             );
 
             CREATE TABLE IF NOT EXISTS aims (
                 id TEXT PRIMARY KEY,
                 focus_area_id TEXT NOT NULL,
                 target_minutes INTEGER NOT NULL,
-                target_date DATE NOT NULL,
+                target_date DATE,
                 is_completed INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0,
+                deleted_at DATETIME,
                 FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
             );
 
@@ -59,22 +65,41 @@ async function init(purge = false) {
                 xp_earned INTEGER DEFAULT 0,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 note TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0,
+                deleted_at DATETIME,
                 FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
+                id TEXT PRIMARY KEY,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0,
+                deleted_at DATETIME
             );
 
             CREATE TABLE IF NOT EXISTS user_profile (
-                key TEXT PRIMARY KEY,
-                value TEXT
+                id TEXT PRIMARY KEY,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0,
+                deleted_at DATETIME
             );
 
             CREATE TABLE IF NOT EXISTS app_state (
-                key TEXT PRIMARY KEY,
-                value TEXT
+                id TEXT PRIMARY KEY,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0,
+                deleted_at DATETIME
             );
 
             CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp);
@@ -82,7 +107,28 @@ async function init(purge = false) {
             CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
         `);
 
-        // Migration: Add task_name and task_color if they don't exist
+        // Create Triggers for updated_at
+        const tables = ['focus_areas', 'aims', 'sessions', 'settings', 'user_profile', 'app_state'];
+        for (const table of tables) {
+            db.exec(`
+                CREATE TRIGGER IF NOT EXISTS trg_${table}_updated_at 
+                AFTER UPDATE ON ${table}
+                FOR EACH ROW
+                BEGIN
+                    UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                END;
+            `);
+        }
+
+        // Migration: Add new columns if they don't exist
+        for (const table of tables) {
+            try { db.exec(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); } catch(e) {}
+            try { db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at DATETIME`); } catch(e) {}
+            try { db.exec(`ALTER TABLE ${table} ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`); } catch(e) {}
+            try { db.exec(`ALTER TABLE ${table} ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`); } catch(e) {}
+        }
+        
+        // Special migration for sessions
         try { db.exec("ALTER TABLE sessions ADD COLUMN task_name TEXT"); } catch(e) {}
         try { db.exec("ALTER TABLE sessions ADD COLUMN task_color TEXT"); } catch(e) {}
 
@@ -114,32 +160,76 @@ self.onmessage = async (e) => {
                 result = db.exec(payload.sql, { returnValue: 'resultRows', bind: payload.bind });
                 break;
             case 'insert_focus_area':
-                db.exec("INSERT OR REPLACE INTO focus_areas (id, name, color, category, is_active) VALUES (?, ?, ?, ?, ?)", {
-                    bind: [payload.id, payload.name, payload.color, payload.category, payload.is_active ? 1 : 0]
+                db.exec(`
+                    INSERT INTO focus_areas (id, name, color, category, is_active, created_at, updated_at, is_deleted) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                    ON CONFLICT(id) DO UPDATE SET
+                        name = excluded.name,
+                        color = excluded.color,
+                        category = excluded.category,
+                        is_active = excluded.is_active,
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_deleted = 0
+                `, {
+                    bind: [payload.id, payload.name, payload.color, payload.category, payload.is_active ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
                 });
                 break;
             case 'delete_focus_area':
-                db.exec("DELETE FROM focus_areas WHERE id = ?", {
+                db.exec("UPDATE focus_areas SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
                     bind: [payload.id]
                 });
                 break;
             case 'insert_session':
-                db.exec("INSERT OR REPLACE INTO sessions (id, focus_area_id, task_name, task_color, duration_seconds, xp_earned, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)", {
-                    bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp]
+                db.exec(`
+                    INSERT INTO sessions (id, focus_area_id, task_name, task_color, duration_seconds, xp_earned, timestamp, created_at, updated_at, is_deleted)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    ON CONFLICT(id) DO UPDATE SET
+                        duration_seconds = excluded.duration_seconds,
+                        xp_earned = excluded.xp_earned,
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_deleted = 0
+                `, {
+                    bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp, payload.created_at || payload.timestamp, payload.updated_at || new Date().toISOString()]
+                });
+                break;
+            case 'delete_session':
+                db.exec("UPDATE sessions SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
+                    bind: [payload.id]
                 });
                 break;
             case 'insert_aim':
-                db.exec("INSERT OR REPLACE INTO aims (id, focus_area_id, target_minutes, target_date, is_completed) VALUES (?, ?, ?, ?, ?)", {
-                    bind: [payload.id, payload.focusAreaId, payload.targetMinutes, payload.deadline, payload.completed ? 1 : 0]
+                db.exec(`
+                    INSERT INTO aims (id, focus_area_id, target_minutes, target_date, is_completed, created_at, updated_at, is_deleted)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                    ON CONFLICT(id) DO UPDATE SET
+                        target_minutes = excluded.target_minutes,
+                        target_date = excluded.target_date,
+                        is_completed = excluded.is_completed,
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_deleted = 0
+                `, {
+                    bind: [payload.id, payload.focusAreaId, payload.targetMinutes, payload.deadline, payload.completed ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
+                });
+                break;
+            case 'delete_aim':
+                db.exec("UPDATE aims SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
+                    bind: [payload.id]
                 });
                 break;
             case 'set_setting':
-                db.exec("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", {
-                    bind: [payload.key, payload.value]
+                db.exec(`
+                    INSERT INTO settings (id, key, value, created_at, updated_at, is_deleted)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+                    ON CONFLICT(key) DO UPDATE SET
+                        value = excluded.value,
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_deleted = 0
+                `, {
+                    bind: [payload.id, payload.key, payload.value]
                 });
                 break;
             case 'get_all_focus_areas':
-                result = db.exec("SELECT * FROM focus_areas", { returnValue: 'resultRows', rowMode: 'object' });
+                result = db.exec("SELECT * FROM focus_areas WHERE is_deleted = 0", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_sessions':
                 result = db.exec(`
@@ -148,29 +238,44 @@ self.onmessage = async (e) => {
                            COALESCE(f.color, s.task_color, '#58a6ff') as display_color
                     FROM sessions s 
                     LEFT JOIN focus_areas f ON s.focus_area_id = f.id 
+                    WHERE s.is_deleted = 0
                     ORDER BY s.timestamp DESC
                 `, { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_aims':
-                result = db.exec("SELECT * FROM aims", { returnValue: 'resultRows', rowMode: 'object' });
+                result = db.exec("SELECT * FROM aims WHERE is_deleted = 0", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_settings':
-                result = db.exec("SELECT * FROM settings", { returnValue: 'resultRows', rowMode: 'object' });
+                result = db.exec("SELECT * FROM settings WHERE is_deleted = 0", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_user_profile':
-                result = db.exec("SELECT * FROM user_profile", { returnValue: 'resultRows', rowMode: 'object' });
+                result = db.exec("SELECT * FROM user_profile WHERE is_deleted = 0", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_all_app_state':
-                result = db.exec("SELECT * FROM app_state", { returnValue: 'resultRows', rowMode: 'object' });
+                result = db.exec("SELECT * FROM app_state WHERE is_deleted = 0", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'set_user_profile':
-                db.exec("INSERT OR REPLACE INTO user_profile (key, value) VALUES (?, ?)", {
-                    bind: [payload.key, payload.value]
+                db.exec(`
+                    INSERT INTO user_profile (id, key, value, created_at, updated_at, is_deleted)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+                    ON CONFLICT(key) DO UPDATE SET
+                        value = excluded.value,
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_deleted = 0
+                `, {
+                    bind: [payload.id, payload.key, payload.value]
                 });
                 break;
             case 'set_app_state':
-                db.exec("INSERT OR REPLACE INTO app_state (key, value) VALUES (?, ?)", {
-                    bind: [payload.key, payload.value]
+                db.exec(`
+                    INSERT INTO app_state (id, key, value, created_at, updated_at, is_deleted)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+                    ON CONFLICT(key) DO UPDATE SET
+                        value = excluded.value,
+                        updated_at = CURRENT_TIMESTAMP,
+                        is_deleted = 0
+                `, {
+                    bind: [payload.id, payload.key, payload.value]
                 });
                 break;
         }

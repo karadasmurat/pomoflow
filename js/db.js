@@ -3,6 +3,8 @@
  * UI-side API for interacting with the SQLite worker.
  */
 
+import { uuidv7 } from './utils/uuid.js';
+
 class DatabaseManager {
     constructor() {
         this.requests = new Map();
@@ -64,26 +66,65 @@ class DatabaseManager {
         // Force is_active to 1 (Active) unless explicitly completed
         const isCompleted = (area.completed === true || area.completed === 1 || area.completed === 'true');
         return this._send('insert_focus_area', {
-            id: area.id,
+            id: area.id || uuidv7(),
             name: area.name,
             color: area.color,
             category: area.category,
-            is_active: isCompleted ? 0 : 1
+            is_active: isCompleted ? 0 : 1,
+            created_at: area.created_at || area.createdAt,
+            updated_at: area.updated_at
         }); 
     }
     async deleteFocusArea(id) { return this._send('delete_focus_area', { id }); }
-    async insertSession(session) { return this._send('insert_session', session); }
-    async insertAim(aim) { return this._send('insert_aim', aim); }
-    async setSetting(key, value) { return this._send('set_setting', { key, value: JSON.stringify(value) }); }
-    async setUserProfile(key, value) { return this._send('set_user_profile', { key, value: JSON.stringify(value) }); }
-    async setAppState(key, value) { return this._send('set_app_state', { key, value: JSON.stringify(value) }); }
+    
+    async insertSession(session) { 
+        return this._send('insert_session', {
+            ...session,
+            id: session.id || uuidv7(),
+            created_at: session.created_at || session.timestamp,
+            updated_at: session.updated_at
+        }); 
+    }
+    async deleteSession(id) { return this._send('delete_session', { id }); }
+
+    async insertAim(aim) { 
+        return this._send('insert_aim', {
+            ...aim,
+            id: aim.id || uuidv7(),
+            created_at: aim.created_at || aim.createdAt,
+            updated_at: aim.updated_at
+        }); 
+    }
+    async deleteAim(id) { return this._send('delete_aim', { id }); }
+
+    async setSetting(key, value) { 
+        return this._send('set_setting', { 
+            id: uuidv7(), // New record for this key (ON CONFLICT will update)
+            key, 
+            value: JSON.stringify(value) 
+        }); 
+    }
+    
+    async setUserProfile(key, value) { 
+        return this._send('set_user_profile', { 
+            id: uuidv7(), 
+            key, 
+            value: JSON.stringify(value) 
+        }); 
+    }
+    
+    async setAppState(key, value) { 
+        return this._send('set_app_state', { 
+            id: uuidv7(), 
+            key, 
+            value: JSON.stringify(value) 
+        }); 
+    }
 
     async getAllFocusAreas() { 
         const rows = await this._send('get_all_focus_areas');
         if (!rows) return [];
         return rows.map(r => {
-            // is_active = 1 or true means ACTIVE (not completed)
-            // Anything else (0, null, false) is treated as COMPLETED
             const isActive = (r.is_active === 1 || r.is_active === '1' || r.is_active === true || r.is_active === 'true');
             return {
                 id: r.id,
@@ -91,7 +132,8 @@ class DatabaseManager {
                 color: r.color,
                 category: r.category || 'Uncategorized',
                 completed: !isActive,
-                createdAt: r.created_at
+                createdAt: r.created_at,
+                updatedAt: r.updated_at
             };
         });
     }
@@ -104,7 +146,9 @@ class DatabaseManager {
             taskName: s.display_name,
             taskColor: s.display_color,
             duration: s.duration_seconds,
-            xp: s.xp_earned
+            xp: s.xp_earned,
+            createdAt: s.created_at,
+            updatedAt: s.updated_at
         }));
     }
     async getAllAims() { 
@@ -116,9 +160,11 @@ class DatabaseManager {
             targetMinutes: a.target_minutes,
             deadline: a.target_date,
             completed: a.is_completed === 1 || a.is_completed === '1' || a.is_completed === true || a.is_completed === 'true',
-            createdAt: a.created_at
+            createdAt: a.created_at,
+            updatedAt: a.updated_at
         }));
     }
+
     
     async _getKVTable(action) {
         const rows = await this._send(action);
@@ -166,7 +212,7 @@ class DatabaseManager {
             await this.setSetting(key, value);
         }
 
-        // Save Tasks
+        // Save Tasks (Small collection, usually < 50 items)
         for (const task of state.tasks) {
             await this.insertFocusArea(task);
         }

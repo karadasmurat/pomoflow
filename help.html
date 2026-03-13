@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PomoFlow — User Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+
+  <style>
+    /* ── PAGE-SPECIFIC TOKENS ── */
+    :root {
+      --nav-h: 52px;
+      --nav-w: 220px;
+    }
+
+    /* ── NAV CHROME (help-specific) ── */
+    .topnav-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-sep {
+      width: 1px;
+      height: 16px;
+      background: var(--rule);
+    }
+
+    .nav-section {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-soft);
+    }
+
+    .nav-back {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: color 0.15s;
+    }
+
+    .nav-back:hover {
+      color: var(--ink);
+    }
+
+    /* ── PAGE LAYOUT ── */
+    .page {
+      padding-top: var(--nav-h);
+      max-width: var(--max);
+      margin: 0 auto;
+      padding-left: var(--pad);
+      padding-right: var(--pad);
+      display: grid;
+      grid-template-columns: var(--nav-w) 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: sticky;
+      top: 72px;
+      padding: 40px 0 80px;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-nav a {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-mid);
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-nav a:hover {
+      color: var(--ink);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .sidebar-nav a.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+      font-weight: 600;
+    }
+
+    .sidebar-nav .nav-num {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      min-width: 16px;
+      text-align: right;
+      letter-spacing: 0.04em;
+    }
+
+    .sidebar-nav a.active .nav-num {
+      color: var(--accent);
+      opacity: 0.6;
+    }
+
+    /* ── CONTENT AREA ── */
+    .content {
+      padding: 48px 0 120px;
+      min-width: 0;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      margin-bottom: 56px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .page-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+      color: var(--ink);
+      margin-bottom: 16px;
+    }
+
+    .page-lead {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      max-width: 520px;
+    }
+
+    /* ── DOC SECTIONS ── */
+    .doc-section {
+      margin-bottom: 72px;
+      scroll-margin-top: 80px;
+    }
+
+    .doc-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1.5px solid var(--rule);
+    }
+
+    .section-num {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      min-width: 20px;
+    }
+
+    h2 {
+      font-size: clamp(20px, 2.5vw, 28px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      .page {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .content {
+        padding-top: 32px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-left">
+        <a class="nav-logo" href="#">PomoFlow</a>
+        <div class="nav-sep"></div>
+        <span class="nav-section">User Guide</span>
+      </div>
+      <a class="nav-back" href="app.html">← Back to app</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <aside class="sidebar">
+      <div class="sidebar-label">Contents</div>
+      <nav class="sidebar-nav">
+        <a href="#what-it-is" class="active"><span class="nav-num">—</span> What PomoFlow is</a>
+        <a href="#first-session"><span class="nav-num">01</span> Your first session</a>
+        <a href="#timer"><span class="nav-num">02</span> The timer</a>
+        <a href="#focus-areas"><span class="nav-num">03</span> Focus Areas</a>
+        <a href="#planner"><span class="nav-num">04</span> The Focus Planner</a>
+        <a href="#progress"><span class="nav-num">05</span> Seeing your progress</a>
+        <a href="#profile"><span class="nav-num">06</span> Your profile</a>
+        <a href="#customization"><span class="nav-num">07</span> Customization</a>
+        <a href="#reference"><span class="nav-num">—</span> Reference</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+
+      <header class="page-header">
+        <div class="page-eyebrow">
+          <div class="eyebrow-dot"></div>User Guide
+        </div>
+        <h1 class="page-title">Everything you need<br><span class="muted">to get started.</span></h1>
+        <p class="page-lead">From your first session to planning your week — this guide follows the same loop PomoFlow
+          is built around.</p>
+      </header>
+
+      <section class="doc-section" id="what-it-is">
+        <div class="section-header">
+          <h2>What PomoFlow is</h2>
+        </div>
+        <p class="section-intro">Most productivity tools measure one thing: whether you finished. PomoFlow measures
+          something different — <strong>whether you showed up.</strong></p>
+        <p>Instead of tracking task completion, it tracks the effort you invest across the areas of work, study, and
+          life that matter to you. Every session you complete is proof of progress, regardless of where the finish line
+          sits.</p>
+        <p>The result is a different relationship with your time. Not guilt when things aren't done, but clarity about
+          where your energy is actually going — and whether it reflects what you care about.</p>
+        <p>PomoFlow is built around a simple loop you repeat daily: <strong>Define</strong> what deserves your
+          attention. <strong>Commit</strong> to where a block of time is going before you start. <strong>Focus</strong>
+          by showing up fully for each session. <strong>Reflect</strong> on how your effort is flowing across your
+          areas.</p>
+      </section>
+
+      <section class="doc-section" id="first-session">
+        <div class="section-header"><span class="section-num">01</span>
+          <h2>Your first session</h2>
+        </div>
+        <p>The fastest way to understand PomoFlow is to run a session.</p>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num-badge">1</div>
+            <div class="step-body"><strong>Create a Focus Area.</strong> Open the Focus Areas panel (<code>G</code>) and
+              add your first area. Give it a name and a color.</div>
+          </div>
+          <div class="step">
+            <div class="step-num-badge">2</div>
+            <div class="step-body"><strong>Set your intent.</strong> Tap <em>What are you focusing on?</em> and select
+              your area. This is where busy becomes purposeful — you're naming, before the work begins, where this time
+              is going.</div>
+          </div>
+          <div class="step">
+            <div class="step-num-badge">3</div>
+            <div class="step-body"><strong>Start the timer.</strong> Press <code>Space</code> or tap Start. A 25-minute
+              focus session begins. Your only job is to be present for it.</div>
+          </div>
+          <div class="step">
+            <div class="step-num-badge">4</div>
+            <div class="step-body"><strong>Take your break.</strong> When the session ends, the timer holds at 0:00.
+              PomoFlow waits for you — it won't rush you. Press <code>Space</code> when you're ready.</div>
+          </div>
+          <div class="step">
+            <div class="step-num-badge">5</div>
+            <div class="step-body"><strong>Repeat.</strong> After four focus sessions, a longer break is triggered.
+              That's one full Pomodoro cycle.</div>
+          </div>
+        </div>
+        <p>When you're done, your time is logged against your Focus Area and appears in your effort history.</p>
+      </section>
+
+      <section class="doc-section" id="timer">
+        <div class="section-header"><span class="section-num">02</span>
+          <h2>The timer</h2>
+        </div>
+        <h3>Modes</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th>Default</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Focus</td>
+                <td>25 minutes</td>
+                <td>Deep work dedicated to a Focus Area</td>
+              </tr>
+              <tr>
+                <td>Short Break</td>
+                <td>5 minutes</td>
+                <td>A brief pause to reset between sessions</td>
+              </tr>
+              <tr>
+                <td>Long Break</td>
+                <td>15 minutes</td>
+                <td>Extended rest after every 4 focus sessions</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Switch modes manually at any time using <code>1</code>, <code>2</code>, or <code>3</code>.</p>
+        <h3>Accuracy</h3>
+        <p>The timer uses wall-clock accuracy — it tracks your session's target end-time rather than counting down in
+          the foreground. Sessions stay precise even if your browser tab moves to the background or your device sleeps
+          briefly.</p>
+        <h3>Adjusting durations</h3>
+        <p>Open the Orbit menu (the timer icon, also known as the <strong>Watch Crown</strong>) to set durations in preset increments between 10 and 60 minutes. Use
+          <code>+</code> and <code>−</code> for fine-tuning. When active, the timer ring displays <strong>Guiding Content</strong> to help you make adjustments. Changes take effect at the start of your next session.</p>
+        <h3>Controls</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Space</code></td>
+                <td>Start / pause</td>
+              </tr>
+              <tr>
+                <td><code>R</code></td>
+                <td>Reset timer</td>
+              </tr>
+              <tr>
+                <td><code>N</code></td>
+                <td>Skip to next session</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section" id="focus-areas">
+        <div class="section-header"><span class="section-num">03</span>
+          <h2>Focus Areas</h2>
+        </div>
+        <p class="section-intro">Focus Areas are the categories you invest time in. They're not just labels — they're a
+          declaration of what you're choosing to show up for.</p>
+        <h3>Creating and editing areas</h3>
+        <p>Open the Focus Areas panel with <code>G</code>. Add an area, give it a name, choose a color and an icon. Most
+          people find that four to six areas covers everything that genuinely matters.</p>
+        <h3>Attributing sessions</h3>
+        <p>Before each session, select the area you're working in. If you forget, you can edit the attribution from the
+          Activity Log after the fact.</p>
+        <h3>XP and levels</h3>
+        <p>Every minute of focused time earns XP. Your rank advances as you build consistency — from Novice upward
+          through higher tiers. It's a reflection of investment over time, not a productivity score.</p>
+      </section>
+
+      <section class="doc-section" id="planner">
+        <div class="section-header"><span class="section-num">04</span>
+          <h2>The Focus Planner</h2>
+        </div>
+        <p class="section-intro">The Focus Planner is where you move from reactive sessions to intentional weeks. Open
+          it with <code>P</code>.</p>
+        <p>It's a weekly calendar where you place <em>commitment blocks</em> — planned effort against your Focus Areas —
+          and <em>deadline markers</em> — real-world moments you're working toward. Completed sessions automatically
+          appear as a second layer.</p>
+        <h3>Commitment blocks</h3>
+        <p>A commitment block is an intention: <em>I will give this Focus Area N sessions on this day.</em></p>
+        <p><strong>On desktop</strong>, drag a Focus Area card from the sidebar and drop it onto the day and time you
+          want. A popover appears for session count and an optional label. Drag the bottom edge to adjust after
+          placement.</p>
+        <p><strong>On mobile</strong>, tap any day column to open the day drawer, then tap an empty slot or
+          <code>+</code>. Set a start time and use the stepper to set session count. The end time updates live.</p>
+        <div class="note">Block duration is calculated from your session settings — so it always reflects how long that
+          number of sessions will actually take.</div>
+        <h3>Deadline markers</h3>
+        <p>A deadline marker is an event in the world — a submission, a presentation, a moment you're planning toward.
+          Add one from the <code>+</code> button in the header and optionally link it to relevant Focus Areas.</p>
+        <p>Deadline markers never turn red as the date approaches. The calendar is not here to generate urgency — it's
+          here to give you clarity.</p>
+        <h3>Planned vs. actual</h3>
+        <p>The calendar shows your commitment blocks (planned) and completed session blocks (actual) simultaneously. Use
+          the filter to toggle between views.</p>
+        <div class="note">The gap between planned and actual is information, not failure. Drift is normal. The value is
+          in being able to see it clearly.</div>
+      </section>
+
+      <section class="doc-section" id="progress">
+        <div class="section-header"><span class="section-num">05</span>
+          <h2>Seeing your progress</h2>
+        </div>
+        <h3>The Dashboard</h3>
+        <p>The Dashboard shows a visual breakdown across Focus Areas, total focus time, session count, your current day
+          streak, and a full Activity Log. You can edit session durations or delete entries from the log if needed.</p>
+        <h3>Logical day rollover</h3>
+        <p>PomoFlow uses a 4:00 AM rollover for daily calculations. Sessions completed before 4 AM are attributed to the
+          previous calendar date, so late-night work lands in the right day's totals.</p>
+        <h3>Achievements</h3>
+        <p>Achievements are earned automatically as you hit focus milestones.</p>
+        <div class="achievements">
+          <div class="achievement">
+            <div class="ach-icon">🌱</div>
+            <div class="ach-body">
+              <div class="ach-name">First Steps</div>
+              <div class="ach-condition">Complete your first focus session</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">🔥</div>
+            <div class="ach-body">
+              <div class="ach-name">Habitual</div>
+              <div class="ach-condition">Maintain a 3-day focus streak</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">🌊</div>
+            <div class="ach-body">
+              <div class="ach-name">Deep Diver</div>
+              <div class="ach-condition">Reach 10 total hours of focus</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">📐</div>
+            <div class="ach-body">
+              <div class="ach-name">Architect</div>
+              <div class="ach-condition">Reach 10 unique focus targets</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">🦉</div>
+            <div class="ach-body">
+              <div class="ach-name">Night Owl</div>
+              <div class="ach-condition">Complete a session between midnight and 4 AM</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="profile">
+        <div class="section-header"><span class="section-num">06</span>
+          <h2>Your profile</h2>
+        </div>
+        <h3>Persona</h3>
+        <p>Your chosen Persona appears as an avatar in the header, alongside your Rank and XP, and stays visible across
+          the app. It's not a fixed identity — it's a reflection of how you're showing up right now.</p>
+        <p>Browse and select from the Persona Gallery in your Profile. Change it whenever your mood shifts. There's no
+          right answer and no schedule.</p>
+        <h3>Rank and XP</h3>
+        <p>Your Rank and XP accumulate automatically as you log focused time, displayed in the header next to your
+          Persona. They're a record of investment over time — not a performance target.</p>
+      </section>
+
+      <section class="doc-section" id="customization">
+        <div class="section-header"><span class="section-num">07</span>
+          <h2>Customization</h2>
+        </div>
+        <h3>Session durations</h3>
+        <p>Adjust focus, short break, and long break durations in Settings. Toggle auto-start if you prefer the timer to
+          advance automatically between phases.</p>
+        <h3>Visual styles</h3>
+        <p>PomoFlow ships with several UI variants selectable in Settings.</p>
+        <div class="badge-row">
+          <span class="badge">Glass</span>
+          <span class="badge">Bento</span>
+          <span class="badge">Skeuo</span>
+        </div>
+        <h3>Sharing</h3>
+        <p>Customize templates for posting your focus status to X or other platforms. Find these in Settings under
+          Sharing.</p>
+      </section>
+
+      <section class="doc-section" id="reference">
+        <div class="section-header">
+          <h2>Reference</h2>
+        </div>
+        <h3>All keyboard shortcuts</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Space</code></td>
+                <td>Start / pause timer</td>
+              </tr>
+              <tr>
+                <td><code>R</code></td>
+                <td>Reset timer</td>
+              </tr>
+              <tr>
+                <td><code>N</code></td>
+                <td>Skip to next session</td>
+              </tr>
+              <tr>
+                <td><code>G</code></td>
+                <td>Toggle Focus Areas panel</td>
+              </tr>
+              <tr>
+                <td><code>P</code></td>
+                <td>Toggle Focus Planner</td>
+              </tr>
+              <tr>
+                <td><code>1</code></td>
+                <td>Switch to Focus mode</td>
+              </tr>
+              <tr>
+                <td><code>2</code></td>
+                <td>Switch to Short Break mode</td>
+              </tr>
+              <tr>
+                <td><code>3</code></td>
+                <td>Switch to Long Break mode</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Privacy and data</h3>
+        <p>All data is stored locally in your browser — nothing is sent to a server. Use the Export and Import tools in
+          Settings → Data to back up or migrate your history.</p>
+        <div class="note">Clearing your browser's site data will reset your PomoFlow history. Export regularly if your
+          history matters to you.</div>
+        <h3>Technical requirements</h3>
+        <p><strong>Browser:</strong> Chrome, Firefox, Safari, or Edge (current versions).</p>
+        <p><strong>Notifications:</strong> Enable browser notifications in Settings to receive alerts when sessions end.
+        </p>
+        <p><strong>Storage:</strong> Local storage must be enabled for PomoFlow to save your data.</p>
+      </section>
+
+      <footer class="doc-footer">
+        <span class="doc-footer-logo">PomoFlow</span>
+        <span class="doc-footer-tagline">Your intention. Your pace. Your progress.</span>
+        <span class="doc-footer-copy">© 2026 PomoFlow</span>
+      </footer>
+
+    </main>
+  </div>
+
+  <script>
+    const sections = document.querySelectorAll('.doc-section');
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          navLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+          });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(s => observer.observe(s));
+  </script>
+
+</body>
+
+</html>

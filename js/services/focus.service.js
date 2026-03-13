@@ -1,19 +1,21 @@
 import { state, mutations } from '../state/store.js';
+import { uuidv7 } from '../utils/uuid.js';
 
 export class FocusService {
     static addFocusArea(name, category, color) {
         if (!name) return null;
-        
-        const task = { 
-            id: Date.now().toString(), 
-            name, 
-            category: category || 'Uncategorized', 
-            color: color || state.selectedTaskColor, 
-            completed: false, 
-            createdAt: new Date().toISOString(), 
-            totalTime: 0 
+
+        const now = new Date().toISOString();
+        const task = {
+            id: uuidv7(),
+            name,
+            category: category || 'Uncategorized',
+            color: color || state.selectedTaskColor,
+            completed: false,
+            created_at: now,
+            updated_at: now,
+            totalTime: 0
         };
-        
         state.tasks.push(task);
         state.lastTaskId = task.id;
         return task;

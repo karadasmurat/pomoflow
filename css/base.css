@@ -1,0 +1,638 @@
+/*
+ * PomoFlow — base.css
+ * ─────────────────────────────────────────────────────────────
+ * Shared foundation for all PomoFlow pages.
+ * Include this file in every page's <head> via:
+ *   <link rel="stylesheet" href="base.css">
+ *
+ * Also include the font in every page's <head>:
+ *   <link rel="preconnect" href="https://fonts.googleapis.com">
+ *   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ *   <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+ *
+ * Page-specific styles go in a separate <style> block or .css file.
+ * Never override tokens inline — extend by adding new tokens or classes.
+ * ─────────────────────────────────────────────────────────────
+ */
+
+
+/* ── TOKENS ────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --bg:         #F0EFED;   /* Page background. Warm off-white. */
+  --bg-card:    #FAFAF8;   /* Card backgrounds, panel insets, nav chrome. */
+  --white:      #FFFFFF;   /* Elevated surfaces — cards, modals, tables. */
+
+  /* Ink (text) */
+  --ink:        #1A1917;   /* Primary text. Warm near-black. */
+  --ink-mid:    #6B6860;   /* Secondary text. Body copy, descriptions. */
+  --ink-soft:   #A8A49E;   /* Tertiary text. Metadata, timestamps, placeholders. */
+
+  /* Borders */
+  --rule:       #E2DFD9;   /* Dividers, borders, separators. */
+
+  /* Accent */
+  --accent:     #2D4A3E;   /* Brand green. Use sparingly. */
+  --accent-dim: #E6EDEA;   /* Accent tint. Badge fills, subtle highlights. */
+
+  /* Typography */
+  --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Layout */
+  --max:   1100px;                  /* Max content width */
+  --pad:   clamp(20px, 5vw, 72px); /* Horizontal page padding */
+  --r:     6px;                     /* Base border radius */
+
+  /* Nav */
+  --nav-h: 56px; /* Default nav height. Help page overrides to 52px locally. */
+}
+
+
+/* ── RESET ──────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+
+/* ── BASE ───────────────────────────────────────────────────── */
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* ── NAVIGATION ─────────────────────────────────────────────── */
+/*
+ * Shared nav shell. Both pages use the frosted glass fixed bar.
+ * The landing page uses <nav> directly; the help page uses .topnav.
+ * Both classes share these rules. Page-specific inner structure
+ * (nav links, back link, section label) is styled per-page.
+ */
+
+nav,
+.topnav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  background: rgba(240, 239, 237, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Inner container — centers content and sets height */
+.nav-inner,
+.topnav-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--pad);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Logo — shared across all pages */
+.nav-logo {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* Nav link row (landing page) */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.nav-links a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-mid);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.nav-links a:hover {
+  color: var(--ink);
+}
+
+
+/* ── BUTTONS ────────────────────────────────────────────────── */
+
+/* Primary CTA — accent background */
+.btn-primary {
+  font-family: var(--f);
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: var(--r);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+/* Nav CTA — ink background, compact */
+.nav-cta {
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--ink);
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: var(--r);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.nav-cta:hover {
+  opacity: 0.8;
+}
+
+/* Secondary / ghost — text only */
+.btn-secondary {
+  font-family: var(--f);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-mid);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+
+.btn-secondary:hover {
+  color: var(--ink);
+}
+
+/* Light CTA — for dark/accent backgrounds */
+.btn-light {
+  font-family: var(--f);
+  font-size: 15px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--ink);
+  padding: 14px 28px;
+  border-radius: var(--r);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-light:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+
+/* ── EYEBROW BADGE ──────────────────────────────────────────── */
+/*
+ * Small uppercase label used above headings to name or categorize a section.
+ * Always accent-colored. Optionally includes an .eyebrow-dot before the text.
+ *
+ * Usage:
+ *   <div class="eyebrow"><div class="eyebrow-dot"></div>Section name</div>
+ */
+
+.eyebrow,
+.hero-eyebrow,
+.page-eyebrow,
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Pill variant — has background fill (hero, page headers) */
+.hero-eyebrow,
+.page-eyebrow {
+  background: var(--accent-dim);
+  padding: 5px 12px;
+  border-radius: 40px;
+  margin-bottom: 24px;
+}
+
+/* Plain variant — no background (section labels inline with content) */
+.section-eyebrow {
+  margin-bottom: 16px;
+}
+
+.eyebrow-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+
+/* ── HEADINGS ───────────────────────────────────────────────── */
+/*
+ * Heading styles are intentionally light here — pages override
+ * h1 and h2 sizes via their own context. These are defaults only.
+ */
+
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+/* Weight-contrast modifier — used inside display headings */
+.muted {
+  color: var(--ink-soft);
+  font-weight: 300;
+}
+
+/* Accent emphasis — single word highlight in headings */
+.em {
+  color: var(--accent);
+}
+
+
+/* ── SECTION LAYOUT ─────────────────────────────────────────── */
+
+.section-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--pad);
+}
+
+
+/* ── FOOTER ─────────────────────────────────────────────────── */
+
+footer,
+.doc-footer {
+  border-top: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+footer {
+  padding: 28px var(--pad);
+  max-width: var(--max);
+  margin: 0 auto;
+}
+
+.doc-footer {
+  margin-top: 80px;
+  padding-top: 32px;
+}
+
+.footer-logo,
+.doc-footer-logo {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-soft);
+}
+
+.footer-tagline,
+.doc-footer-tagline {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.footer-copy,
+.doc-footer-copy {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+
+/* ── SCROLL REVEAL ──────────────────────────────────────────── */
+/*
+ * Elements with .reveal animate in when they enter the viewport.
+ * Trigger via IntersectionObserver — see base.js for the shared script.
+ *
+ * For staggered reveals, add setTimeout delays in JS (increments of ~90ms).
+ * For page-load animations, use .au + .d1–.d5 classes (landing page only).
+ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* ── FOCUS AREA COLOR PALETTE ───────────────────────────────── */
+/*
+ * Used in the planner, calendar blocks, and effort bars.
+ * These are not CSS custom properties — they're defined classes
+ * to ensure the palette stays controlled.
+ *
+ * Actual (logged) session blocks use the same class + opacity: 0.5.
+ */
+
+.fa-green  { background: #DDE8DF; color: #2D4A3E; border-color: #C4D9C8; }
+.fa-amber  { background: #EDE8DD; color: #5C4A2D; border-color: #D9C8A4; }
+.fa-violet { background: #E4DDEE; color: #3D2D5C; border-color: #C4B4D9; }
+.fa-blue   { background: #DDE4EE; color: #2D3E5C; border-color: #B4C4D9; }
+
+/* Progress / logged effort fill colors (used in bars and dots) */
+.fa-green-fill  { background: #6B9E78; }
+.fa-amber-fill  { background: #9E8B6B; }
+.fa-violet-fill { background: #8B6B9E; }
+.fa-blue-fill   { background: #6B8B9E; }
+
+
+/* ── TYPOGRAPHY ─────────────────────────────────────────────── */
+/*
+ * Base prose styles for body copy, used in any content-heavy page.
+ * Headings intentionally light — pages set h1/h2 sizes in context.
+ */
+
+p {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--ink-mid);
+  margin-bottom: 16px;
+}
+
+p:last-child { margin-bottom: 0; }
+
+p strong { color: var(--ink); font-weight: 600; }
+
+p em { font-style: italic; }
+
+h3 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 28px 0 10px;
+}
+
+h3:first-child { margin-top: 0; }
+
+/* Section intro — accented lead paragraph */
+.section-intro {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--ink-mid);
+  border-left: 3px solid var(--accent);
+  padding: 2px 0 2px 20px;
+  margin-bottom: 28px;
+}
+
+.section-intro strong { color: var(--ink); }
+
+/* Left-border callout block — pull quotes, manifesto, important notes */
+.callout {
+  border-left: 3px solid var(--accent);
+  padding-left: 20px;
+}
+
+
+/* ── CODE ────────────────────────────────────────────────────── */
+/*
+ * Inline monospace — keyboard shortcuts, CSS values, code references.
+ */
+
+code {
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+
+/* ── TABLES ─────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 16px 0 24px;
+  border-radius: var(--r);
+  border: 1px solid var(--rule);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+}
+
+thead { background: #F5F4F1; }
+
+th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+
+td {
+  font-size: 14px;
+  color: var(--ink-mid);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+tr:last-child td { border-bottom: none; }
+
+/* First column acts as a row label */
+td:first-child { color: var(--ink); font-weight: 500; }
+
+/* Code inside table cells inherits the base code style */
+td code { font-size: 12px; }
+
+
+/* ── NOTE BLOCK ─────────────────────────────────────────────── */
+/*
+ * A bordered callout for tips, caveats, and important asides.
+ *
+ * Usage: <div class="note">...</div>
+ */
+
+.note {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 14px 18px;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-mid);
+}
+
+.note strong { color: var(--ink); }
+
+
+/* ── STEPS ──────────────────────────────────────────────────── */
+/*
+ * Numbered step list with badge + body layout.
+ *
+ * Usage:
+ *   <div class="steps">
+ *     <div class="step">
+ *       <div class="step-num-badge">1</div>
+ *       <div class="step-body"><strong>Title.</strong> Description.</div>
+ *     </div>
+ *   </div>
+ */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.step-num-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-mid);
+  padding-top: 3px;
+}
+
+.step-body strong { color: var(--ink); font-weight: 600; }
+
+
+/* ── ACHIEVEMENTS ───────────────────────────────────────────── */
+/*
+ * Stacked list of achievement cards — icon + name + condition.
+ */
+
+.achievements {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.achievement {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 12px 16px;
+}
+
+.ach-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.ach-name { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.ach-condition { font-size: 12px; color: var(--ink-soft); }
+
+
+/* ── PLATFORM / TAG BADGES ──────────────────────────────────── */
+/*
+ * Small pill labels — used for feature tags, version badges, etc.
+ *
+ * Usage:
+ *   <div class="badge-row">
+ *     <span class="badge">Glass</span>
+ *     <span class="badge">Bento</span>
+ *   </div>
+ */
+
+.badge-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 16px;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 40px;
+  padding: 3px 12px;
+}
+
+
+/* ── RESPONSIVE ─────────────────────────────────────────────── */
+
+@media (max-width: 560px) {
+  .nav-links {
+    display: none;
+  }
+
+  .footer-tagline,
+  .doc-footer-tagline {
+    display: none;
+  }
+}
