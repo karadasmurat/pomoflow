@@ -4,115 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PomoFlow — Invest your time intentionally</title>
+  <title>shwn. — Have you shwn up?</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=DM+Mono:wght@400&display=swap"
     rel="stylesheet">
-
+  <link rel="stylesheet" href="css/base.css">
   <style>
-    :root {
-      --bg: #F0EFED;
-      --bg-card: #FAFAF8;
-      --ink: #1A1917;
-      --ink-mid: #6B6860;
-      --ink-soft: #A8A49E;
-      --rule: #E2DFD9;
-      --accent: #2D4A3E;
-      --accent-dim: #E6EDEA;
-      --white: #FFFFFF;
-      --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-      --max: 1100px;
-      --pad: clamp(20px, 5vw, 72px);
-      --r: 6px;
-    }
+    /* ── NAV (landing-specific) ── */
+    /* base.css handles: nav shell, frosted glass, .nav-inner, .nav-logo, .nav-links, .nav-cta */
 
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: var(--f);
-      font-size: 15px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* NAV */
-    nav {
-      position: fixed;
-      inset: 0 0 auto 0;
-      z-index: 100;
-      background: rgba(240, 239, 237, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--rule);
-    }
-
-    .nav-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--pad);
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .nav-logo {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-      text-decoration: none;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
-
-    .nav-links a {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--ink-mid);
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-
-    .nav-links a:hover {
-      color: var(--ink);
-    }
-
-    .nav-cta {
-      font-size: 13px;
-      font-weight: 700;
-      background: var(--ink);
-      color: #fff;
-      padding: 9px 18px;
-      border-radius: var(--r);
-      text-decoration: none;
-      transition: opacity 0.15s;
-    }
-
-    .nav-cta:hover {
-      opacity: 0.8;
-    }
-
-    /* HERO */
+    /* ── HERO ── */
     .hero {
-      padding-top: 56px;
+      padding-top: var(--nav-h);
       display: flex;
       flex-direction: column;
     }
@@ -127,46 +32,6 @@
       grid-template-columns: 1fr 420px;
       gap: 64px;
       align-items: start;
-    }
-
-    .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-      background: var(--accent-dim);
-      padding: 5px 12px;
-      border-radius: 40px;
-      margin-bottom: 28px;
-    }
-
-    .eyebrow-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-
-    h1 {
-      font-size: clamp(32px, 4vw, 68px);
-      font-weight: 800;
-      line-height: 1.0;
-      letter-spacing: -0.035em;
-      color: var(--ink);
-      margin-bottom: 28px;
-    }
-
-    h1 .muted {
-      color: var(--ink-soft);
-      font-weight: 300;
-    }
-
-    h1 .em {
-      color: var(--accent);
     }
 
     .hero-sub {
@@ -185,45 +50,7 @@
       flex-wrap: wrap;
     }
 
-    .btn-primary {
-      font-family: var(--f);
-      font-size: 15px;
-      font-weight: 700;
-      background: var(--accent);
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: var(--r);
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.15s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-primary:hover {
-      opacity: 0.88;
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      font-family: var(--f);
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--ink-mid);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: color 0.15s;
-    }
-
-    .btn-secondary:hover {
-      color: var(--ink);
-    }
-
-    /* HERO CARD */
+    /* ── HERO CARD ── */
     .hero-card {
       background: var(--white);
       border: 1px solid var(--rule);
@@ -240,7 +67,7 @@
       justify-content: space-between;
       padding: 14px 18px;
       border-bottom: 1px solid var(--rule);
-      background: #FAFAF8;
+      background: var(--bg-card);
     }
 
     .card-dots {
@@ -263,7 +90,7 @@
       text-transform: uppercase;
     }
 
-    /* mini planner */
+    /* ── MINI PLANNER (hero card) ── */
     .planner {
       padding: 16px;
     }
@@ -402,7 +229,7 @@
       letter-spacing: 0.04em;
     }
 
-    /* TIMER CARD */
+    /* ── TIMER CARD ── */
     .timer-card-body {
       padding: 32px 28px 24px;
       display: flex;
@@ -460,7 +287,7 @@
 
     .timer-bar-fill {
       height: 100%;
-      background: #6B9E78;
+      background: #3D8F5A;
       border-radius: 2px;
     }
 
@@ -478,11 +305,11 @@
     }
 
     .timer-session.done {
-      background: #6B9E78;
+      background: #3D8F5A;
     }
 
     .timer-session.active {
-      background: #6B9E78;
+      background: #3D8F5A;
       opacity: 0.4;
     }
 
@@ -492,7 +319,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #FAFAF8;
+      background: var(--bg-card);
     }
 
     .timer-stat-val {
@@ -509,317 +336,211 @@
       margin-top: 2px;
     }
 
-    /* BELT */
-    .belt {
-      border-top: 1px solid var(--rule);
-      border-bottom: 1px solid var(--rule);
-      background: var(--white);
-      overflow: hidden;
-      padding: 18px 0;
-      margin-top: clamp(60px, 10vh, 100px);
-    }
-
-    .belt-track {
-      display: flex;
-      gap: 0;
-      width: max-content;
-      animation: ticker 30s linear infinite;
-    }
-
-    .belt-item {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-soft);
-      white-space: nowrap;
-      padding: 0 32px;
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
-
-    .belt-item::after {
-      content: '·';
-      color: var(--rule);
-    }
-
-    @keyframes ticker {
-      from {
-        transform: translateX(0);
-      }
-
-      to {
-        transform: translateX(-50%);
-      }
-    }
-
-    /* ATMOSPHERIC IMAGE BREAK */
-    .section-imgbreak {
-      position: relative;
-      height: clamp(500px, 70vh, 780px);
-      overflow: hidden;
-      background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80');
-      background-size: cover;
-      background-position: center 40%;
-      background-attachment: fixed;
-    }
-
-    .section-imgbreak::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom,
-          rgba(20, 18, 15, 0.45) 0%,
-          rgba(20, 18, 15, 0.55) 100%);
-    }
-
-    .imgbreak-inner {
-      position: relative;
-      z-index: 2;
-      height: 100%;
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--pad);
-      display: flex;
-      align-items: center;
-    }
-
-    .imgbreak-eyebrow {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.45);
-      margin-bottom: 20px;
-    }
-
-    .imgbreak-quote {
-      font-size: clamp(28px, 3.5vw, 52px);
-      font-weight: 800;
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-      color: #fff;
-    }
-
-    .imgbreak-quote span {
-      color: rgba(255, 255, 255, 0.45);
-      font-weight: 300;
-    }
-
-    .imgbreak-body {
-      margin-top: 24px;
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.75;
-      color: rgba(255, 255, 255, 0.6);
-      max-width: 480px;
-    }
-
-    /* SECTION COMMONS */
-    .section {
-      padding: clamp(80px, 12vh, 140px) 0;
-    }
-
-    .section-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--pad);
-    }
-
-    .section-eyebrow {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 16px;
-    }
-
-    h2 {
-      font-size: clamp(28px, 3.2vw, 52px);
-      font-weight: 800;
-      line-height: 1.08;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      margin-bottom: 20px;
-    }
-
-    h2 .muted {
-      color: var(--ink-soft);
-      font-weight: 300;
-    }
-
-    .section-lead {
-      font-size: 17px;
-      font-weight: 400;
-      line-height: 1.7;
-      color: var(--ink-mid);
-      max-width: 560px;
-    }
-
-    /* MANIFESTO */
-    .section-manifesto {
-      border-top: 1px solid var(--rule);
-      padding: clamp(80px, 12vh, 140px) 0;
-    }
-
-    .manifesto-block {
-      max-width: 780px;
-    }
-
-    .manifesto-line {
-      font-size: clamp(32px, 4vw, 64px);
-      font-weight: 800;
-      line-height: 1.05;
-      letter-spacing: -0.035em;
-      color: var(--ink);
-    }
-
-    .manifesto-line.muted {
-      color: var(--ink-soft);
-      font-weight: 300;
-      margin-bottom: 32px;
-    }
-
-    .manifesto-body {
-      font-size: 18px;
-      font-weight: 400;
-      line-height: 1.75;
-      color: var(--ink-mid);
-      max-width: 560px;
-      border-left: 3px solid var(--accent);
-      padding-left: 20px;
-    }
-
-    /* TENSION */
+    /* ── SECTION BACKGROUNDS ── */
     .section-tension {
       border-top: 1px solid var(--rule);
+      background: var(--bg);
+      padding: clamp(80px, 12vh, 140px) 0;
     }
 
-    .tension-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2px;
-      margin-top: 56px;
-    }
-
-    @media (max-width: 860px) {
-      .tension-grid {
-        margin-top: 32px;
-      }
-
-      .tension-card {
-        padding: 28px 24px;
-      }
-    }
-
-    .tension-card {
-      border-radius: var(--r);
-      padding: 40px;
-    }
-
-    .tension-card.old {
-      background: #E8E6E1;
-      border: 1px solid #D4D0C8;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .tension-card.old::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(to bottom right,
-          transparent calc(50% - 0.75px),
-          rgba(107, 104, 96, 0.3) calc(50% - 0.75px),
-          rgba(107, 104, 96, 0.3) calc(50% + 0.75px),
-          transparent calc(50% + 0.75px));
-      pointer-events: none;
-    }
-
-    .tension-card.new {
-      background: var(--accent);
-    }
-
-    .tension-tag {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-    }
-
-    .tension-card.old .tension-tag {
-      color: var(--ink-soft);
-      border-bottom: 1px solid var(--rule);
-    }
-
-    .tension-card.new .tension-tag {
-      color: rgba(255, 255, 255, 0.45);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    }
-
-    .tension-statement {
-      font-size: clamp(20px, 2.2vw, 32px);
-      font-weight: 700;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      margin-bottom: 20px;
-    }
-
-    .tension-card.old .tension-statement {
-      color: var(--ink-mid);
-    }
-
-    .tension-card.new .tension-statement {
-      color: #fff;
-    }
-
-    .tension-body {
-      font-size: 14px;
-      line-height: 1.75;
-    }
-
-    .tension-card.old .tension-body {
-      color: var(--ink-soft);
-    }
-
-    .tension-card.new .tension-body {
-      color: rgba(255, 255, 255, 0.65);
-    }
-
-    .tension-question {
-      font-size: clamp(18px, 1.8vw, 26px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-top: 20px;
-      font-style: italic;
-    }
-
-    .tension-question.old-q {
-      color: var(--ink-soft);
-    }
-
-    .tension-question.new-q {
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .tension-yes {
-      font-size: clamp(28px, 3vw, 48px);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: #fff;
-      line-height: 1;
-      margin-top: 8px;
-    }
-
-    /* HOW IT WORKS */
     .section-how {
       border-top: 1px solid var(--rule);
       background: var(--white);
+    }
+
+    .section-visibility {
+      border-top: 1px solid var(--rule);
+      background: var(--bg);
+    }
+
+    .section-why {
+      border-top: 1px solid var(--rule);
+      background: var(--white);
+    }
+
+    .section-planner {
+      border-top: 1px solid var(--rule);
+      background: var(--white);
+    }
+
+    .section-imgbreak {
+      background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80');
+    }
+
+    /* ── TENSION MATRIX ── */
+    .tension-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .tension-col-heads {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin-bottom: 2px;
+    }
+
+    .tension-col-head {
+      padding: 10px 24px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .tch-before {
+      background: var(--ink);
+      color: rgba(255, 255, 255, 0.7);
+      border: none;
+    }
+
+    .tch-after {
+      background: var(--grove);
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .tension-matrix {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tm-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+
+    .tm-cell {
+      padding: clamp(20px, 3vh, 32px) 24px;
+    }
+
+    .tm-cell.before {
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      border-top: none;
+    }
+
+    .tm-cell.after {
+      background: #EDF7F1;
+      border: 1px solid #B6DEC5;
+      border-top: none;
+    }
+
+    .tm-q {
+      font-size: clamp(16px, 1.8vw, 22px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .tm-cell.before .tm-q {
+      color: var(--ink-mid);
+    }
+
+    .tm-cell.after .tm-q {
+      color: var(--ink);
+    }
+
+    .tm-cell.after .tm-q .grove {
+      color: var(--grove);
+    }
+
+    .tm-body {
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.7;
+    }
+
+    .tm-cell.before .tm-body {
+      color: var(--ink-mid);
+    }
+
+    .tm-cell.after .tm-body {
+      color: var(--ink-mid);
+    }
+
+    .tension-foot {
+      margin-top: clamp(40px, 6vh, 64px);
+    }
+
+    .tension-foot-name {
+      font-size: clamp(36px, 4.5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .tension-foot-name .grove {
+      color: var(--grove);
+    }
+
+    .tension-foot-line {
+      font-size: clamp(16px, 1.8vw, 24px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--ink-mid);
+      margin-bottom: 10px;
+    }
+
+    .tension-foot-line .grove {
+      color: var(--grove);
+    }
+
+    .tension-foot-sub {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.65;
+    }
+
+    /* ── CLEAN PAGE SECTION ── */
+    .section-clean-page {
+      border-top: 1px solid var(--rule);
+      background: var(--white);
+      padding: clamp(80px, 14vh, 140px) 0;
+      background-image: repeating-linear-gradient(to bottom,
+          transparent,
+          transparent 39px,
+          var(--rule) 39px,
+          var(--rule) 40px);
+    }
+
+    .clean-page-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .clean-page-eyebrow {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 28px;
+    }
+
+    .clean-page-line {
+      font-size: clamp(32px, 5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+
+    .clean-page-line .grove {
+      color: var(--grove);
+    }
+
+    .clean-page-line .soft {
+      color: var(--ink-soft);
+      font-weight: 300;
     }
 
     .how-head {
@@ -832,16 +553,20 @@
       border-bottom: 1px solid var(--rule);
     }
 
-    .steps {
+    .section-how .steps {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 2px;
+      flex-direction: unset;
+      margin-bottom: 0;
     }
 
-    .step {
+    .section-how .step {
       background: var(--bg);
       border-radius: var(--r);
       padding: 32px 28px 36px;
+      display: block;
+      grid-template-columns: unset;
     }
 
     .step-num {
@@ -869,30 +594,26 @@
       font-size: 13px;
       line-height: 1.75;
       color: var(--ink-mid);
+      padding-top: 0;
     }
 
-    /* VISIBILITY */
-    .section-visibility {
-      border-top: 1px solid var(--rule);
-      background: var(--white);
-    }
-
+    /* ── VISIBILITY ── */
     .vis-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 80px;
-      align-items: center;
+      align-items: start;
     }
 
     .vis-quote {
-      font-size: clamp(20px, 2.2vw, 32px);
+      font-size: clamp(18px, 2vw, 28px);
       font-weight: 800;
       line-height: 1.2;
       letter-spacing: -0.025em;
       color: var(--ink);
       border-left: 3px solid var(--accent);
       padding-left: 24px;
-      margin: 28px 0 32px;
+      margin: 32px 0 28px;
     }
 
     .vis-quote .light {
@@ -900,127 +621,20 @@
       color: var(--ink-mid);
     }
 
-    /* effort card */
-    .effort-card {
-      background: var(--bg);
-      border: 1px solid var(--rule);
-      border-radius: 10px;
-      padding: 28px;
-    }
-
-    .effort-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 28px;
-    }
-
-    .effort-card-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--ink);
-      letter-spacing: -0.01em;
-    }
-
-    .effort-card-meta {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--ink-soft);
-    }
-
-    .effort-rows {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .effort-row-head {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 7px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink);
-    }
-
-    .effort-row-meta {
-      font-size: 12px;
+    .vis-beat {
+      font-size: 16px;
       font-weight: 400;
-      color: var(--ink-soft);
+      line-height: 1.75;
+      color: var(--ink-mid);
+      margin-bottom: 16px;
     }
 
-    .effort-track {
-      height: 8px;
-      background: var(--rule);
-      border-radius: 4px;
-      position: relative;
+    .vis-beat strong {
+      color: var(--ink);
+      font-weight: 700;
     }
 
-    .effort-planned {
-      position: absolute;
-      inset: 0;
-      border-radius: 4px;
-      border: 1.5px dashed #B8C9BB;
-      background: transparent;
-    }
-
-    .effort-actual {
-      height: 100%;
-      border-radius: 4px;
-    }
-
-    .ea1 {
-      background: #6B9E78;
-    }
-
-    .ea2 {
-      background: #9E8B6B;
-    }
-
-    .ea3 {
-      background: #8B6B9E;
-    }
-
-    .ea4 {
-      background: #6B8B9E;
-    }
-
-    .effort-legend {
-      display: flex;
-      gap: 18px;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid var(--rule);
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--ink-soft);
-    }
-
-    .legend-dot {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ld-a {
-      width: 16px;
-      height: 6px;
-      border-radius: 3px;
-      background: #6B9E78;
-    }
-
-    .ld-p {
-      width: 16px;
-      height: 6px;
-      border-radius: 3px;
-      border: 1.5px dashed #B8C9BB;
-    }
-
-    /* PLANNER FEATURE */
-    .section-planner {
-      border-top: 1px solid var(--rule);
-    }
-
+    /* ── PLANNER FEATURE ── */
     .planner-feature-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1036,34 +650,149 @@
       box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06);
     }
 
-    @media (max-width:860px) {
-      .planner-feature-grid {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
+    /* card stack — effort card front, calendar behind */
+    .card-stack {
+      position: relative;
+      padding-bottom: 80px;
+      padding-right: 56px;
     }
 
-    /* CLOSING */
+    .card-stack .planner-feature-card {
+      position: relative;
+      z-index: 1;
+      transform: translate(-24px, -24px);
+      opacity: 0.72;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-stack .effort-card-behind {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: calc(100% - 8px);
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      box-shadow: 0 4px 28px rgba(0, 0, 0, 0.10);
+      z-index: 2;
+      padding: 20px 24px;
+    }
+
+    /* ── WHY SHWN — comparison table ── */
+    .why-head {
+      margin-bottom: 48px;
+    }
+
+    .why-lead {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      max-width: 580px;
+      margin-top: 12px;
+    }
+
+    .why-table-close {
+      margin-top: 32px;
+      font-size: clamp(16px, 1.8vw, 22px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink-mid);
+      line-height: 1.3;
+    }
+
+    .why-table-close .grove {
+      color: var(--grove);
+    }
+
+    .why-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .why-table th {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 400;
+      padding: 10px 16px;
+      text-align: center;
+      border-bottom: 2px solid var(--rule);
+      color: var(--ink-soft);
+    }
+
+    .why-table th.col-feature {
+      text-align: left;
+      color: var(--ink-mid);
+    }
+
+    .why-table th.col-shwn {
+      color: var(--grove);
+      border-bottom-color: var(--grove);
+    }
+
+    .why-table td {
+      padding: 14px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--rule);
+      text-align: center;
+      vertical-align: middle;
+      color: var(--ink-soft);
+    }
+
+    .why-table td.col-feature {
+      text-align: left;
+      font-weight: 500;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .why-table td.col-shwn {
+      font-weight: 700;
+    }
+
+    .why-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .why-table tbody tr:hover td {
+      background: var(--bg);
+    }
+
+    .wt-yes {
+      color: var(--grove);
+      font-size: 16px;
+    }
+
+    .wt-partial {
+      color: var(--ink-soft);
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .wt-no {
+      color: var(--rule);
+      font-size: 18px;
+    }
+
+    .wt-yes-shwn {
+      color: var(--grove);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* ── CLOSING ANIMATION ── */
     .section-closing {
       border-top: 1px solid var(--rule);
       background: var(--ink);
       padding: clamp(100px, 16vh, 160px) 0;
-      text-align: center;
     }
 
     .closing-inner {
-      max-width: 620px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 0 var(--pad);
-    }
-
-    .closing-eyebrow {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.3);
-      margin-bottom: 24px;
     }
 
     .closing-inner h2 {
@@ -1083,31 +812,162 @@
       margin-bottom: 48px;
     }
 
-    .btn-light {
-      font-family: var(--f);
-      font-size: 15px;
-      font-weight: 700;
-      background: #fff;
-      color: var(--ink);
-      padding: 14px 32px;
-      border-radius: var(--r);
-      text-decoration: none;
-      display: inline-flex;
+    .closing-anim {
+      position: relative;
+      height: clamp(100px, 16vh, 160px);
+      margin-bottom: 52px;
+      overflow: hidden;
+    }
+
+    .ca-scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
       align-items: center;
-      gap: 8px;
-      transition: opacity 0.15s, transform 0.15s;
+      justify-content: flex-start;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      pointer-events: none;
     }
 
-    .btn-light:hover {
-      opacity: 0.92;
-      transform: translateY(-1px);
+    .ca-scene.active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    /* FOOTER */
+    .ca-s1-line {
+      font-size: clamp(36px, 5.5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      display: flex;
+      align-items: baseline;
+      color: rgba(255, 255, 255, 0.35);
+      white-space: nowrap;
+    }
+
+    .ca-lets {
+      white-space: nowrap;
+    }
+
+    .ca-anchor {
+      position: relative;
+      display: inline-block;
+      vertical-align: baseline;
+    }
+
+    .ca-ph {
+      visibility: hidden;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .ca-typing {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      max-width: 0;
+      display: inline-flex;
+      align-items: baseline;
+    }
+
+    .ca-inner {
+      display: inline;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.88);
+      flex-shrink: 0;
+    }
+
+    .ca-inner .gdot {
+      color: #3D8F5A;
+    }
+
+    .ca-cur {
+      display: inline-block;
+      width: 0.32em;
+      height: 0.72em;
+      background: #3D8F5A;
+      vertical-align: baseline;
+      margin-left: 1px;
+      flex-shrink: 0;
+      border-radius: 1px;
+      animation: caBlink 0.65s step-end infinite;
+    }
+
+    .ca-cur.off {
+      opacity: 0;
+      animation: none;
+    }
+
+    @keyframes caBlink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0
+      }
+    }
+
+    .ca-s2-line {
+      font-size: clamp(64px, 9vw, 110px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      display: flex;
+      align-items: baseline;
+      white-space: nowrap;
+    }
+
+    .ca-base {
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .ca-dot {
+      color: #3D8F5A;
+    }
+
+    .ca-s2-anchor {
+      position: relative;
+      display: inline-block;
+    }
+
+    .ca-s2-ph {
+      visibility: hidden;
+      white-space: pre;
+      display: inline-block;
+    }
+
+    .ca-suffix {
+      position: absolute;
+      left: 0;
+      top: 0;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.65s ease;
+    }
+
+    .ca-suffix.muted {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .ca-suffix.grove {
+      color: #3D8F5A;
+    }
+
+    .ca-suffix.on {
+      opacity: 1;
+    }
+
+    /* ── FOOTER — landing dark variant ── */
     footer {
       background: var(--ink);
       border-top: 1px solid rgba(255, 255, 255, 0.06);
-      padding: 28px var(--pad);
     }
 
     .footer-inner {
@@ -1118,91 +978,30 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
+      padding: 28px var(--pad);
     }
 
     .footer-logo {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
       color: rgba(255, 255, 255, 0.35);
     }
 
     .footer-tagline {
-      font-size: 13px;
-      font-weight: 400;
       color: rgba(255, 255, 255, 0.2);
+      font-style: normal;
     }
 
     .footer-copy {
-      font-size: 12px;
       color: rgba(255, 255, 255, 0.2);
     }
 
-    /* ANIMATIONS */
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(28px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .au {
-      opacity: 0;
-      animation: fadeUp 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-
-    .d1 {
-      animation-delay: 0.05s;
-    }
-
-    .d2 {
-      animation-delay: 0.15s;
-    }
-
-    .d3 {
-      animation-delay: 0.25s;
-    }
-
-    .d4 {
-      animation-delay: 0.38s;
-    }
-
-    .d5 {
-      animation-delay: 0.50s;
-    }
-
-    .reveal {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* RESPONSIVE */
-    @media (max-width:860px) {
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
       .hero-body {
         grid-template-columns: 1fr;
       }
 
       .hero-card {
         position: static;
-      }
-
-      .tension-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .tension-card {
-        padding: 28px 24px;
       }
 
       .how-head {
@@ -1212,31 +1011,32 @@
         padding-bottom: 28px;
       }
 
-      .steps {
+      .section-how .steps {
         grid-template-columns: 1fr 1fr;
       }
 
       .vis-grid {
         grid-template-columns: 1fr;
-        gap: 48px;
+        gap: 32px;
+      }
+
+      .planner-feature-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
       }
 
       .section {
         padding: clamp(48px, 8vh, 80px) 0;
       }
-    }
 
-    @media (max-width:560px) {
-      .nav-links {
-        display: none;
+      .tension-col-heads,
+      .tm-row {
+        grid-template-columns: 1fr;
       }
 
-      .footer-tagline {
+      .tch-before,
+      .tm-cell.before {
         display: none;
-      }
-
-      .section-closing {
-        padding: clamp(64px, 10vh, 100px) 0;
       }
     }
   </style>
@@ -1247,7 +1047,9 @@
   <!-- NAV -->
   <nav>
     <div class="nav-inner">
-      <a class="nav-logo" href="#">PomoFlow</a>
+      <a class="nav-logo" href="#"
+        style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span
+          style="color:#3D8F5A">.</span></a>
       <div class="nav-links">
         <a href="#how">How it works</a>
         <a href="#visibility">The idea</a>
@@ -1261,18 +1063,17 @@
     <div class="hero-body">
       <div>
         <div class="hero-eyebrow au d1">
-          <div class="eyebrow-dot"></div>Intentional focus
+          <div class="eyebrow-dot"></div>shwn<span style="color:#3D8F5A">.</span> let's do it again<span
+            style="color:#3D8F5A">.</span> better<span style="color:#3D8F5A">.</span>
         </div>
         <h1 class="au d2">
-          You can't control<br>
-          <span class="muted">when it's finished.</span><br>
-          You <span class="em">can</span> control<br>
-          if you showed up.
+          Have you<br>
+          shwn<span style="color:#3D8F5A">.</span> up<span style="color:#3D8F5A">?</span>
         </h1>
-        <p class="hero-sub au d3">PomoFlow tracks what you invest, not what you complete. Every session is proof of
-          progress — regardless of where the finish line sits.</p>
+        <p class="hero-sub au d3">shwn. tracks what you give. Every session is proof you showed up — regardless of where
+          the finish line sits.</p>
         <div class="hero-actions au d4">
-          <a href="#" class="btn-primary">Get early access →</a>
+          <a href="app.html" class="btn-primary">Get early access →</a>
           <a href="#how" class="btn-secondary">See how it works ↓</a>
         </div>
       </div>
@@ -1290,7 +1091,7 @@
           </div>
           <div class="timer-card-body">
             <div class="timer-focus-area">
-              <div class="timer-area-dot" style="background:#6B9E78;"></div>
+              <div class="timer-area-dot" style="background:#3D8F5A;"></div>
               <div class="timer-area-name">Deep Work</div>
             </div>
             <div class="timer-display">20:14</div>
@@ -1325,22 +1126,28 @@
 
     <div class="belt">
       <div class="belt-track">
-        <div class="belt-item">Time invested, made visible</div>
-        <div class="belt-item">Shrink deadline anxiety</div>
-        <div class="belt-item">Intentional effort, planned ahead</div>
-        <div class="belt-item">See where your effort actually went</div>
-        <div class="belt-item">Built-in Pomodoro timer</div>
-        <div class="belt-item">No guilt. Just clarity.</div>
-        <div class="belt-item">Name what matters, give it a color</div>
-        <div class="belt-item">Planned vs. actual, side by side</div>
-        <div class="belt-item">Time invested, made visible</div>
-        <div class="belt-item">Shrink deadline anxiety</div>
-        <div class="belt-item">Intentional effort, planned ahead</div>
-        <div class="belt-item">See where your effort actually went</div>
-        <div class="belt-item">Built-in Pomodoro timer</div>
-        <div class="belt-item">No guilt. Just clarity.</div>
-        <div class="belt-item">Name what matters, give it a color</div>
-        <div class="belt-item">Planned vs. actual, side by side</div>
+        <div class="belt-item belt-em">Have you shwn up?</div>
+        <div class="belt-item">not did you finish — did you show up</div>
+        <div class="belt-item belt-grove">missed yesterday? today is a clean page.</div>
+        <div class="belt-item">your time, honestly mapped</div>
+        <div class="belt-item belt-em">the deadline is still there. its shadow isn't.</div>
+        <div class="belt-item">show up. again. better.</div>
+        <div class="belt-item">no guilt. just clarity.</div>
+        <div class="belt-item">what did you give today?</div>
+        <div class="belt-item belt-em">yes. again.</div>
+        <div class="belt-item">the path to it? visible and honestly yours.</div>
+        <div class="belt-item">shwn. counts what you gave.</div>
+        <div class="belt-item belt-grove">missed yesterday? today is a clean page.</div>
+        <div class="belt-item belt-em">Have you shwn up?</div>
+        <div class="belt-item">not did you finish — did you show up</div>
+        <div class="belt-item">your time, honestly mapped</div>
+        <div class="belt-item belt-em">the deadline is still there. its shadow isn't.</div>
+        <div class="belt-item">show up. again. better.</div>
+        <div class="belt-item">no guilt. just clarity.</div>
+        <div class="belt-item">what did you give today?</div>
+        <div class="belt-item belt-em">yes. again.</div>
+        <div class="belt-item">the path to it? visible and honestly yours.</div>
+        <div class="belt-item">shwn. counts what you gave.</div>
       </div>
     </div>
   </section>
@@ -1353,36 +1160,86 @@
         <div class="imgbreak-quote">The output matters.<br><span>And the path to it needs to be<br>visible, honest, and
             sustainable.</span></div>
         <p class="imgbreak-body">The deadline is real. The thesis, the recital, the project — these things have finish
-          lines and the finish lines matter. What PomoFlow adds isn't a different goal. It's clarity about the path.</p>
+          lines and the finish lines matter. What shwn. adds isn't a different goal. It's clarity about the path.</p>
       </div>
     </div>
   </section>
 
   <!-- TENSION -->
-  <section class="section section-tension" id="how">
-    <div class="section-inner">
-      <div class="reveal">
-        <div class="section-eyebrow">A different measure</div>
-        <h2>The only metric<br><span class="muted">shouldn't be done.</span></h2>
+  <section class="section-tension" id="how">
+    <div class="tension-inner">
+
+      <div class="section-eyebrow reveal" style="margin-bottom:clamp(40px,6vh,64px);">The question that changes
+        everything</div>
+
+      <div class="tension-col-heads reveal">
+        <div class="tension-col-head tch-before">Without shwn.</div>
+        <div class="tension-col-head tch-after">With shwn.</div>
       </div>
-      <div class="tension-grid">
-        <div class="tension-card old reveal">
-          <div class="tension-tag">The incomplete picture</div>
-          <div class="tension-statement">Done or not done. That's the whole story.</div>
-          <p class="tension-body">When the only thing that counts is finishing, everything before the finish line feels
-            like falling behind. The work becomes invisible.</p>
-          <div class="tension-question old-q">did you finish?</div>
+
+      <div class="tension-matrix">
+
+        <div class="tm-row reveal">
+          <div class="tm-cell before">
+            <div class="tm-q">Did you finish?</div>
+            <p class="tm-body">Pass or fail. Nothing in between. When life gets in the way, there's only one answer —
+              and it's the wrong one.</p>
+          </div>
+          <div class="tm-cell after">
+            <div class="tm-q">Have you <span class="grove">shwn up?</span></div>
+            <p class="tm-body">A question you can always answer yes to. You control whether you showed up — not whether
+              the stars aligned.</p>
+          </div>
         </div>
-        <div class="tension-card new reveal">
-          <div class="tension-tag">The fuller picture</div>
-          <div class="tension-statement">Give this three hours of honest effort by Friday.</div>
-          <p class="tension-body">A commitment you can actually keep. That's a question you can always answer:</p>
-          <div class="tension-question new-q">did you show up?</div>
-          <div class="tension-yes">yes.</div>
+
+        <div class="tm-row reveal">
+          <div class="tm-cell before">
+            <div class="tm-q">Finish this by Friday.</div>
+            <p class="tm-body">A deadline with no path. Everything before the finish line feels like falling behind.</p>
+          </div>
+          <div class="tm-cell after">
+            <div class="tm-q">Give this <span class="grove">three hours</span> by Friday.</div>
+            <p class="tm-body">A commitment you can actually keep. Small, honest, repeatable — and the deadline is still
+              there.</p>
+          </div>
         </div>
+
+        <div class="tm-row reveal">
+          <div class="tm-cell before">
+            <div class="tm-q">I was busy all day.</div>
+            <p class="tm-body">No record of where the time went. The day ends uncertain — was it enough? Did it count?
+            </p>
+          </div>
+          <div class="tm-cell after">
+            <div class="tm-q">I gave <span class="grove">2h 40m</span> to Writing.</div>
+            <p class="tm-body">Is that what you intended? Now you know. Go again. better.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tension-foot reveal">
+        <div class="tension-foot-name">shwn<span class="grove">.</span></div>
+        <div class="tension-foot-line">Let's do it again<span class="grove">.</span> better<span class="grove">.</span>
+        </div>
+        <p class="tension-foot-sub">The finish line matters. The path to it? Visible and honestly yours.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CLEAN PAGE -->
+  <section class="section-clean-page">
+    <div class="clean-page-inner reveal">
+      <div class="clean-page-eyebrow">No guilt. Just clarity.</div>
+      <div class="clean-page-line">
+        Missed yesterday<span class="grove">?</span><br>
+        <span class="soft">Today is a</span> clean page<span class="grove">.</span>
       </div>
     </div>
   </section>
+
+  <!-- HOW IT WORKS -->
   <section class="section section-how">
     <div class="section-inner">
       <div class="how-head reveal">
@@ -1391,7 +1248,8 @@
           <h2>Four steps.<br><span class="muted">At your pace.</span></h2>
         </div>
         <p class="section-lead">Progress isn't built in marathons. It's built in honest, repeated acts of showing up.
-          Small yeses, repeated daily, compound into real progress.</p>
+          shwn<span style="color:#3D8F5A">.</span> let's do it again<span style="color:#3D8F5A">.</span> better<span
+            style="color:#3D8F5A">.</span></p>
       </div>
       <div class="steps">
         <div class="step reveal">
@@ -1426,19 +1284,118 @@
   <!-- VISIBILITY -->
   <section class="section section-visibility" id="visibility">
     <div class="section-inner">
-      <div class="vis-grid">
-        <div class="reveal">
-          <div class="section-eyebrow">Why it works</div>
-          <h2>Focus is only half of it.</h2>
-          <div class="vis-quote">The sessions build the focus.<br><span class="light">The visibility shrinks the
-              anxiety.</span></div>
-          <p class="section-lead">That background dread before a deadline — it's not about the work. It's about not
-            knowing where you stand. PomoFlow makes that visible. Not a log of minutes — a map of where your effort is
-            actually going.</p>
+
+      <!-- two text columns -->
+      <div class="vis-grid reveal">
+        <div>
+          <div class="section-eyebrow">The feeling you know</div>
+          <h2>That dread before a deadline.<br><span class="muted">It lives in the dark.</span></h2>
+          <p class="section-lead">Not the night-before panic. The weeks-before weight. You know the deadline is there.
+            It's in your calendar. You're aware of it. But awareness isn't a plan — and a plan you haven't committed to
+            doesn't move you.</p>
         </div>
-        <div class="reveal">
-          <div class="effort-card">
-            <div class="effort-card-header">
+        <div style="padding-top:8px;">
+          <p class="vis-beat"><strong>Plan.</strong> Break it into sessions you'll actually give. Put them on the
+            calendar before the week starts. Now the deadline has a path.</p>
+          <p class="vis-beat"><strong>Focus.</strong> Show up for each session. Your only job is to be present. The
+            record builds session by session.</p>
+          <p class="vis-beat"><strong>Reflect.</strong> See what you've given and what remains. Not to judge — to
+            understand. The dread has less to hold onto when the path is visible.</p>
+        </div>
+      </div>
+
+      <!-- pull quote + close — full width below -->
+      <div class="reveal">
+        <div class="vis-quote">A committed session is worth more<br><span class="light">than a deadline you're aware
+            of.</span></div>
+        <p class="section-lead">shwn. gives you all three. The dread doesn't disappear. But it stops living in the dark.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PLANNER FEATURE -->
+  <section class="section section-planner" id="planner">
+    <div class="section-inner">
+      <div class="planner-feature-grid reveal">
+        <div>
+          <div class="section-eyebrow">The Focus Planner</div>
+          <h2>Your effort, distributed<br><span class="muted">across what matters.</span></h2>
+          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what
+            matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
+          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.
+          </p>
+        </div>
+        <div class="card-stack">
+          <!-- front: planner calendar card -->
+          <div class="planner-feature-card">
+            <div class="hero-card-header">
+              <div class="card-dots">
+                <div class="card-dot"></div>
+                <div class="card-dot"></div>
+                <div class="card-dot"></div>
+              </div>
+              <div class="card-title">Focus Planner · Mar 10–16</div>
+              <div style="font-size:11px;color:var(--ink-soft);font-weight:500;">All ▾</div>
+            </div>
+            <div class="planner">
+              <div class="planner-week">
+                <div></div>
+                <div class="pw-head">M<br>10</div>
+                <div class="pw-head today">T<br>11</div>
+                <div class="pw-head">W<br>12</div>
+                <div class="pw-head">T<br>13</div>
+                <div class="pw-head">F<br>14</div>
+                <div class="pw-head">S<br>15</div>
+                <div class="pw-head">S<br>16</div>
+                <div class="pw-time-col">
+                  <div class="pw-tl">8a</div>
+                  <div class="pw-tl">10a</div>
+                  <div class="pw-tl">12p</div>
+                  <div class="pw-tl">2p</div>
+                  <div class="pw-tl">4p</div>
+                </div>
+                <div class="pw-col">
+                  <div class="pw-block c-green" style="top:38px;height:62px;">Deep Work</div>
+                  <div class="pw-block c-green actual" style="top:42px;height:50px;"></div>
+                </div>
+                <div class="pw-col today-col">
+                  <div class="pw-now" style="top:90px;"></div>
+                  <div class="pw-block c-amber" style="top:0;height:48px;">Research</div>
+                  <div class="pw-block c-amber actual" style="top:4px;height:38px;"></div>
+                  <div class="pw-block c-green" style="top:108px;height:42px;"></div>
+                </div>
+                <div class="pw-col">
+                  <div class="pw-block c-violet" style="top:72px;height:48px;">Creative</div>
+                  <div class="pw-block c-green" style="top:140px;height:38px;"></div>
+                </div>
+                <div class="pw-col">
+                  <div class="pw-block c-amber" style="top:0;height:38px;"></div>
+                  <div class="pw-block c-green" style="top:72px;height:48px;"></div>
+                </div>
+                <div class="pw-col">
+                  <div class="pw-block c-violet" style="top:38px;height:56px;"></div>
+                </div>
+                <div class="pw-col"></div>
+                <div class="pw-col" style="border-right:none;"></div>
+              </div>
+            </div>
+            <div class="planner-footer">
+              <div class="planner-stat">
+                <div class="planner-stat-val">8.5h</div>
+                <div class="planner-stat-label">logged this week</div>
+              </div>
+              <div class="planner-stat" style="text-align:right;">
+                <div class="planner-stat-val">14h</div>
+                <div class="planner-stat-label">planned this week</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- back: effort card peeking behind -->
+          <div class="effort-card-behind">
+            <div class="effort-card-header" style="margin-bottom:16px;">
               <div class="effort-card-title">This week's effort</div>
               <div class="effort-card-meta">Wed · mid-week</div>
             </div>
@@ -1464,13 +1421,6 @@
                   <div class="effort-actual ea3" style="width:8%;"></div>
                 </div>
               </div>
-              <div class="effort-row">
-                <div class="effort-row-head"><span>Admin</span><span class="effort-row-meta">1h / 2h</span></div>
-                <div class="effort-track">
-                  <div class="effort-planned" style="width:33%;"></div>
-                  <div class="effort-actual ea4" style="width:17%;"></div>
-                </div>
-              </div>
             </div>
             <div class="effort-legend">
               <div class="legend-dot">
@@ -1481,96 +1431,116 @@
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
   </section>
 
-  <!-- PLANNER FEATURE -->
-  <section class="section section-planner" id="planner">
+  <!-- WHY SHWN -->
+  <section class="section section-why" id="why">
     <div class="section-inner">
-      <div class="planner-feature-grid reveal">
-        <div>
-          <div class="section-eyebrow">The Focus Planner</div>
-          <h2>Your effort, distributed<br><span class="muted">across what matters.</span></h2>
-          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what
-            matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
-          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.
-          </p>
-        </div>
-        <div class="planner-feature-card">
-          <div class="hero-card-header">
-            <div class="card-dots">
-              <div class="card-dot"></div>
-              <div class="card-dot"></div>
-              <div class="card-dot"></div>
-            </div>
-            <div class="card-title">Focus Planner · Mar 10–16</div>
-            <div style="font-size:11px;color:var(--ink-soft);font-weight:500;">All ▾</div>
-          </div>
-          <div class="planner">
-            <div class="planner-week">
-              <div></div>
-              <div class="pw-head">M<br>10</div>
-              <div class="pw-head today">T<br>11</div>
-              <div class="pw-head">W<br>12</div>
-              <div class="pw-head">T<br>13</div>
-              <div class="pw-head">F<br>14</div>
-              <div class="pw-head">S<br>15</div>
-              <div class="pw-head">S<br>16</div>
-              <div class="pw-time-col">
-                <div class="pw-tl">8a</div>
-                <div class="pw-tl">10a</div>
-                <div class="pw-tl">12p</div>
-                <div class="pw-tl">2p</div>
-                <div class="pw-tl">4p</div>
-              </div>
-              <div class="pw-col">
-                <div class="pw-block c-green" style="top:38px;height:62px;">Deep Work</div>
-                <div class="pw-block c-green actual" style="top:42px;height:50px;"></div>
-              </div>
-              <div class="pw-col today-col">
-                <div class="pw-now" style="top:90px;"></div>
-                <div class="pw-block c-amber" style="top:0;height:48px;">Research</div>
-                <div class="pw-block c-amber actual" style="top:4px;height:38px;"></div>
-                <div class="pw-block c-green" style="top:108px;height:42px;"></div>
-              </div>
-              <div class="pw-col">
-                <div class="pw-block c-violet" style="top:72px;height:48px;">Creative</div>
-                <div class="pw-block c-green" style="top:140px;height:38px;"></div>
-              </div>
-              <div class="pw-col">
-                <div class="pw-block c-amber" style="top:0;height:38px;"></div>
-                <div class="pw-block c-green" style="top:72px;height:48px;"></div>
-              </div>
-              <div class="pw-col">
-                <div class="pw-block c-violet" style="top:38px;height:56px;"></div>
-              </div>
-              <div class="pw-col"></div>
-              <div class="pw-col" style="border-right:none;"></div>
-            </div>
-          </div>
-          <div class="planner-footer">
-            <div class="planner-stat">
-              <div class="planner-stat-val">8.5h</div>
-              <div class="planner-stat-label">logged this week</div>
-            </div>
-            <div class="planner-stat" style="text-align:right;">
-              <div class="planner-stat-val">14h</div>
-              <div class="planner-stat-label">planned this week</div>
-            </div>
-          </div>
-        </div>
+
+      <div class="why-head reveal">
+        <div class="section-eyebrow">A different measure. A different tool.</div>
+        <h2>Built differently<span class="grove">.</span><br><span class="muted">By design.</span></h2>
+        <p class="why-lead">Most productivity tools measure what you finished. shwn. measures what you invested — and
+          that changes every feature underneath it.</p>
       </div>
+
+      <div class="reveal">
+        <table class="why-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Feature</th>
+              <th>Task apps</th>
+              <th>Calendar apps</th>
+              <th>Pomodoro timers</th>
+              <th class="col-shwn">shwn.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-feature">Tracks effort, not completion</td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-partial">partial</span></td>
+              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Commitment blocks on a calendar</td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-partial">partial</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Planned vs. actual vs. deadline layers</td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Immutable past / live future calendar</td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Session-based duration arithmetic</td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-partial">partial</span></td>
+              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+            </tr>
+            <tr>
+              <td class="col-feature">Reflect step built into the loop</td>
+              <td><span class="wt-partial">partial</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td><span class="wt-no">—</span></td>
+              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="why-table-close">From checking off tasks — to showing up for what matters.</p>
+      </div>
+
     </div>
   </section>
 
   <!-- CLOSING -->
   <section class="section-closing">
     <div class="closing-inner reveal">
-      <div class="closing-eyebrow">Your intention. Your pace. Your progress.</div>
-      <h2>From checking off tasks<br><span class="muted">to investing in what matters.</span></h2>
-      <p class="closing-sub">One session at a time. One honest effort at a time.</p>
+
+      <div class="closing-anim">
+        <!-- scene 1: let's [verb] -->
+        <div class="ca-scene" id="caS1">
+          <div class="ca-s1-line">
+            <span class="ca-lets">let's&nbsp;</span>
+            <span class="ca-anchor">
+              <span class="ca-ph">reflect.</span>
+              <span class="ca-typing" id="caTyping">
+                <span class="ca-inner" id="caInner"></span><span class="ca-cur off" id="caCur"></span>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- scene 2: shwn. again/better -->
+        <div class="ca-scene" id="caS2">
+          <div class="ca-s2-line">
+            <span class="ca-base">shwn</span><span class="ca-dot">.</span>
+            <span class="ca-s2-anchor">
+              <span class="ca-s2-ph">better</span>
+              <span class="ca-suffix muted" id="caAgain">again</span>
+              <span class="ca-suffix grove" id="caBetter">better</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <p class="closing-sub">One session at a time. One honest act of showing up at a time.</p>
       <a href="app.html" class="btn-light">Get early access →</a>
     </div>
   </section>
@@ -1578,11 +1548,155 @@
   <!-- FOOTER -->
   <footer>
     <div class="footer-inner">
-      <span class="footer-logo">PomoFlow</span>
-      <span class="footer-tagline">Designed for intentional focus.</span>
-      <span class="footer-copy">© 2026 PomoFlow</span>
+      <span class="footer-logo"
+        style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span
+          style="color:#3D8F5A">.</span></span>
+      <span class="footer-tagline" style="font-family:'Manrope',sans-serif;font-weight:600;font-style:normal;">Have you
+        shwn up?</span>
+      <span class="footer-copy">© 2026 shwn.</span>
     </div>
   </footer>
+
+  <script>
+    (function () {
+      const caS1 = document.getElementById('caS1');
+      const caS2 = document.getElementById('caS2');
+      const caTyping = document.getElementById('caTyping');
+      const caInner = document.getElementById('caInner');
+      const caCur = document.getElementById('caCur');
+      const caAgain = document.getElementById('caAgain');
+      const caBetter = document.getElementById('caBetter');
+      if (!caS1) return;
+
+      const VERBS = ['show up.', 'plan.', 'focus.', 'reflect.', 'repeat.', 'do it.'];
+      const TYPE_MS = 82;
+      const DEL_MS = 50;
+      const HOLD_MS = 860;
+      const DOIT_HOLD = 2600;
+      const PAUSE_MS = 260;
+      const CHAR_W = 0.58;
+
+      let timer = null;
+      function wait(ms, cb) { timer = setTimeout(cb, ms); }
+      function curOn() { caCur.classList.remove('off'); }
+      function curOff() { caCur.classList.add('off'); }
+
+      function showScene(el) {
+        [caS1, caS2].forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+      }
+
+      function blinkReady(n, cb) {
+        curOn();
+        let count = 0;
+        const iv = setInterval(() => {
+          count++;
+          if (count >= n * 2) { clearInterval(iv); curOn(); cb(); }
+        }, 320);
+      }
+
+      function buildHTML(verb) {
+        return verb.slice(0, -1) + '<span class="gdot">.</span>';
+      }
+
+      function typeVerb(verb, onDone) {
+        caInner.innerHTML = buildHTML(verb);
+        caTyping.style.maxWidth = '0';
+        curOn();
+        let i = 0;
+        function step() {
+          i++;
+          caTyping.style.maxWidth = (i * CHAR_W + 0.3) + 'em';
+          if (i >= verb.length) {
+            wait(verb === 'do it.' ? DOIT_HOLD : HOLD_MS, onDone);
+            return;
+          }
+          timer = setTimeout(step, TYPE_MS);
+        }
+        timer = setTimeout(step, TYPE_MS);
+      }
+
+      function deleteVerb(verb, onDone) {
+        let i = verb.length;
+        function step() {
+          i--;
+          caTyping.style.maxWidth = i > 0 ? (i * CHAR_W + 0.3) + 'em' : '0';
+          if (i <= 0) { caInner.innerHTML = ''; curOff(); wait(PAUSE_MS, onDone); return; }
+          timer = setTimeout(step, DEL_MS);
+        }
+        timer = setTimeout(step, DEL_MS);
+      }
+
+      function runVerbs(idx, onAllDone) {
+        if (idx >= VERBS.length) { onAllDone(); return; }
+        const verb = VERBS[idx];
+        const isLast = idx === VERBS.length - 1;
+        typeVerb(verb, () => {
+          if (isLast) { onAllDone(); }
+          else { deleteVerb(verb, () => runVerbs(idx + 1, onAllDone)); }
+        });
+      }
+
+      function scene2(onLoop) {
+        caAgain.classList.remove('on');
+        caBetter.classList.remove('on');
+        showScene(caS2);
+        wait(1500, () => {
+          caAgain.classList.add('on');
+          wait(1300, () => {
+            caAgain.classList.remove('on');
+            wait(700, () => {
+              caBetter.classList.add('on');
+              wait(2800, () => {
+                caS2.classList.remove('active');
+                caBetter.classList.remove('on');
+                wait(700, onLoop);
+              });
+            });
+          });
+        });
+      }
+
+      function loop() {
+        clearTimeout(timer);
+        caTyping.style.maxWidth = '0';
+        caInner.innerHTML = '';
+        caAgain.classList.remove('on');
+        caBetter.classList.remove('on');
+        [caS1, caS2].forEach(s => s.classList.remove('active'));
+        curOff();
+        wait(300, () => {
+          showScene(caS1);
+          wait(120, () => {
+            // seed ca-inner with an invisible zero-width space so ca-typing
+            // has a real text baseline for the cursor to sit on
+            caInner.innerHTML = '<span style="opacity:0;font-size:0;user-select:none">x</span>';
+            caTyping.style.maxWidth = '1em';
+            blinkReady(3, () => {
+              caInner.innerHTML = '';
+              caTyping.style.maxWidth = '0';
+              runVerbs(0, () => {
+                wait(400, () => {
+                  caS1.classList.remove('active');
+                  wait(800, () => scene2(() => loop())); // 800ms = fade-out duration + buffer
+                });
+              });
+            });
+          });
+        });
+      }
+
+      // start when section scrolls into view
+      const closing = document.querySelector('.section-closing');
+      let started = false;
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting && !started) { started = true; loop(); }
+        });
+      }, { threshold: 0.3 });
+      if (closing) obs.observe(closing);
+    })();
+  </script>
 
   <script>
     const observer = new IntersectionObserver((entries) => {

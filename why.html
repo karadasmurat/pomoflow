@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Makes PomoFlow Unique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0EFED;
+    --bg-card: #FAFAF8;
+    --white: #FFFFFF;
+    --ink: #1A1917;
+    --ink-mid: #6B6860;
+    --ink-soft: #A8A49E;
+    --rule: #E2DFD9;
+    --accent: #2D4A3E;
+    --accent-dim: #E6EDEA;
+    --r: 6px;
+    --max: 960px;
+    --pad: clamp(20px, 5vw, 64px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: clamp(48px, 8vh, 80px) var(--pad) clamp(32px, 5vh, 56px);
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-dim);
+    padding: 5px 12px; border-radius: 40px;
+    margin-bottom: 24px;
+  }
+  .eyebrow-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.0;
+    margin-bottom: 16px;
+  }
+  h1 .muted {
+    color: var(--ink-soft);
+    font-weight: 300;
+  }
+
+  .header-body {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--ink-mid);
+    max-width: 560px;
+    margin-top: 16px;
+  }
+
+  /* ── RULE ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+
+  /* ── MAIN GRID ── */
+  .main {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: clamp(32px, 5vh, 56px) var(--pad) clamp(48px, 8vh, 80px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── DIFFERENTIATOR CARDS ── */
+  .diff-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.03);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  .diff-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .card-inner {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 0;
+  }
+
+  .card-num {
+    background: var(--bg-card);
+    border-right: 1px solid var(--rule);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 0 24px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+
+  .card-body {
+    padding: 24px 28px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  .card-text {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink-mid);
+  }
+
+  .card-text strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ── CALLOUT ── */
+  .callout {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--r) var(--r) 0;
+    padding: 20px 24px;
+    margin-top: 8px;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  .callout.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .callout-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .callout-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--ink-mid);
+    font-style: italic;
+  }
+
+  /* ── VERSUS TABLE ── */
+  .versus-wrap {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  .versus-wrap.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .versus-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+
+  .versus-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--r);
+    border: 1px solid var(--rule);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+  }
+
+  thead tr {
+    background: #F5F4F1;
+  }
+
+  th {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    padding: 10px 16px;
+    text-align: left;
+  }
+  th:not(:first-child) { text-align: center; }
+
+  td {
+    font-size: 13px;
+    color: var(--ink-mid);
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  td:not(:first-child) { text-align: center; }
+
+  .check { color: var(--accent); font-weight: 700; font-size: 15px; }
+  .cross { color: var(--ink-soft); font-size: 15px; }
+  .partial { color: #9E8B6B; font-size: 13px; font-weight: 600; }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--rule);
+    background: var(--bg-card);
+    padding: clamp(24px, 4vh, 40px) var(--pad);
+    text-align: center;
+  }
+  .footer-text {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .footer-text em {
+    font-style: italic;
+    color: var(--ink-mid);
+  }
+
+  @media (max-width: 560px) {
+    .card-num { display: none; }
+    .card-inner { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="eyebrow"><span class="eyebrow-dot"></span>Competitive positioning</div>
+  <h1>What makes PomoFlow<br><span class="muted">different from everything else</span></h1>
+  <p class="header-body">Most productivity tools measure completion. PomoFlow measures investment — and that changes everything about how progress feels.</p>
+</div>
+
+<hr class="divider">
+
+<main class="main">
+
+  <!-- Card 1 -->
+  <div class="diff-card">
+    <div class="card-inner">
+      <div class="card-num">01</div>
+      <div class="card-body">
+        <div class="card-title">Effort over output — a different measure of progress</div>
+        <p class="card-text">Most tools (Todoist, Things, Notion tasks) are built around <strong>completion</strong>. PomoFlow is built around <strong>investment</strong>. The core question shifts from "did you finish?" to "did you show up honestly?" — a question you can always answer yes to, even when life gets in the way. This isn't just a philosophy; it shapes every feature decision in the product.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="diff-card">
+    <div class="card-inner">
+      <div class="card-num">02</div>
+      <div class="card-body">
+        <div class="card-title">Visibility shrinks the shadow of a deadline</div>
+        <p class="card-text">PomoFlow frames deadline anxiety as a <strong>visibility problem, not a focus problem</strong>. Most dread comes from not knowing where you stand — not from the work itself. The Focus Planner doesn't help you go faster. It helps you see clearly. When you can see your effort honestly, the deadline is still there — but its shadow gets smaller.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class="diff-card">
+    <div class="card-inner">
+      <div class="card-num">03</div>
+      <div class="card-body">
+        <div class="card-title">Commitment blocks, not tasks</div>
+        <p class="card-text">Instead of to-do items, users place <strong>session-based effort commitments</strong> on a calendar — "give this 3 hours by Friday." These are distinct from deadline markers (events in the world) and actuals (what really happened). Showing all three layers simultaneously on one calendar is a deliberate design choice that standard task managers and even most calendar apps don't attempt.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4 -->
+  <div class="diff-card">
+    <div class="card-inner">
+      <div class="card-num">04</div>
+      <div class="card-body">
+        <div class="card-title">The immutable past / live future split</div>
+        <p class="card-text">A technically distinctive feature: past commitment blocks <strong>freeze their duration</strong> the moment the day passes (<code style="font-family:'SF Mono',monospace;font-size:12px;font-weight:600;background:var(--accent-dim);color:var(--accent);padding:2px 6px;border-radius:4px;">snapshotDuration</code>), while future blocks recalculate live from current session settings. The calendar always tells a true story — you can't accidentally rewrite history by changing your Pomodoro length today. This level of data integrity is unusual in consumer productivity software.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 5 -->
+  <div class="diff-card">
+    <div class="card-inner">
+      <div class="card-num">05</div>
+      <div class="card-body">
+        <div class="card-title">Sessions as the unit of planning</div>
+        <p class="card-text">Rather than hours or arbitrary blocks, everything is expressed in <strong>Pomodoro sessions</strong> — the unit the user has already configured. The UI derives durations automatically ("2 sessions = 85 minutes at your settings"), removing mental arithmetic and keeping planning tightly coupled to how you actually work at your desk.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 6 -->
+  <div class="diff-card">
+    <div class="card-inner">
+      <div class="card-num">06</div>
+      <div class="card-body">
+        <div class="card-title">Reflect as a first-class step</div>
+        <p class="card-text">The four-step loop — Define → Commit → Focus → <strong>Reflect</strong> — makes review a core product behaviour, not an afterthought. The effort history is framed as "a map of where your energy went" — a diagnostic tool, not a guilt log. The question it poses is simply: <em>is my time reflecting my priorities?</em></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Callout -->
+  <div class="callout">
+    <div class="callout-label">The short version</div>
+    <p class="callout-text">Where competitors help you manage tasks, PomoFlow helps you manage attention and intention — and it's built a coherent philosophy, data model, and UX all pointed at the same idea.</p>
+  </div>
+
+  <!-- Versus table -->
+  <div class="versus-wrap" style="margin-top: 20px;">
+    <div class="versus-label">At a glance</div>
+    <div class="versus-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature / Idea</th>
+            <th>Task apps</th>
+            <th>Calendar apps</th>
+            <th>Pomodoro timers</th>
+            <th>PomoFlow</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Tracks effort, not completion</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="partial">partial</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Commitment blocks on a calendar</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="partial">partial</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Planned vs. actual vs. deadline layers</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Immutable past / live future calendar</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Session-based duration arithmetic</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="partial">partial</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Reflect step built into the loop</td>
+            <td><span class="partial">partial</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <p class="footer-text"><em>Your intention. Your pace. Your progress.</em> &nbsp;·&nbsp; PomoFlow © 2026</p>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), 0);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.diff-card, .callout, .versus-wrap').forEach((el, i) => {
+    el.style.transitionDelay = `${i * 60}ms`;
+    observer.observe(el);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>shwn. · Brand Identity · Final · 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --void: #18181A; --void-2: #2A2A2E; --void-3: #3A3A3F;
+    --chalk: #F8F7FC; --stone-50: #F1F0F5; --stone-100: #E4E3EA;
+    --stone-300: #BFBEC8; --stone-500: #7A7A85;
+    --grove: #3D8F5A; --grove-dark: #2E6B44;
+    --grove-200: #B6DEC5; --grove-50: #EDF7F1;
+    --honey: #C07A2A; --honey-50: #FAF0DC; --honey-200: #F0CC90;
+    --f: 'Manrope', sans-serif; --m: 'DM Mono', monospace;
+  }
+  body { font-family: var(--f); background: var(--chalk); color: var(--void); max-width: 860px; margin: 0 auto; }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--void); padding: 56px 44px 52px;
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: 'shwn.';
+    position: absolute; right: -24px; top: -16px;
+    font-family: var(--f); font-size: 190px; font-weight: 800;
+    letter-spacing: -0.04em; color: rgba(255,255,255,0.025);
+    line-height: 1; pointer-events: none; user-select: none;
+  }
+  .hero-eyebrow { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.18); margin-bottom: 40px; }
+  .hero-wm { font-size: 80px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; color: white; margin-bottom: 8px; }
+  .hero-wm .dot { color: var(--grove); }
+  .hero-pronun { font-family: var(--m); font-size: 11px; color: rgba(255,255,255,0.18); letter-spacing: 0.08em; margin-bottom: 36px; }
+  .hero-rule { width: 32px; height: 2px; background: var(--grove); border-radius: 2px; margin-bottom: 20px; }
+  .hero-tagline { font-size: 17px; font-weight: 400; color: rgba(255,255,255,0.45); line-height: 1.6; max-width: 320px; }
+  .hero-tagline strong { color: rgba(255,255,255,0.82); font-weight: 600; }
+
+  /* ── SHARED ── */
+  .section { padding: 44px; border-top: 1px solid var(--stone-100); }
+  .sec-bg { background: white; }
+  .sec-label { font-family: var(--m); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--stone-300); margin-bottom: 28px; }
+  .dot { color: var(--grove); }
+
+  /* ── ICON ── */
+  .icon-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
+  .icon-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .icon-lbl { font-family: var(--m); font-size: 10px; color: var(--stone-300); }
+  .ic { display: flex; align-items: center; justify-content: center; font-family: var(--f); font-weight: 800; letter-spacing: -0.025em; }
+  .ic-dark  { background: var(--void); color: white; }
+  .ic-grove { background: var(--grove); color: white; }
+  .ic-white { background: white; color: var(--void); border: 1px solid var(--stone-100); }
+  .s80 { width:80px; height:80px; font-size:26px; border-radius:22px; }
+  .s60 { width:60px; height:60px; font-size:20px; border-radius:16px; }
+  .s44 { width:44px; height:44px; font-size:15px; border-radius:12px; }
+  .s28 { width:28px; height:28px; font-size:10px; border-radius:8px; }
+  .ic-note { font-size:12px; color:var(--stone-500); line-height:1.7; max-width:480px; }
+  .ic-wm { display: flex; align-items: flex-end; }
+  .ic-wm-dot { color: var(--grove); line-height: 1; margin-bottom: -1px; }
+
+  /* ── WORDMARK ── */
+  .wm-stack { display: flex; flex-direction: column; gap: 8px; }
+  .wm-row { border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .wm-on-white { background: white; border: 1px solid var(--stone-100); }
+  .wm-on-chalk { background: var(--chalk); border: 1px solid var(--stone-100); }
+  .wm-on-dark  { background: var(--void); }
+  .wm-on-grove { background: var(--grove); }
+  .wm-text { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .wm-sub  { font-family: var(--m); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
+  .wm-pill { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; }
+  .c-dark  { color: var(--void); } .c-mid { color: var(--stone-500); }
+  .c-white { color: white; } .c-faint { color: rgba(255,255,255,0.28); }
+  .pill-grove { background: var(--grove-50); color: var(--grove-dark); border: 1px solid var(--grove-200); }
+  .pill-dark  { background: var(--stone-50); color: var(--stone-500); border: 1px solid var(--stone-100); }
+  .pill-ghost { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+  .dot-rule { margin-top: 16px; padding: 14px 18px; background: var(--grove-50); border: 1px solid var(--grove-200); border-radius: 10px; display: flex; align-items: flex-start; gap: 12px; }
+  .dot-rule-mark { font-size: 22px; font-weight: 800; color: var(--grove); line-height: 1; flex-shrink: 0; }
+  .dot-rule-text { font-size: 12px; color: var(--grove-dark); line-height: 1.65; }
+  .dot-rule-text strong { font-weight: 700; }
+
+  /* ── PALETTE ── */
+  .palette { display: grid; grid-template-columns: repeat(auto-fit, minmax(106px,1fr)); gap: 8px; margin-bottom: 12px; }
+  .sw { border-radius: 10px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }
+  .sw-col { height: 52px; }
+  .sw-info { background: white; padding: 8px 10px; }
+  .sw-name { font-size: 12px; font-weight: 700; color: var(--void); display: block; }
+  .sw-hex  { font-family: var(--m); font-size: 10px; color: var(--stone-300); }
+  .sw-role { font-size: 10px; color: var(--stone-300); display: block; margin-top: 1px; }
+
+  /* ── TYPE ── */
+  .type-rows { display: flex; flex-direction: column; gap: 8px; }
+  .type-row { background: white; border: 1px solid var(--stone-100); border-radius: 10px; padding: 14px 20px; display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; }
+  .type-meta { font-family: var(--m); font-size: 10px; color: var(--stone-300); min-width: 130px; flex-shrink: 0; line-height: 1.6; }
+
+  /* ── TAGLINES ── */
+  .taglines { display: flex; flex-direction: column; gap: 6px; }
+  .tl { background: white; border: 1px solid var(--stone-100); border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .tl-text { font-size: 15px; font-weight: 500; color: var(--void); line-height: 1.5; letter-spacing: -0.01em; }
+  .tl-ctx  { font-family: var(--m); font-size: 10px; color: var(--stone-300); letter-spacing: 0.08em; text-transform: uppercase; flex-shrink: 0; }
+
+  /* ── TONE ── */
+  .principles { display: flex; flex-direction: column; gap: 2px; margin-bottom: 24px; }
+  .principle { background: var(--void); padding: 22px 26px; display: flex; align-items: flex-start; gap: 18px; }
+  .principle:first-child { border-radius: 12px 12px 2px 2px; }
+  .principle:last-child  { border-radius: 2px 2px 12px 12px; }
+  .p-num { font-family: var(--m); font-size: 10px; color: rgba(255,255,255,0.18); padding-top: 3px; flex-shrink: 0; width: 20px; }
+  .p-stmt { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: -0.01em; line-height: 1.4; margin-bottom: 5px; }
+  .p-note { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.3); line-height: 1.65; }
+  .ex-label { font-family: var(--m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stone-300); margin-bottom: 10px; }
+  .examples { display: flex; flex-direction: column; gap: 6px; }
+  .ex { background: white; border-radius: 12px; border: 1px solid var(--stone-100); overflow: hidden; }
+  .ex-head { padding: 9px 16px; background: var(--stone-50); border-bottom: 1px solid var(--stone-100); display: flex; align-items: center; gap: 8px; }
+  .ex-ctx { font-family: var(--m); font-size: 10px; color: var(--stone-500); letter-spacing: 0.08em; text-transform: uppercase; }
+  .d { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .d-g { background: var(--grove); } .d-a { background: var(--honey); } .d-n { background: var(--stone-300); }
+  .ex-body { padding: 14px 16px; }
+  .ex-main { font-size: 14px; font-weight: 700; color: var(--void); line-height: 1.45; margin-bottom: 3px; letter-spacing: -0.01em; }
+  .ex-sub  { font-size: 12px; font-weight: 400; color: var(--stone-500); line-height: 1.65; }
+  .never-label { font-family: var(--m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stone-300); margin: 20px 0 10px; }
+  .never-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .never-tag { background: white; border: 1px solid var(--stone-100); border-radius: 100px; padding: 5px 13px; font-size: 11px; font-weight: 500; color: var(--stone-500); display: flex; align-items: center; gap: 6px; }
+  .never-tag::before { content: "×"; color: var(--stone-300); }
+
+  /* ── DARK MODE ── */
+  .dark-preview { background: var(--void); border-radius: 16px; padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dp-card { background: var(--void-2); border-radius: 12px; padding: 16px 18px; }
+  .dp-lbl { font-family: var(--m); font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .dp-val { font-size: 24px; font-weight: 800; color: rgba(255,255,255,0.92); letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 3px; }
+  .dp-sub { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.28); }
+  .dp-pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 100px; padding: 4px 10px; font-size: 11px; font-weight: 600; margin-top: 10px; }
+  .dp-pill-g { background: rgba(61,143,90,0.2); border: 1px solid rgba(61,143,90,0.35); color: #7DD4A0; }
+  .dp-pill-a { background: rgba(192,122,42,0.15); border: 1px solid rgba(192,122,42,0.3); color: #E5A95A; }
+  .dp-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dp-dot-g { background: #5DC68A; } .dp-dot-a { background: #E5A95A; }
+  .dp-wm { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: rgba(255,255,255,0.9); }
+  .dp-wm-sub { font-family: var(--m); font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
+
+  /* ── DONTS ── */
+  .donts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dont-card { border-radius: 10px; padding: 16px 18px; border: 1px solid var(--stone-100); background: white; }
+  .dont-wm { font-size: 22px; font-weight: 800; letter-spacing: -0.025em; line-height: 1; margin-bottom: 8px; }
+  .dont-label { font-size: 11px; font-weight: 600; color: #C04040; display: flex; align-items: center; gap: 5px; }
+  .dont-label::before { content: "×"; font-size: 13px; }
+  .dont-note { font-size: 11px; color: var(--stone-500); margin-top: 3px; line-height: 1.5; }
+
+  /* ── FOOTER ── */
+  .footer { background: var(--void); padding: 18px 44px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .footer span { font-family: var(--m); font-size: 10px; color: rgba(255,255,255,0.18); letter-spacing: 0.08em; }
+</style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">shwn. · Brand Identity v4 · Final · 2026</div>
+    <div class="hero-wm">shwn<span class="dot">.</span></div>
+    <div class="hero-pronun">pronounced: shown &nbsp;·&nbsp; /ʃoʊn/ &nbsp;·&nbsp; the dot is always Grove green</div>
+    <div class="hero-rule"></div>
+    <div class="hero-tagline"><strong>Have you shwn up?</strong><br>Track what you give, not what you finish.</div>
+  </div>
+
+  <!-- 01 ICON -->
+  <div class="section sec-bg">
+    <div class="sec-label">01 · App icon</div>
+    <div class="icon-row">
+      <div class="icon-wrap">
+        <div class="ic ic-dark s80"><span class="ic-wm">sh<span class="ic-wm-dot">.</span></span></div>
+        <span class="icon-lbl">Dark · primary</span>
+      </div>
+      <div class="icon-wrap">
+        <div class="ic ic-grove s80"><span class="ic-wm">sh<span class="ic-wm-dot" style="color:rgba(255,255,255,0.7)">.</span></span></div>
+        <span class="icon-lbl">Grove · accent</span>
+      </div>
+      <div class="icon-wrap">
+        <div class="ic ic-white s80"><span class="ic-wm" style="color:var(--void)">sh<span class="ic-wm-dot">.</span></span></div>
+        <span class="icon-lbl">Light</span>
+      </div>
+      <div class="icon-wrap">
+        <div class="ic ic-dark s60"><span class="ic-wm">sh<span class="ic-wm-dot">.</span></span></div>
+        <span class="icon-lbl">60pt</span>
+      </div>
+      <div class="icon-wrap">
+        <div class="ic ic-dark s44"><span class="ic-wm">sh<span class="ic-wm-dot">.</span></span></div>
+        <span class="icon-lbl">44pt</span>
+      </div>
+      <div class="icon-wrap">
+        <div class="ic ic-dark s28"><span class="ic-wm" style="font-size:9px">sh<span class="ic-wm-dot">.</span></span></div>
+        <span class="icon-lbl">28pt</span>
+      </div>
+    </div>
+    <p class="ic-note">The icon uses <strong>sh.</strong> — the first two letters plus the dot. At 28pt the green dot becomes the recognition signal even before the letters register. The rounded icon container mirrors the rounded terminals in Manrope 800.</p>
+  </div>
+
+  <!-- 02 WORDMARK -->
+  <div class="section">
+    <div class="sec-label">02 · Wordmark</div>
+    <div class="wm-stack">
+      <div class="wm-row wm-on-white">
+        <div><div class="wm-text c-dark">shwn<span class="dot">.</span></div><div class="wm-sub c-mid">show up · every day</div></div>
+        <span class="wm-pill pill-grove">Light · default</span>
+      </div>
+      <div class="wm-row wm-on-chalk">
+        <div><div class="wm-text c-dark">shwn<span class="dot">.</span></div><div class="wm-sub c-mid">show up · every day</div></div>
+        <span class="wm-pill pill-dark">On chalk</span>
+      </div>
+      <div class="wm-row wm-on-dark">
+        <div><div class="wm-text c-white">shwn<span class="dot">.</span></div><div class="wm-sub c-faint">show up · every day</div></div>
+        <span class="wm-pill pill-ghost">Dark · default</span>
+      </div>
+      <div class="wm-row wm-on-grove">
+        <div><div class="wm-text c-white">shwn<span class="dot" style="color:rgba(255,255,255,0.6)">.</span></div><div class="wm-sub c-faint">show up · every day</div></div>
+        <span class="wm-pill pill-ghost">On Grove</span>
+      </div>
+    </div>
+    <div class="dot-rule">
+      <div class="dot-rule-mark">.</div>
+      <div class="dot-rule-text"><strong>The dot rule:</strong> The dot is always Grove green (#3D8F5A) on every background except Grove green itself, where it softens to 60% white. It never changes to black, white, or any other colour. It is the one non-negotiable element of the brand.</div>
+    </div>
+  </div>
+
+  <!-- 03 PALETTE -->
+  <div class="section sec-bg">
+    <div class="sec-label">03 · Colour palette</div>
+    <div class="palette">
+      <div class="sw"><div class="sw-col" style="background:#18181A"></div><div class="sw-info"><span class="sw-name">Void</span><span class="sw-hex">#18181A</span><span class="sw-role">Text · dark bg</span></div></div>
+      <div class="sw"><div class="sw-col" style="background:#F8F7FC"></div><div class="sw-info"><span class="sw-name">Chalk</span><span class="sw-hex">#F8F7FC</span><span class="sw-role">Page bg</span></div></div>
+      <div class="sw"><div class="sw-col" style="background:#3D8F5A"></div><div class="sw-info"><span class="sw-name">Grove</span><span class="sw-hex">#3D8F5A</span><span class="sw-role">Dot · accent · CTA</span></div></div>
+      <div class="sw"><div class="sw-col" style="background:#B6DEC5"></div><div class="sw-info"><span class="sw-name">Fern</span><span class="sw-hex">#B6DEC5</span><span class="sw-role">Soft fills</span></div></div>
+      <div class="sw"><div class="sw-col" style="background:#EDF7F1"></div><div class="sw-info"><span class="sw-name">Mist</span><span class="sw-hex">#EDF7F1</span><span class="sw-role">Accent bg</span></div></div>
+      <div class="sw"><div class="sw-col" style="background:#C07A2A"></div><div class="sw-info"><span class="sw-name">Honey</span><span class="sw-hex">#C07A2A</span><span class="sw-role">Earned moments</span></div></div>
+    </div>
+  </div>
+
+  <!-- 04 TYPOGRAPHY -->
+  <div class="section">
+    <div class="sec-label">04 · Typography</div>
+    <div class="type-rows">
+      <div class="type-row">
+        <span class="type-meta">Manrope 800<br>Display</span>
+        <span style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.025em;color:var(--void)">Have you shwn up<span style="color:var(--grove)">?</span></span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">Manrope 600<br>Heading</span>
+        <span style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:600;letter-spacing:-0.015em;color:var(--void)">Small yeses, repeated daily.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">Manrope 400<br>Body</span>
+        <span style="font-family:'Manrope',sans-serif;font-size:13px;font-weight:400;color:var(--stone-500);line-height:1.7">You can't always control when something is finished. You can always control whether you showed up honestly.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">DM Mono 400<br>Labels · UI</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--stone-300);letter-spacing:0.06em">2h 40m invested · focus: writing</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 TAGLINES -->
+  <div class="section sec-bg">
+    <div class="sec-label">05 · Taglines</div>
+    <div class="taglines">
+      <div class="tl"><span class="tl-text">Have you shwn up<span style="color:var(--grove)">?</span></span><span class="tl-ctx">Primary</span></div>
+      <div class="tl"><span class="tl-text">Track what you give, not what you finish.</span><span class="tl-ctx">Product</span></div>
+      <div class="tl"><span class="tl-text">Small yeses, repeated daily.</span><span class="tl-ctx">Philosophy</span></div>
+      <div class="tl"><span class="tl-text">The deadline is still there. But its shadow gets smaller.</span><span class="tl-ctx">Landing</span></div>
+      <div class="tl"><span class="tl-text">Not did you finish — did you show up.</span><span class="tl-ctx">App Store</span></div>
+    </div>
+  </div>
+
+  <!-- 06 TONE -->
+  <div class="section">
+    <div class="sec-label">06 · Tone of voice</div>
+    <div class="principles">
+      <div class="principle">
+        <div class="p-num">01</div>
+        <div><div class="p-stmt">Honest, not motivational.</div><div class="p-note">shwn. shows you the truth of where your time went and trusts you to decide what to do with that.</div></div>
+      </div>
+      <div class="principle">
+        <div class="p-num">02</div>
+        <div><div class="p-stmt">Brief. Always brief.</div><div class="p-note">Every word earns its place. If a message can be three words, it's three words.</div></div>
+      </div>
+      <div class="principle">
+        <div class="p-num">03</div>
+        <div><div class="p-stmt">No guilt. No pressure. No streaks held over you.</div><div class="p-note">Missing a day isn't failure. Yesterday is recorded, today is open.</div></div>
+      </div>
+      <div class="principle">
+        <div class="p-num">04</div>
+        <div><div class="p-stmt">Warm, but never soft.</div><div class="p-note">Like a friend who keeps honest score. Encouraging without being a cheerleader.</div></div>
+      </div>
+    </div>
+    <div class="ex-label">In practice</div>
+    <div class="examples">
+      <div class="ex">
+        <div class="ex-head"><div class="d d-g"></div><span class="ex-ctx">Session complete</span></div>
+        <div class="ex-body"><div class="ex-main">You showed up.</div><div class="ex-sub">3h 20m given to Writing this week.</div></div>
+      </div>
+      <div class="ex">
+        <div class="ex-head"><div class="d d-n"></div><span class="ex-ctx">Nothing logged today</span></div>
+        <div class="ex-body"><div class="ex-main">Nothing yet today.</div><div class="ex-sub">Whenever you're ready.</div></div>
+      </div>
+      <div class="ex">
+        <div class="ex-head"><div class="d d-n"></div><span class="ex-ctx">Streak broken</span></div>
+        <div class="ex-body"><div class="ex-main">Yesterday you didn't show up. That's fine.</div><div class="ex-sub">Your history is still true. Today is a clean page.</div></div>
+      </div>
+      <div class="ex">
+        <div class="ex-head"><div class="d d-a"></div><span class="ex-ctx">Weekly reflection</span></div>
+        <div class="ex-body"><div class="ex-main">This week: 9h 20m across 3 areas.</div><div class="ex-sub">Writing got the most — 4h 10m. Is that what you intended?</div></div>
+      </div>
+    </div>
+    <div class="never-label">Never this</div>
+    <div class="never-row">
+      <span class="never-tag">You're on a roll! 🔥</span>
+      <span class="never-tag">Don't break your streak!</span>
+      <span class="never-tag">Crush your goals</span>
+      <span class="never-tag">Level up your productivity</span>
+      <span class="never-tag">You've got this!</span>
+      <span class="never-tag">Unlock your potential</span>
+    </div>
+  </div>
+
+  <!-- 07 DARK MODE -->
+  <div class="section sec-bg">
+    <div class="sec-label">07 · Dark mode</div>
+    <div class="dark-preview">
+      <div class="dp-card">
+        <div class="dp-wm">shwn<span style="color:var(--grove)">.</span></div>
+        <div class="dp-wm-sub">show up · every day</div>
+      </div>
+      <div class="dp-card">
+        <div class="dp-lbl">This week</div>
+        <div class="dp-val">9h 20m</div>
+        <div class="dp-sub">across 3 focus areas</div>
+        <div class="dp-pill dp-pill-g"><span class="dp-dot dp-dot-g"></span>Writing +40m</div>
+      </div>
+      <div class="dp-card">
+        <div class="dp-lbl">Today · Writing</div>
+        <div class="dp-val">1h 40m</div>
+        <div class="dp-sub">4 sessions completed</div>
+      </div>
+      <div class="dp-card">
+        <div class="dp-lbl">Streak</div>
+        <div class="dp-val">12 days</div>
+        <div class="dp-sub">shown up</div>
+        <div class="dp-pill dp-pill-a"><span class="dp-dot dp-dot-a"></span>Personal best</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 DONTS -->
+  <div class="section">
+    <div class="sec-label">08 · Logo don'ts</div>
+    <div class="donts">
+      <div class="dont-card">
+        <div class="dont-wm" style="color:var(--void)">SHWN<span style="color:var(--grove)">.</span></div>
+        <div class="dont-label">Don't use all caps</div>
+        <div class="dont-note">Loses the quiet confidence of lowercase.</div>
+      </div>
+      <div class="dont-card">
+        <div class="dont-wm" style="color:var(--void)">Shwn<span style="color:var(--void)">.</span></div>
+        <div class="dont-label">Don't make the dot black</div>
+        <div class="dont-note">The dot must always be Grove green.</div>
+      </div>
+      <div class="dont-card">
+        <div class="dont-wm" style="color:var(--stone-300)">shwn<span style="color:var(--grove)">.</span></div>
+        <div class="dont-label">Don't use light weight</div>
+        <div class="dont-note">Wordmark is always Manrope 800.</div>
+      </div>
+      <div class="dont-card">
+        <div class="dont-wm" style="color:var(--void)">shwn</div>
+        <div class="dont-label">Don't drop the dot</div>
+        <div class="dont-note">The dot is part of the name, always.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>shwn. · Brand Identity v4 · Final · 2026</span>
+    <span>shwn.app</span>
+  </div>
+
+</body>
+</html>

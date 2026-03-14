@@ -37,7 +37,7 @@
   --accent-dim: #E6EDEA;   /* Accent tint. Badge fills, subtle highlights. */
 
   /* Typography */
-  --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --f: 'Manrope', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
 
   /* Layout */
   --max:   1100px;                  /* Max content width */
@@ -87,10 +87,10 @@ nav,
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 100;
-  background: rgba(240, 239, 237, 0.90);
+  background: rgba(24, 24, 26, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 /* Inner container — centers content and sets height */
@@ -110,7 +110,7 @@ nav,
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  color: rgba(255,255,255,0.92);
   text-decoration: none;
 }
 
@@ -124,13 +124,13 @@ nav,
 .nav-links a {
   font-size: 14px;
   font-weight: 500;
-  color: var(--ink-mid);
+  color: rgba(255,255,255,0.5);
   text-decoration: none;
   transition: color 0.15s;
 }
 
 .nav-links a:hover {
-  color: var(--ink);
+  color: rgba(255,255,255,0.92);
 }
 
 
@@ -163,7 +163,7 @@ nav,
 .nav-cta {
   font-size: 13px;
   font-weight: 700;
-  background: var(--ink);
+  background: var(--accent);
   color: #fff;
   padding: 9px 18px;
   border-radius: var(--r);
@@ -172,7 +172,7 @@ nav,
 }
 
 .nav-cta:hover {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 /* Secondary / ghost — text only */
@@ -250,6 +250,7 @@ nav,
 
 /* Plain variant — no background (section labels inline with content) */
 .section-eyebrow {
+  display: block;
   margin-bottom: 16px;
 }
 
@@ -636,3 +637,171 @@ td code { font-size: 12px; }
     display: none;
   }
 }
+
+
+/* ── SHWN BRAND TOKENS ──────────────────────────────────────── */
+/*
+ * Override base tokens for shwn. brand palette.
+ * Import after base.css resets to apply shwn. colours globally.
+ */
+
+:root {
+  --f:          'Manrope', sans-serif;
+  --mono:       'DM Mono', monospace;
+  --accent:     #3D8F5A;
+  --accent-dim: #EDF7F1;
+  --grove:      #3D8F5A;
+  --bg:         #F8F7FC;
+  --bg-card:    #FFFFFF;
+  --white:      #FFFFFF;
+  --ink:        #18181A;
+  --ink-mid:    #7A7A85;
+  --ink-soft:   #BFBEC8;
+  --rule:       #E4E3EA;
+}
+
+
+/* ── SECTION COMMONS ────────────────────────────────────────── */
+
+.section { padding: clamp(80px,12vh,140px) 0; }
+
+h1 {
+  font-size: clamp(32px,4vw,68px); font-weight: 800;
+  line-height: 1.0; letter-spacing: -0.035em;
+  color: var(--ink); margin-bottom: 28px;
+}
+
+h2 {
+  font-size: clamp(28px,3.2vw,52px); font-weight: 800;
+  line-height: 1.08; letter-spacing: -0.03em;
+  color: var(--ink); margin-bottom: 20px;
+}
+
+.section-lead {
+  font-size: 17px; font-weight: 400; line-height: 1.7;
+  color: var(--ink-mid); max-width: 560px;
+}
+
+/* Utility — grove green accent */
+.grove { color: var(--grove); }
+
+
+/* ── BELT / TICKER ──────────────────────────────────────────── */
+
+.belt {
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  background: var(--bg); overflow: hidden; padding: 18px 0;
+  margin-top: clamp(60px,10vh,100px);
+}
+.belt-track { display: flex; gap: 0; width: max-content; animation: ticker 30s linear infinite; }
+.belt-item {
+  font-size: 13px; font-weight: 500; color: var(--ink-soft);
+  white-space: nowrap; padding: 0 32px;
+  display: flex; align-items: center; gap: 32px;
+}
+.belt-item::after { content: '·'; color: var(--rule); }
+.belt-item.belt-em   { color: var(--ink); font-weight: 600; }
+.belt-item.belt-grove { color: var(--grove); font-weight: 600; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+
+/* ── IMAGE BREAK ────────────────────────────────────────────── */
+
+.section-imgbreak {
+  position: relative; height: clamp(500px, 70vh, 780px);
+  overflow: hidden;
+  background-size: cover; background-position: center 40%; background-attachment: fixed;
+}
+.section-imgbreak::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(20,18,15,0.45) 0%, rgba(20,18,15,0.55) 100%);
+}
+.imgbreak-inner {
+  position: relative; z-index: 2; height: 100%;
+  max-width: var(--max); margin: 0 auto; padding: 0 var(--pad);
+  display: flex; align-items: center;
+}
+.imgbreak-eyebrow {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 20px;
+}
+.imgbreak-quote {
+  font-size: clamp(28px, 3.5vw, 52px); font-weight: 800;
+  line-height: 1.15; letter-spacing: -0.03em; color: #fff;
+}
+.imgbreak-quote span { color: rgba(255,255,255,0.45); font-weight: 300; }
+.imgbreak-body {
+  margin-top: 24px; font-size: 16px; font-weight: 400;
+  line-height: 1.75; color: rgba(255,255,255,0.6); max-width: 480px;
+}
+
+
+/* ── MANIFESTO ──────────────────────────────────────────────── */
+
+.section-manifesto { border-top: 1px solid var(--rule); padding: clamp(80px,12vh,140px) 0; }
+.manifesto-block { max-width: 780px; }
+.manifesto-line {
+  font-size: clamp(32px,4vw,64px); font-weight: 800;
+  line-height: 1.05; letter-spacing: -0.035em; color: var(--ink);
+}
+.manifesto-line.muted { color: var(--ink-soft); font-weight: 300; margin-bottom: 32px; }
+.manifesto-body {
+  font-size: 18px; font-weight: 400; line-height: 1.75;
+  color: var(--ink-mid); max-width: 560px;
+  border-left: 3px solid var(--accent); padding-left: 20px;
+}
+
+
+/* ── EFFORT CARD ────────────────────────────────────────────── */
+
+.effort-card { background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; padding: 28px; }
+.effort-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.effort-card-title { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.effort-card-meta { font-size: 11px; font-weight: 500; color: var(--ink-soft); }
+.effort-rows { display: flex; flex-direction: column; gap: 18px; }
+.effort-row-head { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 13px; font-weight: 500; color: var(--ink); }
+.effort-row-meta { font-size: 12px; font-weight: 400; color: var(--ink-soft); }
+.effort-track { height: 8px; background: var(--rule); border-radius: 4px; position: relative; }
+.effort-planned { position: absolute; inset: 0; border-radius: 4px; border: 1.5px dashed #B8C9BB; background: transparent; }
+.effort-actual { height: 100%; border-radius: 4px; }
+.ea1 { background: #3D8F5A; } .ea2 { background: #9E8B6B; }
+.ea3 { background: #8B6B9E; } .ea4 { background: #6B8B9E; }
+.effort-legend {
+  display: flex; gap: 18px; margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--rule); font-size: 11px; font-weight: 500; color: var(--ink-soft);
+}
+.legend-dot { display: flex; align-items: center; gap: 6px; }
+.ld-a { width: 16px; height: 6px; border-radius: 3px; background: #3D8F5A; }
+.ld-p { width: 16px; height: 6px; border-radius: 3px; border: 1.5px dashed #B6DEC5; }
+
+
+/* ── FOOTER — dark variant ──────────────────────────────────── */
+
+footer.footer-dark {
+  background: var(--ink);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 28px var(--pad);
+  max-width: 100%;
+}
+.footer-dark .footer-inner {
+  max-width: var(--max); margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.footer-dark .footer-logo    { color: rgba(255,255,255,0.35); }
+.footer-dark .footer-tagline { color: rgba(255,255,255,0.2); font-style: normal; }
+.footer-dark .footer-copy    { color: rgba(255,255,255,0.2); }
+
+
+/* ── PAGE-LOAD ANIMATIONS ───────────────────────────────────── */
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(28px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.au { opacity:0; animation: fadeUp 0.65s cubic-bezier(0.4,0,0.2,1) forwards; }
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.15s; }
+.d3 { animation-delay: 0.25s; }
+.d4 { animation-delay: 0.38s; }
+.d5 { animation-delay: 0.50s; }
