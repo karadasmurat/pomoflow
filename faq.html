@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>shwn. — FAQ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    :root { --nav-h: 52px; }
+
+    /* ── NAV ── */
+    .nav-left  { display: flex; align-items: center; gap: 20px; }
+    .nav-sep   { width: 1px; height: 16px; background: rgba(255,255,255,0.15); }
+    .nav-section { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.45); }
+    .nav-back {
+      font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55);
+      text-decoration: none; display: flex; align-items: center; gap: 5px;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: #fff; }
+
+    /* ── PAGE ── */
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: calc(var(--nav-h) + 64px) var(--pad) 120px;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      margin-bottom: 56px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .page-title {
+      font-size: clamp(32px,4vw,56px); font-weight: 800;
+      letter-spacing: -0.035em; line-height: 1.05;
+      color: var(--ink); margin-bottom: 12px;
+    }
+    .page-title .muted { color: var(--ink-soft); font-weight: 300; }
+    .page-lead {
+      font-size: 16px; font-weight: 400; line-height: 1.7;
+      color: var(--ink-mid);
+    }
+
+    /* ── ACCORDION ── */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    details.faq-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    details.faq-card.is-open { border-color: var(--accent); }
+
+    details.faq-card summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    details.faq-card summary::-webkit-details-marker { display: none; }
+    details.faq-card summary::marker { display: none; }
+    details.faq-card > summary { list-style: none; }
+
+    .faq-q-num {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; color: var(--ink-soft);
+      font-family: var(--mono);
+      flex-shrink: 0;
+    }
+
+
+    .faq-q-text {
+      font-size: 16px; font-weight: 700;
+      letter-spacing: -0.01em; color: var(--ink);
+      line-height: 1.35; flex: 1;
+    }
+
+    details.faq-card.is-open .faq-q-num { color: var(--accent); }
+    details.faq-card.is-open { border-color: var(--accent); }
+
+
+    .faq-chevron {
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink-soft);
+      font-size: 18px;
+      transition: color 0.2s;
+    }
+    details.faq-card.is-open .faq-chevron { color: var(--accent); }
+    details.faq-card.is-open .faq-q-num { color: var(--accent); }
+    details.faq-card.is-open { border-color: var(--accent); }
+    .ch-up { display: none; }
+    .ch-down { display: flex; }
+    details.faq-card.is-open .ch-up { display: flex; }
+    details.faq-card.is-open .ch-down { display: none; }
+
+    .faq-a {
+      padding: 0 24px 24px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .faq-a p {
+      font-size: 15px; font-weight: 400;
+      line-height: 1.85; color: var(--ink-mid);
+      margin-top: 16px;
+    }
+
+    .faq-a p:first-child { margin-top: 20px; }
+    .faq-a strong { color: var(--ink); font-weight: 600; }
+
+    /* ── FOOTER ── */
+    .faq-footer {
+      margin-top: 80px; padding-top: 32px;
+      border-top: 1px solid var(--rule);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .faq-footer-logo { font-weight: 800; letter-spacing: -0.03em; color: var(--ink-soft); font-size: 15px; }
+    .faq-footer-copy { font-size: 13px; color: var(--ink-soft); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 560px) {
+      .nav-sep, .nav-section { display: none; }
+      .page { padding-top: calc(var(--nav-h) + 32px); }
+      .page-header { margin-bottom: 36px; padding-bottom: 28px; }
+      details.faq-card summary { padding: 16px 18px; gap: 12px; }
+      .faq-a { padding: 0 18px 20px; }
+      .faq-q-text { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="topnav">
+    <div class="nav-inner topnav-inner">
+      <div class="nav-left">
+        <a class="nav-logo" href="index.html" style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span class="grove">.</span></a>
+        <div class="nav-sep"></div>
+        <span class="nav-section">FAQ</span>
+      </div>
+      <a class="nav-back" href="index.html">← Back</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <header class="page-header">
+      <div class="page-eyebrow"><div class="eyebrow-dot"></div>Common questions</div>
+      <h1 class="page-title">Honest answers.<br><span class="muted">No marketing.</span></h1>
+      <p class="page-lead">Real questions from real skeptics. If you're thinking it, it's probably here.</p>
+    </header>
+
+    <div class="faq-list">
+
+      <details class="faq-card" id="faq1">
+        <summary>
+          <span class="faq-q-num">01</span>
+          <span class="faq-q-text">Yet another productivity app? I've tried many of those.</span>
+          <span class="faq-chevron"><i class="ph-bold ph-caret-down ch-down"></i><i class="ph-bold ph-caret-up ch-up"></i></span>
+        </summary>
+        <div class="faq-a">
+          <p>You've downloaded the apps. Built the systems. Set up the dashboards. And at some point, each one became its own kind of burden — another thing to maintain, another streak to protect, another interface that made you feel behind before you'd even started.</p>
+          <p>Most productivity apps are built around the same idea: capture everything, track completion, measure output. The more disciplined you are about the system, the more it rewards you. The moment you fall behind, it turns on you.</p>
+          <p><strong>shwn. is built around a different idea entirely.</strong> It doesn't track what you finished. It tracks what you gave. There's no streak to break, no task list judging you, no system that requires daily maintenance to stay useful. You open it, you run a session, it records what you gave. That's the whole thing.</p>
+          <p>If you've felt exhausted by productivity tools before, shwn. is probably the least demanding thing you'll try. Start with the timer. Nothing else required.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" id="faq2">
+        <summary>
+          <span class="faq-q-num">02</span>
+          <span class="faq-q-text">I already have a calendar. Can't I just schedule my sessions there?</span>
+          <span class="faq-chevron"><i class="ph-bold ph-caret-down ch-down"></i><i class="ph-bold ph-caret-up ch-up"></i></span>
+        </summary>
+        <div class="faq-a">
+          <p>You can. And you should keep using your calendar — shwn. isn't a replacement for it.</p>
+          <p>But here's what your calendar can't do. You block "Deep Work 10–11am" on Tuesday. Tuesday arrives. Your calendar has no idea what happened during that hour. Whether you worked deeply, got distracted, skipped it entirely, or sat there staring at a blank screen. It doesn't record whether you showed up. It has no memory of what you actually gave.</p>
+          <p><strong>A calendar is a plan. Wishful by nature — it has no memory of what actually happened. shwn. does. It shows exactly what you gave, session by session.</strong></p>
+          <p>At the end of a week, a month, a semester — your calendar shows you the intention. shwn. shows you the truth. How many hours you actually gave to each thing that matters. Whether your time reflected your priorities. Where the gaps were.</p>
+          <p>The open loop your brain keeps running — the background hum of deadline anxiety — isn't dimmed by reserving a block on your calendar. Your calendar can't close that loop. One honest act of showing up can. shwn. helps you close the open tabs of your brain.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" id="faq3">
+        <summary>
+          <span class="faq-q-num">03</span>
+          <span class="faq-q-text">I already use a to-do list. I am tracking all the tasks.</span>
+          <span class="faq-chevron"><i class="ph-bold ph-caret-down ch-down"></i><i class="ph-bold ph-caret-up ch-up"></i></span>
+        </summary>
+        <div class="faq-a">
+          <p>Good. Keep using it. shwn. isn't a to-do list and it's not trying to replace one.</p>
+          <p>A to-do list is brilliant at capturing what needs to happen. It's a trusted external memory — things stop living in your head and live on the list instead. That's genuinely valuable.</p>
+          <p>But a to-do list measures completion. Done or not done. Ticked or unticked. And when life gets in the way — when the project takes longer than expected, when the day goes sideways, when the deadline shifts — the only thing it can tell you is that you haven't finished yet.</p>
+          <p><strong>shwn. measures something different.</strong> Not whether you finished, but whether you showed up. You can have a day where nothing gets ticked and still have genuinely moved things forward — if you gave three honest hours to the work that matters. shwn. records that. Your to-do list doesn't see it.</p>
+          <p>And if you have a deadline coming up, shwn.'s Focus Planner lets you map sessions toward it — not as tasks to tick off, but as honest commitments of time. The deadline has a path. You can see whether you're on it.</p>
+          <p>Use your to-do list to know what to work on. Use shwn. to know whether you're actually working on it.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" id="faq4">
+        <summary>
+          <span class="faq-q-num">04</span>
+          <span class="faq-q-text">I have a kitchen timer. Isn't that enough for a Pomodoro session?</span>
+          <span class="faq-chevron"><i class="ph-bold ph-caret-down ch-down"></i><i class="ph-bold ph-caret-up ch-up"></i></span>
+        </summary>
+        <div class="faq-a">
+          <p>Honestly? For the basic rhythm of work and rest, yes. A kitchen timer does the job. There's nothing wrong with that.</p>
+          <p>shwn. adds one thing a kitchen timer can't: <strong>meaning</strong>. When the session ends, shwn. records not just that 25 minutes passed — but where those 25 minutes went. Which focus area they belonged to. How they fit into the week's pattern of effort.</p>
+          <p>Over time, that record becomes something a kitchen timer will never give you. A map of where your energy actually went. How much you gave to writing versus research versus the work that matters most right now. Whether your time is reflecting your priorities — or just passing.</p>
+          <p>If you just want a Pomodoro timer, a kitchen timer is fine. If you want to understand your time, shwn. is the next step.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" id="faq5">
+        <summary>
+          <span class="faq-q-num">05</span>
+          <span class="faq-q-text">Can I just use the timer?</span>
+          <span class="faq-chevron"><i class="ph-bold ph-caret-down ch-down"></i><i class="ph-bold ph-caret-up ch-up"></i></span>
+        </summary>
+        <div class="faq-a">
+          <p>Yes. Completely. Open the app, start the timer, work. That's a full and valid way to use shwn.</p>
+          <p>You don't need to set up focus areas first. You don't need to plan your week. You don't need to name what you're working on. The timer works on its own, right now, with no setup.</p>
+          <p>That's The Sprinter. Some people stay there — and that's fine. The commitment is already made in your head before the app knows anything. shwn. just witnesses it. Records it honestly.</p>
+          <p>When you're ready for more — naming what the session is for, planning ahead toward a deadline, seeing where your effort is going — it's all there. But it waits for you. It doesn't ask you to do anything you're not ready for.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" id="faq6">
+        <summary>
+          <span class="faq-q-num">06</span>
+          <span class="faq-q-text">What if I miss a day of my plan?</span>
+          <span class="faq-chevron"><i class="ph-bold ph-caret-down ch-down"></i><i class="ph-bold ph-caret-up ch-up"></i></span>
+        </summary>
+        <div class="faq-a">
+          <p>Nothing broke. Your plan is still there, your sessions are still there, and today is still a day you can show up for.</p>
+          <p>shwn. has no streak to break. No punishment for missing a day. No system that requires you to have been consistent yesterday in order to be useful today.</p>
+          <p>Some sessions might need to move — you can do that. Some might not happen before the deadline — that's worth knowing too, and shwn. will show you clearly. But nothing expires, nothing resets, nothing turns red.</p>
+          <p>The anxiety of a missed day usually comes from the tool — the streak counter, the red indicator, the sense that you've broken something that now needs to be fixed. shwn. doesn't do any of that. It just asks one question, every day: did you show up today?</p>
+          <p>Yesterday doesn't answer that. Only today does.</p>
+        </div>
+      </details>
+
+    </div>
+
+    <div class="faq-footer">
+      <span class="faq-footer-logo">shwn<span class="grove">.</span></span>
+      <span class="faq-footer-copy">© 2026 shwn. — Have you shwn up?</span>
+    </div>
+
+  </div>
+
+  <script>
+    document.querySelectorAll('details.faq-card').forEach(details => {
+      details.addEventListener('toggle', () => {
+        details.classList.toggle('is-open', details.open);
+      });
+    });
+  </script>
+</body>
+</html>

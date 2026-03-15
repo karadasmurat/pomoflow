@@ -12,1032 +12,71 @@
     rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <style>
-    /* ── NAV (landing-specific) ── */
-    /* base.css handles: nav shell, frosted glass, .nav-inner, .nav-logo, .nav-links, .nav-cta */
-
     /* ── HERO ── */
-    .hero {
-      padding-top: var(--nav-h);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .hero-body {
-      flex: 1;
-      max-width: var(--max);
-      margin: 0 auto;
-      width: 100%;
-      padding: clamp(64px, 11vh, 120px) var(--pad) 0;
-      display: grid;
-      grid-template-columns: 1fr 420px;
-      gap: 64px;
-      align-items: start;
-    }
-
-    .hero-sub {
-      font-size: 17px;
-      font-weight: 400;
-      line-height: 1.7;
-      color: var(--ink-mid);
-      max-width: 460px;
-      margin-bottom: 44px;
-    }
-
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+    .hero { padding-top: var(--nav-h); display: flex; flex-direction: column; }
+    .hero-body { flex: 1; max-width: var(--max); margin: 0 auto; width: 100%; padding: clamp(64px,11vh,120px) var(--pad) 0; display: grid; grid-template-columns: 1fr 420px; gap: 64px; align-items: start; }
+    .hero-sub { font-size: 17px; font-weight: 400; line-height: 1.7; color: var(--ink-mid); max-width: 460px; margin-bottom: 44px; }
+    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
     /* ── HERO CARD ── */
-    .hero-card {
-      background: var(--white);
-      border: 1px solid var(--rule);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
-      position: sticky;
-      top: 80px;
-    }
-
-    .hero-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--rule);
-      background: var(--bg-card);
-    }
-
-    .card-dots {
-      display: flex;
-      gap: 6px;
-    }
-
-    .card-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--rule);
-    }
-
-    .card-title {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      color: var(--ink-soft);
-      text-transform: uppercase;
-    }
+    .hero-card { background: var(--white); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04); position: sticky; top: 80px; }
+    .hero-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--rule); background: var(--bg-card); }
+    .card-dots { display: flex; gap: 6px; }
+    .card-dot  { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); }
+    .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-soft); text-transform: uppercase; }
 
     /* ── MINI PLANNER (hero card) ── */
-    .planner {
-      padding: 16px;
-    }
-
-    .planner-week {
-      display: grid;
-      grid-template-columns: 26px repeat(7, 1fr);
-      font-size: 9px;
-      color: var(--ink-soft);
-    }
-
-    .pw-head {
-      padding: 0 2px 8px;
-      text-align: center;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-    }
-
-    .pw-head.today {
-      color: var(--accent);
-    }
-
-    .pw-head.today::after {
-      content: '';
-      display: block;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--accent);
-      margin: 2px auto 0;
-    }
-
-    .pw-time-col {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .pw-tl {
-      font-size: 8px;
-      color: #CCC;
-      height: 38px;
-      padding-top: 2px;
-    }
-
-    .pw-col {
-      position: relative;
-      height: 190px;
-      border-left: 1px solid #F2F0ED;
-    }
-
-    .pw-col.today-col {
-      background: #FAFDF9;
-    }
-
-    .pw-block {
-      position: absolute;
-      left: 2px;
-      right: 2px;
-      border-radius: 3px;
-      font-size: 7px;
-      font-weight: 600;
-      padding: 3px 4px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-
-    .c-green {
-      background: #DDE8DF;
-      color: #2D4A3E;
-      border: 1px solid #C4D9C8;
-    }
-
-    .c-amber {
-      background: #EDE8DD;
-      color: #5C4A2D;
-      border: 1px solid #D9C8A4;
-    }
-
-    .c-violet {
-      background: #E4DDEE;
-      color: #3D2D5C;
-      border: 1px solid #C4B4D9;
-    }
-
-    .pw-block.actual {
-      opacity: 0.5;
-    }
-
-    .pw-now {
-      position: absolute;
-      left: 0;
-      right: 0;
-      border-top: 1.5px solid var(--accent);
-      z-index: 5;
-    }
-
-    .pw-now::before {
-      content: '';
-      display: block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      position: absolute;
-      left: -3px;
-      top: -4px;
-    }
-
-    .planner-footer {
-      padding: 12px 18px;
-      border-top: 1px solid var(--rule);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .planner-stat {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    .planner-stat-val {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      line-height: 1;
-    }
-
-    .planner-stat-label {
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--ink-soft);
-      letter-spacing: 0.04em;
-    }
+    .planner { padding: 16px; }
+    .planner-week { display: grid; grid-template-columns: 26px repeat(7,1fr); font-size: 9px; color: var(--ink-soft); }
+    .pw-head { padding: 0 2px 8px; text-align: center; font-weight: 600; letter-spacing: 0.04em; }
+    .pw-head.today { color: var(--accent); }
+    .pw-head.today::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin: 2px auto 0; }
+    .pw-time-col { display: flex; flex-direction: column; }
+    .pw-tl { font-size: 8px; color: #CCC; height: 38px; padding-top: 2px; }
+    .pw-col { position: relative; height: 190px; border-left: 1px solid #F2F0ED; }
+    .pw-col.today-col { background: #FAFDF9; }
+    .pw-block { position: absolute; left: 2px; right: 2px; border-radius: 3px; font-size: 7px; font-weight: 600; padding: 3px 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .c-green  { background: #DDE8DF; color: #2D4A3E; border: 1px solid #C4D9C8; }
+    .c-amber  { background: #EDE8DD; color: #5C4A2D; border: 1px solid #D9C8A4; }
+    .c-violet { background: #E4DDEE; color: #3D2D5C; border: 1px solid #C4B4D9; }
+    .pw-block.actual { opacity: 0.5; }
+    .pw-now { position: absolute; left: 0; right: 0; border-top: 1.5px solid var(--accent); z-index: 5; }
+    .pw-now::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); position: absolute; left: -3px; top: -4px; }
+    .planner-footer { padding: 12px 18px; border-top: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
+    .planner-stat { display: flex; flex-direction: column; gap: 1px; }
+    .planner-stat-val { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
+    .planner-stat-label { font-size: 10px; font-weight: 500; color: var(--ink-soft); letter-spacing: 0.04em; }
 
     /* ── TIMER CARD ── */
-    .timer-card-body {
-      padding: 32px 28px 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
+    .timer-card-body { padding: 32px 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .timer-focus-area { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--rule); border-radius: 40px; padding: 5px 14px; }
+    .timer-area-dot  { width: 8px; height: 8px; border-radius: 50%; }
+    .timer-area-name { font-size: 12px; font-weight: 600; color: var(--ink); letter-spacing: 0.02em; }
+    .timer-display   { font-size: 72px; font-weight: 800; letter-spacing: -0.04em; color: var(--ink); line-height: 1; }
+    .timer-label     { font-size: 12px; font-weight: 500; color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; }
+    .timer-bar-track { width: 100%; height: 4px; background: var(--rule); border-radius: 2px; margin-top: 4px; }
+    .timer-bar-fill  { height: 100%; background: var(--grove); border-radius: 2px; }
+    .timer-sessions  { display: flex; gap: 6px; margin-top: 4px; }
+    .timer-session   { width: 28px; height: 4px; border-radius: 2px; background: var(--rule); }
+    .timer-session.done   { background: var(--grove); }
+    .timer-session.active { background: var(--grove); opacity: 0.4; }
+    .timer-card-footer { padding: 16px 24px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); }
+    .timer-stat-val   { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+    .timer-stat-label { font-size: 10px; font-weight: 500; color: var(--ink-soft); margin-top: 2px; }
 
-    .timer-focus-area {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg);
-      border: 1px solid var(--rule);
-      border-radius: 40px;
-      padding: 5px 14px;
-    }
-
-    .timer-area-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    .timer-area-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--ink);
-      letter-spacing: 0.02em;
-    }
-
-    .timer-display {
-      font-size: 72px;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      color: var(--ink);
-      line-height: 1;
-    }
-
-    .timer-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--ink-soft);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .timer-bar-track {
-      width: 100%;
-      height: 4px;
-      background: var(--rule);
-      border-radius: 2px;
-      margin-top: 4px;
-    }
-
-    .timer-bar-fill {
-      height: 100%;
-      background: #3D8F5A;
-      border-radius: 2px;
-    }
-
-    .timer-sessions {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .timer-session {
-      width: 28px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--rule);
-    }
-
-    .timer-session.done {
-      background: #3D8F5A;
-    }
-
-    .timer-session.active {
-      background: #3D8F5A;
-      opacity: 0.4;
-    }
-
-    .timer-card-footer {
-      padding: 16px 24px;
-      border-top: 1px solid var(--rule);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--bg-card);
-    }
-
-    .timer-stat-val {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--ink);
-      letter-spacing: -0.02em;
-    }
-
-    .timer-stat-label {
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--ink-soft);
-      margin-top: 2px;
-    }
-
-    /* ── SECTION BACKGROUNDS ── */
-    .section-tension {
-      border-top: 1px solid var(--rule);
-      background: var(--bg);
-      padding: clamp(80px, 12vh, 140px) 0;
-    }
-
-    .section-how {
-      border-top: 1px solid var(--rule);
-      background: var(--white);
-    }
-
-    .section-visibility {
-      border-top: 1px solid var(--rule);
-      background: var(--bg);
-    }
-
-    .section-why {
-      border-top: 1px solid var(--rule);
-      background: var(--white);
-    }
-
-    .section-planner {
-      border-top: 1px solid var(--rule);
-      background: var(--white);
-    }
-
-    .section-imgbreak {
-      background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80');
-    }
-
-    /* ── TENSION MATRIX ── */
-    .tension-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--pad);
-    }
-
-    .tension-col-heads {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2px;
-      margin-bottom: 2px;
-    }
-
-    .tension-col-head {
-      padding: 10px 24px;
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      border-radius: 4px 4px 0 0;
-    }
-
-    .tch-before {
-      background: var(--ink);
-      color: rgba(255, 255, 255, 0.7);
-      border: none;
-    }
-
-    .tch-after {
-      background: var(--grove);
-      color: rgba(255, 255, 255, 0.85);
-    }
-
-    .tension-matrix {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .tm-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2px;
-    }
-
-    .tm-cell {
-      padding: clamp(20px, 3vh, 32px) 24px;
-    }
-
-    .tm-cell.before {
-      background: var(--bg);
-      border: 1px solid var(--rule);
-      border-top: none;
-    }
-
-    .tm-cell.after {
-      background: #EDF7F1;
-      border: 1px solid #B6DEC5;
-      border-top: none;
-    }
-
-    .tm-q {
-      font-size: clamp(16px, 1.8vw, 22px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-      margin-bottom: 8px;
-    }
-
-    .tm-cell.before .tm-q {
-      color: var(--ink-mid);
-    }
-
-    .tm-cell.after .tm-q {
-      color: var(--ink);
-    }
-
-    .tm-cell.after .tm-q .grove {
-      color: var(--grove);
-    }
-
-    .tm-body {
-      font-size: 13px;
-      font-weight: 400;
-      line-height: 1.7;
-    }
-
-    .tm-cell.before .tm-body {
-      color: var(--ink-mid);
-    }
-
-    .tm-cell.after .tm-body {
-      color: var(--ink-mid);
-    }
-
-    .tension-foot {
-      margin-top: clamp(40px, 6vh, 64px);
-    }
-
-    .tension-foot-name {
-      font-size: clamp(36px, 4.5vw, 64px);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      color: var(--ink);
-      margin-bottom: 8px;
-    }
-
-    .tension-foot-name .grove {
-      color: var(--grove);
-    }
-
-    .tension-foot-line {
-      font-size: clamp(16px, 1.8vw, 24px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: var(--ink-mid);
-      margin-bottom: 10px;
-    }
-
-    .tension-foot-line .grove {
-      color: var(--grove);
-    }
-
-    .tension-foot-sub {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--ink);
-      line-height: 1.65;
-    }
-
-    /* ── CLEAN PAGE SECTION ── */
-    .section-clean-page {
-      border-top: 1px solid var(--rule);
-      background: var(--white);
-      padding: clamp(80px, 14vh, 140px) 0;
-      background-image: repeating-linear-gradient(to bottom,
-          transparent,
-          transparent 39px,
-          var(--rule) 39px,
-          var(--rule) 40px);
-    }
-
-    .clean-page-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--pad);
-    }
-
-    .clean-page-eyebrow {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: 28px;
-    }
-
-    .clean-page-line {
-      font-size: clamp(32px, 5vw, 64px);
-      font-weight: 800;
-      letter-spacing: -0.035em;
-      line-height: 1.15;
-      color: var(--ink);
-    }
-
-    .clean-page-line .grove {
-      color: var(--grove);
-    }
-
-    .clean-page-line .soft {
-      color: var(--ink-soft);
-      font-weight: 300;
-    }
-
-    .how-head {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: end;
+    /* ── SECTION HEAD — full width title area ── */
+    .section-head {
       margin-bottom: 56px;
       padding-bottom: 48px;
-      border-bottom: 1px solid var(--rule);
     }
+    .section-head h2 { margin-bottom: 16px; }
 
-    .section-how .steps {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2px;
-      flex-direction: unset;
-      margin-bottom: 0;
-    }
-
-    .section-how .step {
-      background: var(--bg);
-      border-radius: var(--r);
-      padding: 32px 28px 36px;
-      display: block;
-      grid-template-columns: unset;
-    }
-
-    .step-num {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      background: var(--accent-dim);
-      display: inline-flex;
-      padding: 3px 10px;
-      border-radius: 40px;
-      margin-bottom: 20px;
-    }
-
-    .step-title {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-      margin-bottom: 12px;
-      line-height: 1.2;
-    }
-
-    .step-body {
-      font-size: 13px;
-      line-height: 1.75;
-      color: var(--ink-mid);
-      padding-top: 0;
-    }
-
-    /* ── VISIBILITY ── */
-    .vis-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: start;
-    }
-
-    .vis-quote {
-      font-size: clamp(18px, 2vw, 28px);
-      font-weight: 800;
-      line-height: 1.2;
-      letter-spacing: -0.025em;
-      color: var(--ink);
-      border-left: 3px solid var(--accent);
-      padding-left: 24px;
-      margin: 32px 0 28px;
-    }
-
-    .vis-quote .light {
-      font-weight: 300;
-      color: var(--ink-mid);
-    }
-
-    .vis-beat {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.75;
-      color: var(--ink-mid);
-      margin-bottom: 16px;
-    }
-
-    .vis-beat strong {
-      color: var(--ink);
-      font-weight: 700;
-    }
-
-    /* ── PLANNER FEATURE ── */
-    .planner-feature-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: center;
-    }
-
-    .planner-feature-card {
-      background: var(--white);
-      border: 1px solid var(--rule);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06);
-    }
-
-    /* card stack — effort card front, calendar behind */
-    .card-stack {
-      position: relative;
-      padding-bottom: 80px;
-      padding-right: 56px;
-    }
-
-    .card-stack .planner-feature-card {
-      position: relative;
-      z-index: 1;
-      transform: translate(-24px, -24px);
-      opacity: 0.72;
-      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .card-stack .effort-card-behind {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: calc(100% - 8px);
-      background: var(--white);
-      border: 1px solid var(--rule);
-      border-radius: 12px;
-      box-shadow: 0 4px 28px rgba(0, 0, 0, 0.10);
-      z-index: 2;
-      padding: 20px 24px;
-    }
-
-    /* ── WHY SHWN — comparison table ── */
-    .why-head {
-      margin-bottom: 48px;
-    }
-
-    .why-lead {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.7;
-      color: var(--ink-mid);
-      max-width: 580px;
-      margin-top: 12px;
-    }
-
-    .why-table-close {
-      margin-top: 32px;
-      font-size: clamp(16px, 1.8vw, 22px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--ink-mid);
-      line-height: 1.3;
-    }
-
-    .why-table-close .grove {
-      color: var(--grove);
-    }
-
-    .why-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .why-table th {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      font-weight: 400;
-      padding: 10px 16px;
-      text-align: center;
-      border-bottom: 2px solid var(--rule);
-      color: var(--ink-soft);
-    }
-
-    .why-table th.col-feature {
-      text-align: left;
-      color: var(--ink-mid);
-    }
-
-    .why-table th.col-shwn {
-      color: var(--grove);
-      border-bottom-color: var(--grove);
-    }
-
-    .why-table td {
-      padding: 14px 16px;
-      font-size: 13px;
-      border-bottom: 1px solid var(--rule);
-      text-align: center;
-      vertical-align: middle;
-      color: var(--ink-soft);
-    }
-
-    .why-table td.col-feature {
-      text-align: left;
-      font-weight: 500;
-      color: var(--ink);
-      font-size: 14px;
-    }
-
-    .why-table td.col-shwn {
-      font-weight: 700;
-    }
-
-    .why-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .why-table tbody tr:hover td {
-      background: var(--bg);
-    }
-
-    .wt-yes {
-      color: var(--grove);
-      font-size: 16px;
-    }
-
-    .wt-partial {
-      color: var(--ink-soft);
-      font-size: 12px;
-      font-style: italic;
-    }
-
-    .wt-no {
-      color: var(--rule);
-      font-size: 18px;
-    }
-
-    .wt-yes-shwn {
-      color: var(--grove);
-      font-size: 18px;
-      font-weight: 800;
-    }
-
-    /* ── CLOSING ANIMATION ── */
-    .section-closing {
-      border-top: 1px solid var(--rule);
-      background: var(--ink);
-      padding: clamp(100px, 16vh, 160px) 0;
-    }
-
-    .closing-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 0 var(--pad);
-    }
-
-    .closing-inner h2 {
-      color: #fff;
-      margin-bottom: 20px;
-    }
-
-    .closing-inner h2 .muted {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .closing-sub {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.7;
-      color: rgba(255, 255, 255, 0.5);
-      margin-bottom: 48px;
-    }
-
-    .closing-anim {
-      position: relative;
-      height: clamp(100px, 16vh, 160px);
-      margin-bottom: 52px;
-      overflow: hidden;
-    }
-
-    .ca-scene {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      pointer-events: none;
-    }
-
-    .ca-scene.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .ca-s1-line {
-      font-size: clamp(36px, 5.5vw, 64px);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-      display: flex;
-      align-items: baseline;
-      color: rgba(255, 255, 255, 0.35);
-      white-space: nowrap;
-    }
-
-    .ca-lets {
-      white-space: nowrap;
-    }
-
-    .ca-anchor {
-      position: relative;
-      display: inline-block;
-      vertical-align: baseline;
-    }
-
-    .ca-ph {
-      visibility: hidden;
-      white-space: nowrap;
-      display: inline-block;
-    }
-
-    .ca-typing {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      overflow: hidden;
-      white-space: nowrap;
-      max-width: 0;
-      display: inline-flex;
-      align-items: baseline;
-    }
-
-    .ca-inner {
-      display: inline;
-      white-space: nowrap;
-      color: rgba(255, 255, 255, 0.88);
-      flex-shrink: 0;
-    }
-
-    .ca-inner .gdot {
-      color: #3D8F5A;
-    }
-
-    .ca-cur {
-      display: inline-block;
-      width: 0.32em;
-      height: 0.72em;
-      background: #3D8F5A;
-      vertical-align: baseline;
-      margin-left: 1px;
-      flex-shrink: 0;
-      border-radius: 1px;
-      animation: caBlink 0.65s step-end infinite;
-    }
-
-    .ca-cur.off {
-      opacity: 0;
-      animation: none;
-    }
-
-    @keyframes caBlink {
-
-      0%,
-      100% {
-        opacity: 1
-      }
-
-      50% {
-        opacity: 0
-      }
-    }
-
-    .ca-s2-line {
-      font-size: clamp(64px, 9vw, 110px);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      display: flex;
-      align-items: baseline;
-      white-space: nowrap;
-    }
-
-    .ca-base {
-      color: rgba(255, 255, 255, 0.92);
-    }
-
-    .ca-dot {
-      color: #3D8F5A;
-    }
-
-    .ca-s2-anchor {
-      position: relative;
-      display: inline-block;
-    }
-
-    .ca-s2-ph {
-      visibility: hidden;
-      white-space: pre;
-      display: inline-block;
-    }
-
-    .ca-suffix {
-      position: absolute;
-      left: 0;
-      top: 0;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.65s ease;
-    }
-
-    .ca-suffix.muted {
-      color: rgba(255, 255, 255, 0.55);
-    }
-
-    .ca-suffix.grove {
-      color: #3D8F5A;
-    }
-
-    .ca-suffix.on {
-      opacity: 1;
-    }
-
-    /* ── FOOTER — landing dark variant ── */
-    footer {
-      background: var(--ink);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .footer-inner {
-      max-width: var(--max);
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding: 28px var(--pad);
-    }
-
-    .footer-logo {
-      color: rgba(255, 255, 255, 0.35);
-    }
-
-    .footer-tagline {
-      color: rgba(255, 255, 255, 0.2);
-      font-style: normal;
-    }
-
-    .footer-copy {
-      color: rgba(255, 255, 255, 0.2);
-    }
+    .section-imgbreak { background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80'); }
 
-    /* ── RESPONSIVE ── */
+    /* ── HERO RESPONSIVE ── */
     @media (max-width: 860px) {
-      .hero-body {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-card {
-        position: static;
-      }
-
-      .how-head {
-        grid-template-columns: 1fr;
-        gap: 16px;
-        margin-bottom: 32px;
-        padding-bottom: 28px;
-      }
-
-      .section-how .steps {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .vis-grid {
-        grid-template-columns: 1fr;
-        gap: 32px;
-      }
-
-      .planner-feature-grid {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-
-      .section {
-        padding: clamp(48px, 8vh, 80px) 0;
-      }
-
-      .tension-col-heads,
-      .tm-row {
-        grid-template-columns: 1fr;
-      }
-
-      .tch-before,
-      .tm-cell.before {
-        display: none;
-      }
+      .hero-body { grid-template-columns: 1fr; padding-top: 32px; }
+      .hero-card { position: static; max-width: 100%; }
     }
   </style>
 </head>
@@ -1045,14 +84,16 @@
 <body>
 
   <!-- NAV -->
-  <nav>
+  <nav class="topnav">
     <div class="nav-inner">
-      <a class="nav-logo" href="#"
-        style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span
-          style="color:#3D8F5A">.</span></a>
-      <div class="nav-links">
+      <a class="nav-logo" href="#" style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span class="grove">.</span></a>
+      <button class="nav-hamburger" id="navToggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links" id="navLinks">
         <a href="#how">How it works</a>
         <a href="#visibility">The idea</a>
+        <a href="faq.html">FAQ</a>
         <a href="app.html" class="nav-cta">Get early access</a>
       </div>
     </div>
@@ -1063,15 +104,14 @@
     <div class="hero-body">
       <div>
         <div class="hero-eyebrow au d1">
-          <div class="eyebrow-dot"></div>shwn<span style="color:#3D8F5A">.</span> let's do it again<span
-            style="color:#3D8F5A">.</span> better<span style="color:#3D8F5A">.</span>
+          <div class="eyebrow-dot"></div><span class="brand-name">shwn<span class="grove">.</span></span> let's do it again<span
+            class="grove">.</span> better<span class="grove">.</span>
         </div>
         <h1 class="au d2">
           Have you<br>
-          shwn<span style="color:#3D8F5A">.</span> up<span style="color:#3D8F5A">?</span>
+          shwn<span class="grove">.</span> up<span class="grove">?</span>
         </h1>
-        <p class="hero-sub au d3">shwn. tracks what you give. Every session is proof you showed up — regardless of where
-          the finish line sits.</p>
+        <p class="hero-sub au d3">If you want to understand your time, <span class="brand-name">shwn<span class="grove">.</span></span> is the next step.</p>
         <div class="hero-actions au d4">
           <a href="app.html" class="btn-primary">Get early access →</a>
           <a href="#how" class="btn-secondary">See how it works ↓</a>
@@ -1136,7 +176,7 @@
         <div class="belt-item">what did you give today?</div>
         <div class="belt-item belt-em">yes. again.</div>
         <div class="belt-item">the path to it? visible and honestly yours.</div>
-        <div class="belt-item">shwn. counts what you gave.</div>
+        <div class="belt-item"><span class="brand-name">shwn<span class="grove">.</span></span> counts what you gave.</div>
         <div class="belt-item belt-grove">missed yesterday? today is a clean page.</div>
         <div class="belt-item belt-em">Have you shwn up?</div>
         <div class="belt-item">not did you finish — did you show up</div>
@@ -1147,7 +187,7 @@
         <div class="belt-item">what did you give today?</div>
         <div class="belt-item belt-em">yes. again.</div>
         <div class="belt-item">the path to it? visible and honestly yours.</div>
-        <div class="belt-item">shwn. counts what you gave.</div>
+        <div class="belt-item"><span class="brand-name">shwn<span class="grove">.</span></span> counts what you gave.</div>
       </div>
     </div>
   </section>
@@ -1160,7 +200,7 @@
         <div class="imgbreak-quote">The output matters.<br><span>And the path to it needs to be<br>visible, honest, and
             sustainable.</span></div>
         <p class="imgbreak-body">The deadline is real. The thesis, the recital, the project — these things have finish
-          lines and the finish lines matter. What shwn. adds isn't a different goal. It's clarity about the path.</p>
+          lines and the finish lines matter. What <span class="brand-name">shwn<span class="grove">.</span></span> adds isn't a different goal. It's clarity about the path.</p>
       </div>
     </div>
   </section>
@@ -1173,8 +213,8 @@
         everything</div>
 
       <div class="tension-col-heads reveal">
-        <div class="tension-col-head tch-before">Without shwn.</div>
-        <div class="tension-col-head tch-after">With shwn.</div>
+        <div class="tension-col-head tch-before">Without shwn<span class="grove">.</span></div>
+        <div class="tension-col-head tch-after">With shwn<span class="grove">.</span></div>
       </div>
 
       <div class="tension-matrix">
@@ -1231,10 +271,10 @@
   <!-- CLEAN PAGE -->
   <section class="section-clean-page">
     <div class="clean-page-inner reveal">
-      <div class="clean-page-eyebrow">No guilt. Just clarity.</div>
+      <div class="section-eyebrow">No guilt. Just clarity.</div>
       <div class="clean-page-line">
         Missed yesterday<span class="grove">?</span><br>
-        <span class="soft">Today is a</span> clean page<span class="grove">.</span>
+        <span class="soft">Today is a</span> <span style="color:#8F5218;">clean page</span><span class="grove">.</span>
       </div>
     </div>
   </section>
@@ -1242,40 +282,36 @@
   <!-- HOW IT WORKS -->
   <section class="section section-how">
     <div class="section-inner">
-      <div class="how-head reveal">
-        <div>
-          <div class="section-eyebrow">The loop</div>
-          <h2>Four steps.<br><span class="muted">At your pace.</span></h2>
-        </div>
-        <p class="section-lead">Progress isn't built in marathons. It's built in honest, repeated acts of showing up.
-          shwn<span style="color:#3D8F5A">.</span> let's do it again<span style="color:#3D8F5A">.</span> better<span
-            style="color:#3D8F5A">.</span></p>
+      <div class="section-head reveal">
+        <div class="section-eyebrow">Ways of working</div>
+        <h2>Four ways.<br><span class="muted" style="color:#8F5218;">Your way.</span></h2>
+        <p class="section-lead" style="margin-top:20px;">Some days you just show up. Some days you plan weeks ahead. Some days you're somewhere in between.</p>
+        <p class="section-lead" style="margin-top:12px;"><span class="brand-name">shwn<span class="grove">.</span></span> works your way, and all of it counts.</p>
       </div>
       <div class="steps">
         <div class="step reveal">
-          <div class="step-num">01 — Define</div>
-          <div class="step-title">Name what matters</div>
-          <p class="step-body">Define what deserves your attention. Add the areas of work, study, or life you want to
-            invest in and give each a color. These aren't just labels — they're a declaration of what you're choosing to
-            show up for.</p>
+          <div class="step-num">The Sprinter</div>
+          <div class="step-title">Just show up</div>
+          <p class="step-body">No setup. No planning. Opens the app and starts. The commitment is already made — in their head, before the app knows anything. <span class="brand-name">shwn<span class="grove">.</span></span> just witnesses it. Records it honestly. Some days this is enough. Some days this is everything.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">You showed up. That's the whole thing.</p>
         </div>
         <div class="step reveal">
-          <div class="step-num">02 — Commit</div>
-          <div class="step-title">Set your intent</div>
-          <p class="step-body">Before the timer starts, name where this block of time is going. That single conscious
-            choice — made before the work begins — is where busy becomes purposeful.</p>
+          <div class="step-num">The Namer</div>
+          <div class="step-title">Ten seconds of intention</div>
+          <p class="step-body">Takes ten seconds before starting. Picks a focus area. "This one's for the thesis." That single choice — made before the work begins — changes what the session feels like. It belongs somewhere now. At the end of the week, <span class="brand-name">shwn<span class="grove">.</span></span> shows exactly where the time went.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">Ten seconds of intention. Everything after is clearer.</p>
         </div>
         <div class="step reveal">
-          <div class="step-num">03 — Focus</div>
-          <div class="step-title">Show up fully</div>
-          <p class="step-body">Work. Rest. Repeat. Your only job is to be present for the session you committed to.
-            Progress is built in honest, repeated acts of showing up.</p>
+          <div class="step-num">The Planner</div>
+          <div class="step-title">Give the deadline a shape</div>
+          <p class="step-body">Sees the deadline and gives it a shape. Twelve sessions, four days, Friday at 17:00. Each one placed where it can actually happen. Now the deadline isn't a date looming somewhere — it's a path with steps already committed to. They know exactly where they stand, any day they check.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">The deadline is still there. Its shadow isn't.</p>
         </div>
         <div class="step reveal">
-          <div class="step-num">04 — Reflect</div>
-          <div class="step-title">See where you went</div>
-          <p class="step-body">Review how your effort is flowing across focus areas — not to judge, but to understand.
-            One honest look is worth more than a week of good intentions.</p>
+          <div class="step-num">The Reflector</div>
+          <div class="step-title">Look back honestly</div>
+          <p class="step-body">Looks back honestly. What did I give this week? Does it match what I said mattered? Not to judge — to understand. One honest look changes the next week. And the one after that.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">Is your time reflecting your priorities?</p>
         </div>
       </div>
     </div>
@@ -1285,31 +321,22 @@
   <section class="section section-visibility" id="visibility">
     <div class="section-inner">
 
-      <!-- two text columns -->
-      <div class="vis-grid reveal">
-        <div>
-          <div class="section-eyebrow">The feeling you know</div>
-          <h2>That dread before a deadline.<br><span class="muted">It lives in the dark.</span></h2>
-          <p class="section-lead">Not the night-before panic. The weeks-before weight. You know the deadline is there.
-            It's in your calendar. You're aware of it. But awareness isn't a plan — and a plan you haven't committed to
-            doesn't move you.</p>
-        </div>
-        <div style="padding-top:8px;">
-          <p class="vis-beat"><strong>Plan.</strong> Break it into sessions you'll actually give. Put them on the
-            calendar before the week starts. Now the deadline has a path.</p>
-          <p class="vis-beat"><strong>Focus.</strong> Show up for each session. Your only job is to be present. The
-            record builds session by session.</p>
-          <p class="vis-beat"><strong>Reflect.</strong> See what you've given and what remains. Not to judge — to
-            understand. The dread has less to hold onto when the path is visible.</p>
-        </div>
+      <div class="section-head reveal">
+        <div class="section-eyebrow">The feeling you know</div>
+        <h2>That dread before a deadline.<br><span class="muted" style="color:#8F5218;">It lives in the dark.</span></h2>
       </div>
 
-      <!-- pull quote + close — full width below -->
-      <div class="reveal">
-        <div class="vis-quote">A committed session is worth more<br><span class="light">than a deadline you're aware
-            of.</span></div>
-        <p class="section-lead">shwn. gives you all three. The dread doesn't disappear. But it stops living in the dark.
-        </p>
+      <div class="vis-grid reveal">
+        <!-- left: prose -->
+        <div>
+          <p class="vis-beat">A deadline doesn't just stay in your to-do list. It moves into your head, opening a new tab. Putting it in your calendar won't close it.</p>
+          <p class="vis-beat vis-cruel"><span class="vis-label">Here's the cruel part:</span> the avoidance isn't rest. Every time you try to relax, your brain keeps scanning, keeps reminding, keeps exhausting you. Even when you aren't thinking about it, a part of you is quietly dedicated to tracking it. This is why you feel tired even on days you didn't do anything.</p>
+          <p class="vis-beat vis-good"><span class="vis-label">Here's the good part:</span> you don't have to finish it to feel better. You don't need a fat tick in your to-do list. You just need to start moving.</p>
+        </div>
+        <!-- right: closing quote -->
+        <div class="vis-right">
+          <div class="vis-quote"><span style="color:#8F5218;">Your brain opens tabs.</span><br><span class="light"><span class="brand-name">shwn<span class="grove">.</span></span> helps you close them.<br>One session at a time.<br>One honest act of showing up at a time.</span></div>
+        </div>
       </div>
 
     </div>
@@ -1318,14 +345,14 @@
   <!-- PLANNER FEATURE -->
   <section class="section section-planner" id="planner">
     <div class="section-inner">
+      <div class="section-head reveal">
+        <div class="section-eyebrow">The Focus Planner</div>
+        <h2>Your effort, distributed<br><span class="muted">across what matters.</span></h2>
+      </div>
       <div class="planner-feature-grid reveal">
         <div>
-          <div class="section-eyebrow">The Focus Planner</div>
-          <h2>Your effort, distributed<br><span class="muted">across what matters.</span></h2>
-          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what
-            matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
-          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.
-          </p>
+          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
+          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.</p>
         </div>
         <div class="card-stack">
           <!-- front: planner calendar card -->
@@ -1441,14 +468,16 @@
   <section class="section section-why" id="why">
     <div class="section-inner">
 
-      <div class="why-head reveal">
+      <div class="section-head reveal">
         <div class="section-eyebrow">A different measure. A different tool.</div>
-        <h2>Built differently<span class="grove">.</span><br><span class="muted">By design.</span></h2>
-        <p class="why-lead">Most productivity tools measure what you finished. shwn. measures what you invested — and
-          that changes every feature underneath it.</p>
+        <h2>Built differently<span class="grove">.</span><br><span class="muted" style="color:#8F5218;">By design.</span></h2>
+        <p class="why-table-close" style="margin-top:20px;">It's in your calendar. It's on your to-do list. <span style="color:#8F5218;">So what?</span></p>
+        <p class="why-lead" style="margin-top:12px;">Other tools show you the deadline. <span class="brand-name">shwn<span class="grove">.</span></span> helps you show up for it.</p>
       </div>
 
       <div class="reveal">
+        <p class="why-table-close">From checking off tasks — to showing up for what matters.</p>
+        <div class="why-table-wrap">
         <table class="why-table">
           <thead>
             <tr>
@@ -1456,7 +485,7 @@
               <th>Task apps</th>
               <th>Calendar apps</th>
               <th>Pomodoro timers</th>
-              <th class="col-shwn">shwn.</th>
+              <th class="col-shwn"><span class="brand-name">shwn<span class="grove">.</span></span></th>
             </tr>
           </thead>
           <tbody>
@@ -1504,8 +533,7 @@
             </tr>
           </tbody>
         </table>
-        <p class="why-table-close">From checking off tasks — to showing up for what matters.</p>
-      </div>
+        </div>
 
     </div>
   </section>
@@ -1540,7 +568,7 @@
         </div>
       </div>
 
-      <p class="closing-sub">One session at a time. One honest act of showing up at a time.</p>
+      <p class="closing-sub">One session at a time.<br>One honest act of showing up at a time.</p>
       <a href="app.html" class="btn-light">Get early access →</a>
     </div>
   </section>
@@ -1548,9 +576,7 @@
   <!-- FOOTER -->
   <footer>
     <div class="footer-inner">
-      <span class="footer-logo"
-        style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span
-          style="color:#3D8F5A">.</span></span>
+      <span class="footer-logo" style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span class="grove">.</span></span>
       <span class="footer-tagline" style="font-family:'Manrope',sans-serif;font-weight:600;font-style:normal;">Have you
         shwn up?</span>
       <span class="footer-copy">© 2026 shwn.</span>
@@ -1708,6 +734,26 @@
       });
     }, { threshold: 0.1 });
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
+  <script>
+    (function () {
+      const toggle = document.getElementById('navToggle');
+      const links = document.getElementById('navLinks');
+      if (!toggle) return;
+      toggle.addEventListener('click', () => {
+        const open = links.classList.toggle('open');
+        toggle.classList.toggle('open', open);
+        toggle.setAttribute('aria-expanded', open);
+      });
+      links.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          links.classList.remove('open');
+          toggle.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    })();
   </script>
 
 </body>
