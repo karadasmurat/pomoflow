@@ -29,6 +29,29 @@ async function init() {
             console.warn('OPFS support not found in sqlite3 object, falling back to transient/memory storage');
         }
 
+        // --- MIGRATION CHECK START ---
+        const tablesToMigrate = ['settings', 'app_state', 'user_profile'];
+        const migrationsNeeded = {};
+
+        for (const table of tablesToMigrate) {
+            try {
+                // Check if table exists
+                const tableExists = db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'`, { returnValue: 'resultRows' });
+                if (!tableExists || tableExists.length === 0) continue;
+
+                // Check if id column exists
+                const hasId = db.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name='id'`, { returnValue: 'resultRows' });
+                if (!hasId || hasId.length === 0) {
+                    console.log(`Migrating ${table}: missing 'id' column`);
+                    db.exec(`ALTER TABLE ${table} RENAME TO ${table}_legacy_temp`);
+                    migrationsNeeded[table] = true;
+                }
+            } catch (e) {
+                console.warn(`Error checking migration for ${table}`, e);
+            }
+        }
+        // --- MIGRATION CHECK END ---
+
         // Create Tables with definitive schema
         db.exec(`
             CREATE TABLE IF NOT EXISTS focus_areas (
@@ -102,10 +125,47 @@ async function init() {
                 deleted_at DATETIME
             );
 
+            CREATE TABLE IF NOT EXISTS planned_blocks (
+                id TEXT PRIMARY KEY,
+                focus_area_id TEXT NOT NULL,
+                planned_date TEXT NOT NULL,
+                start_minutes INTEGER NOT NULL,
+                duration_minutes INTEGER NOT NULL,
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp);
             CREATE INDEX IF NOT EXISTS idx_sessions_area ON sessions(focus_area_id);
             CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
+            CREATE INDEX IF NOT EXISTS idx_planned_blocks_date ON planned_blocks(planned_date);
         `);
+
+        // --- DATA RESTORATION START ---
+        for (const table of Object.keys(migrationsNeeded)) {
+            try {
+                const rows = db.exec(`SELECT * FROM ${table}_legacy_temp`, {returnValue: 'resultRows', rowMode: 'object'});
+                if (rows && rows.length > 0) {
+                    console.log(`Restoring ${rows.length} rows for ${table}...`);
+                    db.transaction(() => {
+                        for (const row of rows) {
+                            // Simple UUID generator fallback
+                            const id = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substr(2));
+                            
+                            db.exec(`INSERT INTO ${table} (id, key, value) VALUES (?, ?, ?)`, {
+                                bind: [id, row.key, row.value]
+                            });
+                        }
+                    });
+                }
+                db.exec(`DROP TABLE ${table}_legacy_temp`);
+                console.log(`Migration for ${table} completed.`);
+            } catch (e) {
+                console.error(`Failed to restore data for ${table}`, e);
+            }
+        }
+        // --- DATA RESTORATION END ---
 
         // Create Triggers for updated_at
         const tables = ['focus_areas', 'aims', 'sessions', 'settings', 'user_profile', 'app_state'];
@@ -265,6 +325,44 @@ self.onmessage = async (e) => {
                 `, {
                     bind: [payload.id, payload.key, payload.value]
                 });
+                break;
+            case 'insert_planned_block':
+                db.exec(`
+                    INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(id) DO UPDATE SET
+                        focus_area_id = excluded.focus_area_id,
+                        planned_date = excluded.planned_date,
+                        start_minutes = excluded.start_minutes,
+                        duration_minutes = excluded.duration_minutes,
+                        notes = excluded.notes
+                `, {
+                    bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null]
+                });
+                break;
+            case 'delete_planned_block':
+                db.exec("DELETE FROM planned_blocks WHERE id = ?", { bind: [payload.id] });
+                break;
+            case 'get_planned_blocks_for_week':
+                result = db.exec(`
+                    SELECT pb.*, f.name as area_name, f.color as area_color
+                    FROM planned_blocks pb
+                    LEFT JOIN focus_areas f ON pb.focus_area_id = f.id
+                    WHERE pb.planned_date >= ? AND pb.planned_date <= ?
+                    ORDER BY pb.planned_date, pb.start_minutes
+                `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
+                break;
+            case 'get_sessions_for_week':
+                result = db.exec(`
+                    SELECT s.*,
+                           COALESCE(f.name, s.task_name) as area_name,
+                           COALESCE(f.color, s.task_color) as area_color
+                    FROM sessions s
+                    LEFT JOIN focus_areas f ON s.focus_area_id = f.id
+                    WHERE s.is_deleted = 0
+                      AND date(s.timestamp) >= ? AND date(s.timestamp) <= ?
+                    ORDER BY s.timestamp
+                `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
                 break;
         }
         self.postMessage({ action: 'success', result, requestId });
