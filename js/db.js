@@ -97,26 +97,6 @@ class DatabaseManager {
     }
     async deleteAim(id) { return this._send('delete_aim', { id }); }
 
-    async insertPlannedBlock(block) {
-        return this._send('insert_planned_block', {
-            id: block.id || uuidv7(),
-            focusAreaId: block.focusAreaId,
-            plannedDate: block.plannedDate,
-            startMinutes: block.startMinutes,
-            durationMinutes: block.durationMinutes,
-            notes: block.notes || null
-        });
-    }
-    async deletePlannedBlock(id) { return this._send('delete_planned_block', { id }); }
-    async getPlannedBlocksForWeek(startDate, endDate) {
-        const rows = await this._send('get_planned_blocks_for_week', { startDate, endDate });
-        return rows || [];
-    }
-    async getSessionsForWeek(startDate, endDate) {
-        const rows = await this._send('get_sessions_for_week', { startDate, endDate });
-        return rows || [];
-    }
-
     async setSetting(key, value) { 
         return this._send('set_setting', { 
             id: uuidv7(), // New record for this key (ON CONFLICT will update)
