@@ -982,10 +982,7 @@ export const PlannerView = {
         window.updateDerivedTime = () => this.updateDerivedTime();
         window.confirmBlock = () => this.confirmBlock();
         window.startNewBlockDrag = (e) => this.startNewBlockDrag(e);
-        window.openDeadlineModal = () => {
-            console.log('openDeadlineModal called from menu');
-            this.openDeadlineModal();
-        }; // default arg
+        window.openDeadlineModal = () => this.openDeadlineModal(); // default arg
         window.closeDeadlineModal = () => this.closeDeadlineModal();
         window.saveDeadline = () => this.saveDeadline();
         window.closeModalIfBg = (e) => {
