@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>shwn. — Building something big. Need today to matter?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=DM+Mono:wght@400&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #F0EFED;
+      --bg-card: #FAFAF8;
+      --white: #FFFFFF;
+      --ink: #1A1917;
+      --ink-mid: #6B6860;
+      --ink-soft: #A8A49E;
+      --rule: #E2DFD9;
+      --accent: #2D4A3E;
+      --accent-dim: #E6EDEA;
+      --grove: #3D8F5A;
+      --max: 760px;
+      --pad: clamp(20px, 5vw, 48px);
+      --font: 'Manrope', -apple-system, sans-serif;
+      --mono: 'DM Mono', monospace;
+      --nav-h: 52px;
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .topnav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: var(--nav-h);
+      background: rgba(240, 239, 237, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-family: var(--font);
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-logo .grove {
+      color: var(--grove);
+    }
+
+    .nav-back {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s;
+    }
+
+    .nav-back:hover {
+      color: var(--ink);
+    }
+
+    .page {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: calc(var(--nav-h) + 72px) var(--pad) 120px;
+    }
+
+    .entry {
+      margin-bottom: 56px;
+      padding-bottom: 56px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .entry-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 4px 12px;
+      border-radius: 40px;
+      margin-bottom: 28px;
+    }
+
+    .entry-eyebrow-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .entry-q {
+      font-size: clamp(32px, 4.5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.06;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+
+    .entry-q .grove {
+      color: var(--grove);
+    }
+
+    .entry-lead {
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      max-width: 560px;
+    }
+
+    .prose p {
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1.85;
+      color: var(--ink-mid);
+      margin-bottom: 24px;
+    }
+
+    .prose p:last-child {
+      margin-bottom: 0;
+    }
+
+    .prose p strong {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .prose p em {
+      font-style: italic;
+      color: var(--ink);
+    }
+
+    .pull {
+      border-left: 3px solid var(--accent);
+      padding: 8px 0 8px 28px;
+      margin: 40px 0;
+    }
+
+    .pull-text {
+      font-size: clamp(19px, 2.2vw, 24px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.35;
+      color: var(--ink);
+    }
+
+    .pull-text .grove {
+      color: var(--grove);
+    }
+
+    .section-marker {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 56px 0 40px;
+    }
+
+    .section-marker-line {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .section-marker-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .section-marker-label.accent {
+      color: var(--accent);
+    }
+
+    .features-used {
+      margin: 48px 0 0;
+      padding: 28px 32px;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+    }
+
+    .features-used-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 16px;
+    }
+
+    .features-pills {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      border: 1px solid var(--rule);
+      border-radius: 40px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 0 4px 8px 0;
+    }
+
+    .feature-pill-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--grove);
+      flex-shrink: 0;
+    }
+
+    .closing {
+      margin-top: 64px;
+      padding-top: 48px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .closing-statement {
+      font-size: clamp(22px, 2.8vw, 32px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      color: var(--ink);
+      margin-bottom: 32px;
+    }
+
+    .closing-statement .grove {
+      color: var(--grove);
+    }
+
+    .closing-sub {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      margin-bottom: 40px;
+      max-width: 480px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      color: var(--ink-mid);
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      margin-left: 24px;
+      transition: color 0.15s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--ink);
+    }
+
+    .other-stories {
+      margin-top: 80px;
+      padding-top: 48px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .other-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 24px;
+    }
+
+    .other-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .other-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 20px 22px 18px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .other-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 16px rgba(45, 74, 62, 0.08);
+    }
+
+    .other-card-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+
+    .other-card-q {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      color: var(--ink);
+    }
+
+    .other-card-q .grove {
+      color: var(--grove);
+    }
+
+    .page-footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-logo {
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink-soft);
+      font-size: 15px;
+      text-decoration: none;
+    }
+
+    .footer-logo .grove {
+      color: var(--grove);
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      color: var(--ink-soft);
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 560px) {
+      .other-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .entry-q {
+        font-size: 28px;
+      }
+
+      .features-used {
+        padding: 22px 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="topnav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="../index.html">shwn<span class="grove">.</span></a>
+      <a class="nav-back" href="../index.html#familiar">← Back</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <header class="entry reveal">
+      <div class="entry-eyebrow">
+        <div class="entry-eyebrow-dot"></div>The Builder
+      </div>
+      <h1 class="entry-q">Building something big.<br><span class="grove">Need today to matter?</span></h1>
+      <p class="entry-lead">The thesis. The book. The business. No natural checkpoints. Progress is real but invisible
+        on a daily scale.</p>
+    </header>
+
+    <div class="section-marker reveal">
+      <div class="section-marker-line"></div>
+      <div class="section-marker-label">Without shwn.</div>
+      <div class="section-marker-line"></div>
+    </div>
+
+    <div class="prose reveal">
+      <p>You're building something that takes years. The finish line is real — the submission date, the publication, the
+        launch — but it's so far ahead that it barely functions as motivation on a Tuesday morning. What you need is for
+        <em>today</em> to feel like it counts.</p>
+      <p>But today is hard to measure. You worked for three hours on a problem that didn't resolve. You read papers that
+        didn't directly advance the argument. You rewrote a section and it's not better yet — just different. By
+        conventional metrics, today produced nothing. The task list is unchanged. The deadline is unchanged. The work is
+        unchanged, visibly.</p>
+      <p>And the insidious thing about long-horizon work is that the gap between effort and visible progress stretches
+        so wide that it starts to feel like the effort isn't happening at all. Weeks pass. Months. The background tab
+        runs continuously — not the sharp anxiety of a deadline two weeks away, but a slow, persistent hum. <em>Am I
+          moving? Is this going anywhere? Have I given this enough?</em></p>
+    </div>
+
+    <div class="pull reveal">
+      <div class="pull-text">The finish line is too far<br>to feel on a Tuesday morning.<br><span class="grove">You need
+          today to matter.</span></div>
+    </div>
+
+    <div class="prose reveal">
+      <p>Without a record of what you're actually giving — daily, weekly, across the months — that question has no
+        honest answer. Only a feeling. And feelings erode under the weight of a long project.</p>
+    </div>
+
+    <div class="section-marker reveal">
+      <div class="section-marker-line"></div>
+      <div class="section-marker-label accent">With shwn.</div>
+      <div class="section-marker-line"></div>
+    </div>
+
+    <div class="prose reveal">
+      <p>You create Focus Areas for the different territories of the work. <strong>Research</strong> for the reading and
+        absorbing. <strong>Writing</strong> for the drafting and revising. <strong>Thinking</strong> for the sessions
+        that don't produce anything visible but are doing the deepest work of all.</p>
+      <p>And you build a path. Not a plan for the entire project — that's unknowable. A path for this month. This
+        chapter. This milestone. <em>Eight sessions of Writing before the end of March.</em> Placed on the calendar
+        where they can actually happen. Honest about what the next four weeks realistically hold.</p>
+      <p>Tuesday's three hours that didn't resolve — they're there. A session of Thinking, long, recorded. Not visible
+        progress toward a finished thing. Visible investment in the work that needs to happen before the finished thing
+        can exist. That distinction matters. Those hours didn't disappear into the vague feeling of a difficult week.
+        They're in the record. Counted. Yours.</p>
+      <p>At the end of the month, you can look back honestly. Thirty-two sessions given across three Focus Areas.
+        Fourteen of Writing, twelve of Research, six of Thinking. The distribution tells you something about how the
+        work is moving — whether the balance is right, where you've been generous with your time, where the work is
+        waiting for more.</p>
+      <p><strong>Today mattered.</strong> Not because you finished something. Because you showed up for the work that
+        takes years to finish — and shwn. was there to witness it.</p>
+      <p>Small yeses, repeated daily, compound into real progress. You can't always feel it. But now you can see it.</p>
+    </div>
+
+    <div class="pull reveal">
+      <div class="pull-text">Small yeses, repeated daily,<br><span class="grove">compound into real progress.</span>
+      </div>
+    </div>
+
+    <div class="features-used reveal">
+      <div class="features-used-label">What did the work in this story</div>
+      <div class="features-pills">
+        <span class="feature-pill"><span class="feature-pill-dot"></span>Focus Areas</span>
+        <span class="feature-pill"><span class="feature-pill-dot"></span>Path</span>
+        <span class="feature-pill"><span class="feature-pill-dot"></span>Session timer</span>
+        <span class="feature-pill"><span class="feature-pill-dot"></span>Effort history</span>
+        <span class="feature-pill"><span class="feature-pill-dot"></span>Monthly reflection</span>
+      </div>
+    </div>
+
+    <div class="closing reveal">
+      <div class="closing-statement">Today mattered.<br><span class="grove">shwn. witnessed it.</span></div>
+      <p class="closing-sub">Start with one session. The record of what you're building — honestly, daily — begins right
+        now.</p>
+      <div>
+        <a href="app.html" class="btn-primary">Get early access →</a>
+        <a href="index.html" class="btn-secondary">Back to shwn.</a>
+      </div>
+    </div>
+
+    <div class="other-stories reveal">
+      <div class="other-label">Other stories</div>
+      <div class="other-grid">
+        <a class="other-card" href="for-students.html">
+          <div class="other-card-num">01</div>
+          <div class="other-card-q">Exam coming.<br><span class="grove">Path completely dark?</span></div>
+        </a>
+        <a class="other-card" href="for-workers.html">
+          <div class="other-card-num">02</div>
+          <div class="other-card-q">Working hard.<br><span class="grove">Nothing to show for it?</span></div>
+        </a>
+        <a class="other-card" href="for-creatives.html">
+          <div class="other-card-num">04</div>
+          <div class="other-card-q">Your work doesn't<br><span class="grove">fit a checkbox?</span></div>
+        </a>
+        <a class="other-card" href="for-trackers.html">
+          <div class="other-card-num">05</div>
+          <div class="other-card-q">Every productivity app<br><span class="grove">eventually let you down?</span></div>
+        </a>
+      </div>
+    </div>
+
+    <footer class="page-footer">
+      <a class="footer-logo" href="index.html">shwn<span class="grove">.</span></a>
+      <span class="footer-copy">© 2026 shwn. — Have you shwn up?</span>
+    </footer>
+  </div>
+
+  <script>
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 80); obs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+</body>
+
+</html>

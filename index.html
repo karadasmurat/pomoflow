@@ -13,70 +13,659 @@
   <link rel="stylesheet" href="css/base.css">
   <style>
     /* ── HERO ── */
-    .hero { padding-top: var(--nav-h); display: flex; flex-direction: column; }
-    .hero-body { flex: 1; max-width: var(--max); margin: 0 auto; width: 100%; padding: clamp(64px,11vh,120px) var(--pad) 0; display: grid; grid-template-columns: 1fr 420px; gap: 64px; align-items: start; }
-    .hero-sub { font-size: 17px; font-weight: 400; line-height: 1.7; color: var(--ink-mid); max-width: 460px; margin-bottom: 44px; }
-    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .hero {
+      padding-top: var(--nav-h);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-body {
+      flex: 1;
+      max-width: var(--max);
+      margin: 0 auto;
+      width: 100%;
+      padding: clamp(64px, 11vh, 120px) var(--pad) 0;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      max-width: 460px;
+      margin-bottom: 44px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
 
     /* ── HERO CARD ── */
-    .hero-card { background: var(--white); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04); position: sticky; top: 80px; }
-    .hero-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--rule); background: var(--bg-card); }
-    .card-dots { display: flex; gap: 6px; }
-    .card-dot  { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); }
-    .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-soft); text-transform: uppercase; }
+    .hero-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+      position: sticky;
+      top: 80px;
+    }
+
+    .hero-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--rule);
+      background: var(--bg-card);
+    }
+
+    .card-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .card-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--rule);
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+    }
 
     /* ── MINI PLANNER (hero card) ── */
-    .planner { padding: 16px; }
-    .planner-week { display: grid; grid-template-columns: 26px repeat(7,1fr); font-size: 9px; color: var(--ink-soft); }
-    .pw-head { padding: 0 2px 8px; text-align: center; font-weight: 600; letter-spacing: 0.04em; }
-    .pw-head.today { color: var(--accent); }
-    .pw-head.today::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin: 2px auto 0; }
-    .pw-time-col { display: flex; flex-direction: column; }
-    .pw-tl { font-size: 8px; color: #CCC; height: 38px; padding-top: 2px; }
-    .pw-col { position: relative; height: 190px; border-left: 1px solid #F2F0ED; }
-    .pw-col.today-col { background: #FAFDF9; }
-    .pw-block { position: absolute; left: 2px; right: 2px; border-radius: 3px; font-size: 7px; font-weight: 600; padding: 3px 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .c-green  { background: #DDE8DF; color: #2D4A3E; border: 1px solid #C4D9C8; }
-    .c-amber  { background: #EDE8DD; color: #5C4A2D; border: 1px solid #D9C8A4; }
-    .c-violet { background: #E4DDEE; color: #3D2D5C; border: 1px solid #C4B4D9; }
-    .pw-block.actual { opacity: 0.5; }
-    .pw-now { position: absolute; left: 0; right: 0; border-top: 1.5px solid var(--accent); z-index: 5; }
-    .pw-now::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); position: absolute; left: -3px; top: -4px; }
-    .planner-footer { padding: 12px 18px; border-top: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
-    .planner-stat { display: flex; flex-direction: column; gap: 1px; }
-    .planner-stat-val { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
-    .planner-stat-label { font-size: 10px; font-weight: 500; color: var(--ink-soft); letter-spacing: 0.04em; }
+    .planner {
+      padding: 16px;
+    }
+
+    .planner-week {
+      display: grid;
+      grid-template-columns: 26px repeat(7, 1fr);
+      font-size: 9px;
+      color: var(--ink-soft);
+    }
+
+    .pw-head {
+      padding: 0 2px 8px;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .pw-head.today {
+      color: var(--accent);
+    }
+
+    .pw-head.today::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin: 2px auto 0;
+    }
+
+    .pw-time-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pw-tl {
+      font-size: 8px;
+      color: #CCC;
+      height: 38px;
+      padding-top: 2px;
+    }
+
+    .pw-col {
+      position: relative;
+      height: 190px;
+      border-left: 1px solid #F2F0ED;
+    }
+
+    .pw-col.today-col {
+      background: #FAFDF9;
+    }
+
+    .pw-block {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      border-radius: 3px;
+      font-size: 7px;
+      font-weight: 600;
+      padding: 3px 4px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .c-green {
+      background: #DDE8DF;
+      color: #2D4A3E;
+      border: 1px solid #C4D9C8;
+    }
+
+    .c-amber {
+      background: #EDE8DD;
+      color: #5C4A2D;
+      border: 1px solid #D9C8A4;
+    }
+
+    .c-violet {
+      background: #E4DDEE;
+      color: #3D2D5C;
+      border: 1px solid #C4B4D9;
+    }
+
+    .pw-block.actual {
+      opacity: 0.5;
+    }
+
+    .pw-now {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 1.5px solid var(--accent);
+      z-index: 5;
+    }
+
+    .pw-now::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      left: -3px;
+      top: -4px;
+    }
+
+    .planner-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .planner-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .planner-stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .planner-stat-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
 
     /* ── TIMER CARD ── */
-    .timer-card-body { padding: 32px 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-    .timer-focus-area { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--rule); border-radius: 40px; padding: 5px 14px; }
-    .timer-area-dot  { width: 8px; height: 8px; border-radius: 50%; }
-    .timer-area-name { font-size: 12px; font-weight: 600; color: var(--ink); letter-spacing: 0.02em; }
-    .timer-display   { font-size: 72px; font-weight: 800; letter-spacing: -0.04em; color: var(--ink); line-height: 1; }
-    .timer-label     { font-size: 12px; font-weight: 500; color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; }
-    .timer-bar-track { width: 100%; height: 4px; background: var(--rule); border-radius: 2px; margin-top: 4px; }
-    .timer-bar-fill  { height: 100%; background: var(--grove); border-radius: 2px; }
-    .timer-sessions  { display: flex; gap: 6px; margin-top: 4px; }
-    .timer-session   { width: 28px; height: 4px; border-radius: 2px; background: var(--rule); }
-    .timer-session.done   { background: var(--grove); }
-    .timer-session.active { background: var(--grove); opacity: 0.4; }
-    .timer-card-footer { padding: 16px 24px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); }
-    .timer-stat-val   { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
-    .timer-stat-label { font-size: 10px; font-weight: 500; color: var(--ink-soft); margin-top: 2px; }
+    .timer-card-body {
+      padding: 32px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .timer-focus-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      border-radius: 40px;
+      padding: 5px 14px;
+    }
+
+    .timer-area-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .timer-area-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+
+    .timer-display {
+      font-size: 72px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .timer-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .timer-bar-track {
+      width: 100%;
+      height: 4px;
+      background: var(--rule);
+      border-radius: 2px;
+      margin-top: 4px;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      background: var(--grove);
+      border-radius: 2px;
+    }
+
+    .timer-sessions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .timer-session {
+      width: 28px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--rule);
+    }
+
+    .timer-session.done {
+      background: var(--grove);
+    }
+
+    .timer-session.active {
+      background: var(--grove);
+      opacity: 0.4;
+    }
+
+    .timer-card-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+    }
+
+    .timer-stat-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .timer-stat-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      margin-top: 2px;
+    }
 
     /* ── SECTION HEAD — full width title area ── */
     .section-head {
       margin-bottom: 56px;
       padding-bottom: 48px;
     }
-    .section-head h2 { margin-bottom: 16px; }
 
-    .section-imgbreak { background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80'); }
+    .section-head h2 {
+      margin-bottom: 16px;
+    }
+
+    .section-imgbreak {
+      background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80');
+    }
+
+    .section-imgbreak-universal {
+      background-image: url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1800&q=80');
+      background-position: center 35%;
+    }
+
+    .section-imgbreak-universal::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 12, 10, 0.52);
+      pointer-events: none;
+    }
+
+    .section-imgbreak-universal {
+      position: relative;
+    }
+
+    /* ── CLOSING + FOOTER TIGHTENING ── */
+    .section-closing {
+      padding: clamp(40px, 7vh, 72px) 0 !important;
+    }
+
+    .closing-inner {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+
+    .closing-anim {
+      margin-bottom: 24px !important;
+    }
+
+    .closing-sub {
+      margin-bottom: 24px !important;
+      margin-top: 0 !important;
+    }
+
+    footer {
+      padding: 20px 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+    }
 
     /* ── HERO RESPONSIVE ── */
     @media (max-width: 860px) {
-      .hero-body { grid-template-columns: 1fr; padding-top: 32px; }
-      .hero-card { position: static; max-width: 100%; }
+      .hero-body {
+        grid-template-columns: 1fr;
+        padding-top: 32px;
+      }
+
+      .hero-card {
+        position: static;
+        max-width: 100%;
+      }
+    }
+
+    /* ── FAMILIAR SECTION ── */
+    .section-familiar {
+      padding: clamp(80px, 12vh, 140px) 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .hook-block {
+      max-width: 640px;
+      margin: 0 auto 80px;
+      text-align: center;
+    }
+
+    .hook-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 5px 12px;
+      border-radius: 40px;
+      margin-bottom: 32px;
+    }
+
+    .hook-eyebrow-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .hook-m1 {
+      font-size: clamp(30px, 3.8vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .hook-soft {
+      font-weight: 300;
+      color: var(--ink-soft);
+    }
+
+    .hook-m2 {
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      margin-bottom: 40px;
+    }
+
+    .hook-m2 strong {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .hook-path {
+      border-left: 3px solid var(--accent);
+      padding: 4px 0 4px 24px;
+      text-align: left;
+      margin: 0 auto;
+      max-width: 480px;
+    }
+
+    .hook-path-line {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.65;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .hook-path-sub {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--ink-mid);
+      margin-top: 8px;
+    }
+
+    .hook-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 56px auto 64px;
+      max-width: 520px;
+    }
+
+    .hook-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .hook-divider-text {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    /* ── CAROUSEL ── */
+    .carousel-wrap {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      padding: 20px 0 36px;
+    }
+
+    .carousel-track {
+      display: flex;
+      gap: 18px;
+      transition: transform 0.52s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
+      align-items: center;
+    }
+
+    .c-card {
+      flex-shrink: 0;
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 32px 28px 26px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      user-select: none;
+      transition: transform 0.44s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.44s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .c-card.side {
+      opacity: 0.52;
+      transform: scale(0.91);
+    }
+
+    .c-card.active {
+      opacity: 1;
+      transform: scale(1);
+      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .c-card.active:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 32px rgba(45, 74, 62, 0.10), 0 1px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .c-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+      margin-bottom: 20px;
+    }
+
+    .c-q {
+      font-size: clamp(22px, 2.4vw, 30px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--ink);
+      flex: 1;
+      margin-bottom: 24px;
+    }
+
+    .c-rule {
+      height: 1px;
+      background: var(--rule);
+      margin-bottom: 16px;
+    }
+
+    .c-cta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+    }
+
+    .c-cta-text {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .c-cta-arrow {
+      font-size: 15px;
+      color: var(--accent);
+      transition: transform 0.18s;
+      line-height: 1;
+    }
+
+    .c-card.active:hover .c-cta-arrow {
+      transform: translateX(3px);
+    }
+
+    .carousel-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .c-arrow {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--rule);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--ink-mid);
+      transition: border-color 0.15s, color 0.15s, transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .c-arrow:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .c-arrow:disabled {
+      opacity: 0.3;
+      cursor: default;
+      transform: none;
+    }
+
+    .c-dots {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .c-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--rule);
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: background 0.2s, width 0.3s, border-radius 0.3s;
+    }
+
+    .c-dot.active {
+      background: var(--accent);
+      width: 18px;
+      border-radius: 3px;
     }
   </style>
 </head>
@@ -86,32 +675,37 @@
   <!-- NAV -->
   <nav class="topnav">
     <div class="nav-inner">
-      <a class="nav-logo" href="#" style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span class="grove">.</span></a>
+      <a class="nav-logo" href="#"
+        style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span
+          class="grove">.</span></a>
       <button class="nav-hamburger" id="navToggle" aria-label="Menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
       <div class="nav-links" id="navLinks">
+        <a href="#idea">The idea</a>
         <a href="#how">How it works</a>
-        <a href="#visibility">The idea</a>
+        <a href="#why">Why shwn.</a>
         <a href="faq.html">FAQ</a>
         <a href="app.html" class="nav-cta">Get early access</a>
       </div>
     </div>
   </nav>
 
+
   <!-- HERO -->
   <section class="hero">
     <div class="hero-body">
       <div>
         <div class="hero-eyebrow au d1">
-          <div class="eyebrow-dot"></div><span class="brand-name">shwn<span class="grove">.</span></span> let's do it again<span
-            class="grove">.</span> better<span class="grove">.</span>
+          <div class="eyebrow-dot"></div><span class="brand-name">shwn<span class="grove">.</span></span> let's do it
+          again<span class="grove">.</span> better<span class="grove">.</span>
         </div>
         <h1 class="au d2">
           Have you<br>
           shwn<span class="grove">.</span> up<span class="grove">?</span>
         </h1>
-        <p class="hero-sub au d3">If you want to understand your time, <span class="brand-name">shwn<span class="grove">.</span></span> is the next step.</p>
+        <p class="hero-sub au d3">If you want to understand your time, <span class="brand-name">shwn<span
+              class="grove">.</span></span> is the next step.</p>
         <div class="hero-actions au d4">
           <a href="app.html" class="btn-primary">Get early access →</a>
           <a href="#how" class="btn-secondary">See how it works ↓</a>
@@ -153,7 +747,7 @@
             </div>
             <div class="timer-stat" style="text-align:center;">
               <div class="timer-stat-val">1h 25m</div>
-              <div class="timer-stat-label">invested today</div>
+              <div class="timer-stat-label">given today</div>
             </div>
             <div class="timer-stat" style="text-align:right;">
               <div class="timer-stat-val">Deep Work</div>
@@ -176,8 +770,11 @@
         <div class="belt-item">what did you give today?</div>
         <div class="belt-item belt-em">yes. again.</div>
         <div class="belt-item">the path to it? visible and honestly yours.</div>
-        <div class="belt-item"><span class="brand-name">shwn<span class="grove">.</span></span> counts what you gave.</div>
+        <div class="belt-item"><span class="brand-name">shwn<span class="grove">.</span></span> counts what you gave.
+        </div>
         <div class="belt-item belt-grove">missed yesterday? today is a clean page.</div>
+        <div class="belt-item belt-em">everything before the tick is the same shade of unfinished.</div>
+        <div class="belt-item">build the path. walk it.</div>
         <div class="belt-item belt-em">Have you shwn up?</div>
         <div class="belt-item">not did you finish — did you show up</div>
         <div class="belt-item">your time, honestly mapped</div>
@@ -187,173 +784,195 @@
         <div class="belt-item">what did you give today?</div>
         <div class="belt-item belt-em">yes. again.</div>
         <div class="belt-item">the path to it? visible and honestly yours.</div>
-        <div class="belt-item"><span class="brand-name">shwn<span class="grove">.</span></span> counts what you gave.</div>
+        <div class="belt-item"><span class="brand-name">shwn<span class="grove">.</span></span> counts what you gave.
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- MANIFESTO OVER IMAGE -->
-  <section class="section-imgbreak">
+  <!-- UNIVERSAL OPENING — OPTION A: IMAGE BREAK -->
+  <section class="section-imgbreak section-imgbreak-universal">
     <div class="imgbreak-inner reveal">
       <div class="imgbreak-text">
-        <div class="imgbreak-eyebrow">The output and the path</div>
-        <div class="imgbreak-quote">The output matters.<br><span>And the path to it needs to be<br>visible, honest, and
-            sustainable.</span></div>
-        <p class="imgbreak-body">The deadline is real. The thesis, the recital, the project — these things have finish
-          lines and the finish lines matter. What <span class="brand-name">shwn<span class="grove">.</span></span> adds isn't a different goal. It's clarity about the path.</p>
-        <div class="tension-foot-name" style="margin-top:24px; color:#fff;">shwn<span class="grove">.</span></div>
-        <p class="imgbreak-body">The path to the finish line? Visible, and honestly yours.</p>
+        <div class="imgbreak-eyebrow">Where it starts</div>
+        <div class="imgbreak-quote">
+          Every person, every day, spends time.<br>
+          <span>Including you.</span>
+        </div>
+        <p class="imgbreak-body">The question is never whether you spent it — you always did. That's unavoidable. The
+          question is whether you spent it consciously, in the things that actually matter to you.</p>
+        <p class="imgbreak-body"
+          style="margin-top:20px; color:rgba(255,255,255,0.42); font-style:italic; border-left: 2px solid rgba(61,143,90,0.6); padding-left:16px;">
+          Time spent. <br />Can you see where it went?</p>
       </div>
     </div>
   </section>
 
-  <!-- TENSION -->
-  <section class="section-tension" id="how">
-    <div class="tension-inner">
 
-      <div class="section-eyebrow reveal" style="margin-bottom:clamp(40px,6vh,64px);">The question that changes
-        everything</div>
 
-      <div class="tension-col-heads reveal">
-        <div class="tension-col-head tch-before">Without shwn<span class="grove">.</span></div>
-        <div class="tension-col-head tch-after">With shwn<span class="grove">.</span></div>
+
+  <!-- YOUR STORY — CAROUSEL -->
+  <section class="section-familiar" id="familiar">
+    <div class="section-inner">
+
+      <!-- BRIDGE -->
+      <div class="section-head reveal" style="margin-bottom: 32px; padding-bottom: 0;">
+        <div class="section-eyebrow">Does any of this sound familiar?</div>
+        <h2>Everyone shows up<br><span class="muted" style="color:#8F5218;">differently.</span></h2>
+        <p class="section-lead" style="margin-top: 20px;">The pressures are different. But the feeling of giving time to
+          something — everyone knows that.</p>
       </div>
 
-      <div class="tension-matrix">
+      <!-- CAROUSEL -->
+      <div class="carousel-wrap reveal">
+        <div class="carousel-track" id="carouselTrack">
 
-        <div class="tm-row reveal">
-          <div class="tm-cell before">
-            <div class="tm-q">Did you finish?</div>
-            <p class="tm-body">Pass or fail. Nothing in between. When life gets in the way, there's only one answer —
-              and it's the wrong one.</p>
-          </div>
-          <div class="tm-cell after">
-            <div class="tm-q">Have you <span class="grove">shwn up?</span></div>
-            <p class="tm-body">A question you can always answer yes to. You control whether you showed up — not whether
-              the stars aligned.</p>
-          </div>
+          <a class="c-card active" href="for/for-students.html">
+            <div class="c-num">01</div>
+            <div class="c-q">Exam coming.<br><span class="grove">Path completely dark?</span></div>
+            <div class="c-rule"></div>
+            <div class="c-cta">
+              <div class="c-cta-text">See how shwn. helps</div>
+              <div class="c-cta-arrow">›</div>
+            </div>
+          </a>
+
+          <a class="c-card side" href="for/for-workers.html">
+            <div class="c-num">02</div>
+            <div class="c-q">Working hard.<br><span class="grove">Nothing to show for it?</span></div>
+            <div class="c-rule"></div>
+            <div class="c-cta">
+              <div class="c-cta-text">See how shwn. helps</div>
+              <div class="c-cta-arrow">›</div>
+            </div>
+          </a>
+
+          <a class="c-card side" href="for/for-planners.html">
+            <div class="c-num">03</div>
+            <div class="c-q">Made a plan Sunday.<br><span class="grove">Abandoned it by Wednesday?</span></div>
+            <div class="c-rule"></div>
+            <div class="c-cta">
+              <div class="c-cta-text">See how shwn. helps</div>
+              <div class="c-cta-arrow">›</div>
+            </div>
+          </a>
+
+          <a class="c-card side" href="for/for-creatives.html">
+            <div class="c-num">04</div>
+            <div class="c-q">Your work doesn't<br><span class="grove">fit a checkbox?</span></div>
+            <div class="c-rule"></div>
+            <div class="c-cta">
+              <div class="c-cta-text">See how shwn. helps</div>
+              <div class="c-cta-arrow">›</div>
+            </div>
+          </a>
+
+          <a class="c-card side" href="for/for-trackers.html">
+            <div class="c-num">05</div>
+            <div class="c-q">Every productivity app<br><span class="grove">eventually let you down?</span></div>
+            <div class="c-rule"></div>
+            <div class="c-cta">
+              <div class="c-cta-text">See how shwn. helps</div>
+              <div class="c-cta-arrow">›</div>
+            </div>
+          </a>
+
+          <a class="c-card side" href="for/for-builders.html">
+            <div class="c-num">06</div>
+            <div class="c-q">Building something big.<br><span class="grove">Need today to matter?</span></div>
+            <div class="c-rule"></div>
+            <div class="c-cta">
+              <div class="c-cta-text">See how shwn. helps</div>
+              <div class="c-cta-arrow">›</div>
+            </div>
+          </a>
+
         </div>
-
-        <div class="tm-row reveal">
-          <div class="tm-cell before">
-            <div class="tm-q">Finish this by Friday.</div>
-            <p class="tm-body">A deadline with no path. Everything before the finish line feels like falling behind.</p>
-          </div>
-          <div class="tm-cell after">
-            <div class="tm-q">Give this <span class="grove">three hours</span> by Friday.</div>
-            <p class="tm-body">A commitment you can actually keep. Small, honest, repeatable — and the deadline is still
-              there.</p>
-          </div>
-        </div>
-
-        <div class="tm-row reveal">
-          <div class="tm-cell before">
-            <div class="tm-q">I was busy all day.</div>
-            <p class="tm-body">No record of where the time went. The day ends uncertain — was it enough? Did it count?
-            </p>
-          </div>
-          <div class="tm-cell after">
-            <div class="tm-q">I gave <span class="grove">2h 40m</span> to Writing.</div>
-            <p class="tm-body">Is that what you intended? Now you know. Go again. better.</p>
-          </div>
-        </div>
-
       </div>
 
-      <div class="tension-foot reveal">
-        <div class="tension-foot-name">shwn<span class="grove">.</span></div>
+      <!-- CAROUSEL CONTROLS -->
+      <div class="carousel-controls">
+        <button class="c-arrow" id="prevBtn" aria-label="Previous">←</button>
+        <div class="c-dots" id="dotsNav"></div>
+        <button class="c-arrow" id="nextBtn" aria-label="Next">→</button>
       </div>
 
-    </div>
-  </section>
-
-  <!-- CLEAN PAGE -->
-  <section class="section-clean-page">
-    <div class="clean-page-inner reveal">
-      <div class="section-eyebrow">No guilt. Just clarity.</div>
-      <div class="clean-page-line">
-        Missed yesterday<span class="grove">?</span><br>
-        <span class="soft">Today is a</span> <span style="color:#8F5218;">clean page</span><span class="grove">.</span>
-      </div>
-      <p class="clean-page-body">Let go of the feeling that you've broken something. The door isn't locked just because you didn't knock yesterday. It's wide open today. Walk through it.</p>
-      <p class="clean-page-body clean-page-close">Today is still a day you can show up for.</p>
     </div>
   </section>
 
   <!-- HOW IT WORKS -->
-  <section class="section section-how">
+  <section class="section section-how" id="how">
     <div class="section-inner">
       <div class="section-head reveal">
         <div class="section-eyebrow">Ways of working</div>
         <h2>Four ways.<br><span class="muted" style="color:#8F5218;">Your way.</span></h2>
-        <p class="section-lead" style="margin-top:20px;">Some days you just show up. Some days you plan weeks ahead. Some days you're somewhere in between.</p>
-        <p class="section-lead" style="margin-top:12px;"><span class="brand-name">shwn<span class="grove">.</span></span> works your way, and all of it counts.</p>
+        <p class="section-lead" style="margin-top:20px;max-width:none;">Some days you just show up. Some days you plan
+          weeks ahead. Some days you're somewhere in between.</p>
+        <p class="section-lead" style="margin-top:12px;"><span class="brand-name">shwn<span
+              class="grove">.</span></span> works your way, and all of it counts.</p>
       </div>
       <div class="steps">
         <div class="step reveal">
           <div class="step-num">The Sprinter</div>
           <div class="step-title">Just show up</div>
-          <p class="step-body">No setup. No planning. Opens the app and starts. The commitment is already made — in their head, before the app knows anything. <span class="brand-name">shwn<span class="grove">.</span></span> just witnesses it. Records it honestly. Some days this is enough. Some days this is everything.</p>
-          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">You showed up. That's the whole thing.</p>
+          <p class="step-body">No setup. No planning. Opens the app and starts. The commitment is already made — in
+            their head, before the app knows anything. <span class="brand-name">shwn<span class="grove">.</span></span>
+            just witnesses it. Records it honestly. Some days this is enough. Some days this is everything.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">You showed up. That's the
+            whole thing.</p>
         </div>
         <div class="step reveal">
           <div class="step-num">The Namer</div>
           <div class="step-title">Ten seconds of intention</div>
-          <p class="step-body">Takes ten seconds before starting. Picks a focus area. "This one's for the thesis." That single choice — made before the work begins — changes what the session feels like. It belongs somewhere now. At the end of the week, <span class="brand-name">shwn<span class="grove">.</span></span> shows exactly where the time went.</p>
-          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">Ten seconds of intention. Everything after is clearer.</p>
+          <p class="step-body">Takes ten seconds before starting. Picks a focus area. "This one's for the thesis." That
+            single choice — made before the work begins — changes what the session feels like. It belongs somewhere now.
+            At the end of the week, <span class="brand-name">shwn<span class="grove">.</span></span> shows exactly where
+            the time went.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">Ten seconds of intention.
+            Everything after is clearer.</p>
         </div>
         <div class="step reveal">
           <div class="step-num">The Planner</div>
           <div class="step-title">Give the deadline a shape</div>
-          <p class="step-body">Sees the deadline and gives it a shape. Twelve sessions, four days, Friday at 17:00. Each one placed where it can actually happen. Now the deadline isn't a date looming somewhere — it's a path with steps already committed to. They know exactly where they stand, any day they check.</p>
-          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">The deadline is still there. Its shadow isn't.</p>
+          <p class="step-body">Sees the deadline and gives it a shape. Twelve sessions, four days, Friday at 17:00. Each
+            one placed where it can actually happen. Now the deadline isn't a date looming somewhere — it's a path with
+            steps already committed to. They know exactly where they stand, any day they check.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">The deadline is still
+            there. Its shadow isn't.</p>
         </div>
         <div class="step reveal">
           <div class="step-num">The Reflector</div>
           <div class="step-title">Look back honestly</div>
-          <p class="step-body">Looks back honestly. What did I give this week? Does it match what I said mattered? Not to judge — to understand. One honest look changes the next week. And the one after that.</p>
-          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">Is your time reflecting your priorities?</p>
+          <p class="step-body">Looks back honestly. What did I give this week? Does it match what I said mattered? Not
+            to judge — to understand. One honest look changes the next week. And the one after that.</p>
+          <p class="step-body" style="margin-top:10px;font-style:italic;color:var(--accent);">Is your time reflecting
+            your priorities?</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- VISIBILITY -->
-  <section class="section section-visibility" id="visibility">
-    <div class="section-inner">
 
-      <div class="section-head reveal">
-        <div class="section-eyebrow">The feeling you know</div>
-        <h2>That dread before a deadline.<br><span class="muted" style="color:#8F5218;">It lives in the dark.</span></h2>
-      </div>
-
-      <div class="vis-grid reveal">
-        <!-- left: prose -->
-        <div>
-          <p class="vis-beat">A deadline doesn't just stay in your to-do list. It moves into your head, opening a new tab. Putting it in your calendar won't close it.</p>
-          <p class="vis-beat vis-cruel"><span class="vis-label">Here's the cruel part:</span> the avoidance isn't rest. Every time you try to relax, your brain keeps scanning, keeps reminding, keeps exhausting you. Even when you aren't thinking about it, a part of you is quietly dedicated to tracking it. This is why you feel tired even on days you didn't do anything.</p>
-          <p class="vis-beat vis-good"><span class="vis-label">Here's the good part:</span> you don't have to finish it to feel better. You don't need a fat tick in your to-do list. You just need to start moving.</p>
-        </div>
-        <!-- right: closing quote -->
-        <div class="vis-right">
-          <div class="vis-quote"><span style="color:#8F5218;">Your brain opens tabs.</span><br><span class="light"><span class="brand-name">shwn<span class="grove">.</span></span> helps you close them.<br>One session at a time.<br>One honest act of showing up at a time.</span></div>
-        </div>
-      </div>
-
-    </div>
-  </section>
 
   <!-- PLANNER FEATURE -->
   <section class="section section-planner" id="planner">
     <div class="section-inner">
-      <div class="section-head reveal">
+      <div class="section-head reveal" style="margin-bottom: 24px; padding-bottom: 0;">
         <div class="section-eyebrow">The Focus Planner</div>
         <h2>Your effort, distributed<br><span class="muted">across what matters.</span></h2>
       </div>
       <div class="planner-feature-grid reveal">
         <div>
-          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
-          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.</p>
+          <p class="section-lead">Plan effort across your Focus Areas before the week begins. Commit sessions to what
+            matters, mark your deadlines, and watch planned vs. actual unfold side by side.</p>
+          <p class="section-lead" style="margin-top:16px;">The calendar doesn't replace the timer. It gives it context.
+          </p>
+          <!-- PATH STATEMENT -->
+          <div class="hook-path" style="margin-top:28px;">
+            <div class="hook-path-line">Build the path. Walk it.</div>
+            <div class="hook-path-line">The path is <span class="grove">yours.</span></div>
+            <div class="hook-path-sub">shwn. makes your effort visible — session by session.</div>
+          </div>
         </div>
         <div class="card-stack">
           <!-- front: planner calendar card -->
@@ -465,77 +1084,210 @@
     </div>
   </section>
 
+
+  <!-- MANIFESTO OVER IMAGE -->
+
+  <section class="section-imgbreak">
+    <div class="imgbreak-inner reveal">
+      <div class="imgbreak-text">
+        <div class="imgbreak-eyebrow">The output and the path</div>
+        <div class="imgbreak-quote">The output matters.<br><span>And the path to it needs to be<br>visible, honest, and
+            sustainable.</span></div>
+        <p class="imgbreak-body">The deadline is real. The thesis, the recital, the project — these things have finish
+          lines and the finish lines matter. What <span class="brand-name">shwn<span class="grove">.</span></span> adds
+          isn't a different goal. It's clarity about the path.</p>
+        <div class="tension-foot-name" style="margin-top:24px; color:#fff;">shwn<span class="grove">.</span></div>
+        <p class="imgbreak-body">The path to the finish line? Visible, and honestly yours.</p>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- TENSION -->
+  <section class="section-tension">
+    <div class="tension-inner">
+
+      <div class="section-eyebrow reveal" style="margin-bottom:clamp(40px,6vh,64px);">The question that changes
+        everything</div>
+
+      <div class="tension-col-heads reveal">
+        <div class="tension-col-head tch-before">Without shwn<span class="grove">.</span></div>
+        <div class="tension-col-head tch-after">With shwn<span class="grove">.</span></div>
+      </div>
+
+      <div class="tension-matrix">
+
+        <div class="tm-row reveal">
+          <div class="tm-cell before">
+            <div class="tm-q">Did you finish?</div>
+            <p class="tm-body">Pass or fail. Nothing in between. When life gets in the way, there's only one answer —
+              and it's the wrong one.</p>
+          </div>
+          <div class="tm-cell after">
+            <div class="tm-q">Have you <span class="grove">shwn up?</span></div>
+            <p class="tm-body">A question you can always answer yes to. You control whether you showed up — not whether
+              the stars aligned.</p>
+          </div>
+        </div>
+
+        <div class="tm-row reveal">
+          <div class="tm-cell before">
+            <div class="tm-q">Finish this by Friday.</div>
+            <p class="tm-body">A deadline with no path. Everything before the finish line feels like falling behind.</p>
+          </div>
+          <div class="tm-cell after">
+            <div class="tm-q">Give this <span class="grove">three hours</span> by Friday.</div>
+            <p class="tm-body">A commitment you can actually keep. Small, honest, repeatable — and the deadline is still
+              there.</p>
+          </div>
+        </div>
+
+        <div class="tm-row reveal">
+          <div class="tm-cell before">
+            <div class="tm-q">I was busy all day.</div>
+            <p class="tm-body">No record of where the time went. The day ends uncertain — was it enough? Did it count?
+            </p>
+          </div>
+          <div class="tm-cell after">
+            <div class="tm-q">I gave <span class="grove">2h 40m</span> to Writing.</div>
+            <p class="tm-body">Is that what you intended? Now you know. Go again. better.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tension-foot reveal">
+        <div class="tension-foot-name">shwn<span class="grove">.</span></div>
+      </div>
+
+    </div>
+  </section>
+
+
+
   <!-- WHY SHWN -->
   <section class="section section-why" id="why">
     <div class="section-inner">
 
       <div class="section-head reveal">
         <div class="section-eyebrow">A different measure. A different tool.</div>
-        <h2>Built differently<span class="grove">.</span><br><span class="muted" style="color:#8F5218;">By design.</span></h2>
-        <p class="why-table-close" style="margin-top:20px;">It's in your calendar. It's on your to-do list. <span style="color:#8F5218;">So what?</span></p>
-        <p class="why-lead" style="margin-top:12px;">Other tools show you the deadline. <span class="brand-name">shwn<span class="grove">.</span></span> helps you show up for it.</p>
+        <h2>Built differently<span class="grove">.</span><br><span class="muted">By design.</span></h2>
+        <p class="why-table-close" style="margin-top:20px;">It's in your calendar. It's on your to-do list. <span
+            style="color:#8F5218;">So what?</span></p>
+        <p class="why-lead" style="margin-top:12px;">Other tools show you the deadline. <span
+            class="brand-name">shwn<span class="grove">.</span></span> helps you show up for it.</p>
       </div>
 
       <div class="reveal">
         <p class="why-table-close">From checking off tasks — to showing up for what matters.</p>
         <div class="why-table-wrap">
-        <table class="why-table">
-          <thead>
-            <tr>
-              <th class="col-feature">Feature</th>
-              <th>Task apps</th>
-              <th>Calendar apps</th>
-              <th>Pomodoro timers</th>
-              <th class="col-shwn"><span class="brand-name">shwn<span class="grove">.</span></span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="col-feature">Tracks effort, not completion</td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-partial">partial</span></td>
-              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
-            </tr>
-            <tr>
-              <td class="col-feature">Commitment blocks on a calendar</td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-partial">partial</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
-            </tr>
-            <tr>
-              <td class="col-feature">Planned vs. actual vs. deadline layers</td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
-            </tr>
-            <tr>
-              <td class="col-feature">Immutable past / live future calendar</td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
-            </tr>
-            <tr>
-              <td class="col-feature">Session-based duration arithmetic</td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-partial">partial</span></td>
-              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
-            </tr>
-            <tr>
-              <td class="col-feature">Reflect step built into the loop</td>
-              <td><span class="wt-partial">partial</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td><span class="wt-no">—</span></td>
-              <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
-            </tr>
-          </tbody>
-        </table>
+          <table class="why-table">
+            <thead>
+              <tr>
+                <th class="col-feature">Feature</th>
+                <th>Task apps</th>
+                <th>Calendar apps</th>
+                <th>Pomodoro timers</th>
+                <th class="col-shwn"><span class="brand-name">shwn<span class="grove">.</span></span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-feature">Tracks effort, not completion</td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-partial">partial</span></td>
+                <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+              </tr>
+              <tr>
+                <td class="col-feature">Commitment blocks on a calendar</td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-partial">partial</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+              </tr>
+              <tr>
+                <td class="col-feature">Planned vs. actual vs. deadline layers</td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+              </tr>
+              <tr>
+                <td class="col-feature">Immutable past / live future calendar</td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+              </tr>
+              <tr>
+                <td class="col-feature">Session-based duration arithmetic</td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-partial">partial</span></td>
+                <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+              </tr>
+              <tr>
+                <td class="col-feature">Reflect step built into the loop</td>
+                <td><span class="wt-partial">partial</span></td>
+                <td><span class="wt-no">—</span></td>
+                <td><span class="wt-no">—</span></td>
+
+                <td class="col-shwn"><span class="wt-yes-shwn">✓</span></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
+      </div>
+  </section>
+
+  <!-- VISIBILITY -->
+  <section class="section section-visibility" id="idea">
+    <div class="section-inner">
+
+      <div class="section-head reveal" style="margin-bottom: 24px; padding-bottom: 0;">
+        <div class="section-eyebrow">The feeling you know</div>
+        <h2>That dread before a deadline.<br><span class="muted" style="color:#8F5218;">It lives in the dark.</span>
+        </h2>
+      </div>
+
+      <div class="vis-grid reveal">
+        <!-- left: prose -->
+        <div>
+          <p class="vis-beat">A deadline doesn't just stay in your to-do list. It moves into your head, opening a new
+            tab. Putting it in your calendar won't close it.</p>
+          <p class="vis-beat vis-cruel"><span class="vis-label">Here's the cruel part:</span> the avoidance isn't rest.
+            Every time you try to relax, your brain keeps scanning, keeps reminding, keeps exhausting you. Even when you
+            aren't thinking about it, a part of you is quietly dedicated to tracking it. This is why you feel tired even
+            on days you didn't do anything.</p>
+          <p class="vis-beat vis-good"><span class="vis-label">Here's the good part:</span> you don't have to finish it
+            to feel better. You don't need a fat tick in your to-do list. You just need to start moving.</p>
+        </div>
+        <!-- right: closing quote -->
+        <div class="vis-right">
+          <div class="vis-quote"><span style="color:#8F5218;">Your brain opens tabs.</span><br><span class="light"><span
+                class="brand-name">shwn<span class="grove">.</span></span> helps you close them.<br>One session at a
+              time.<br>One honest act of showing up at a time.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- CLEAN PAGE -->
+  <section class="section-clean-page">
+    <div class="clean-page-inner reveal">
+      <div class="section-eyebrow">No guilt. Just clarity.</div>
+      <div class="clean-page-line">
+        Missed yesterday<span class="grove">?</span><br>
+        <span class="soft">Today is a</span> <span style="color:#8F5218;">clean page</span><span class="grove">.</span>
+      </div>
+      <p class="clean-page-body">Let go of the feeling that you've broken something. The door isn't locked just because
+        you didn't knock yesterday. It's wide open today. Walk through it.</p>
+      <p class="clean-page-body clean-page-close">Today is still a day you can show up for.</p>
     </div>
   </section>
 
@@ -564,6 +1316,7 @@
               <span class="ca-s2-ph">better</span>
               <span class="ca-suffix muted" id="caAgain">again</span>
               <span class="ca-suffix grove" id="caBetter">better</span>
+
             </span>
           </div>
         </div>
@@ -574,14 +1327,117 @@
     </div>
   </section>
 
+
   <!-- FOOTER -->
   <footer>
     <div class="footer-inner">
-      <span class="footer-logo" style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span class="grove">.</span></span>
-      <span class="footer-tagline" style="font-family:'Manrope',sans-serif;font-weight:600;font-style:normal;">Let's do it again<span style="color:#3D8F5A;">.</span> better<span style="color:#3D8F5A;">.</span><br>One session at a time. One honest act of showing up at a time.</span>
+      <span class="footer-logo"
+        style="font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-0.03em;">shwn<span
+          class="grove">.</span></span>
       <span class="footer-copy">© 2026 shwn.</span>
     </div>
   </footer>
+
+  <script>
+    (function () {
+      const track = document.getElementById('carouselTrack');
+      const dotsNav = document.getElementById('dotsNav');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      if (!track) return;
+      const cards = Array.from(track.querySelectorAll('.c-card'));
+      const total = cards.length;
+      let current = 0;
+      let autoTimer = null;
+
+      function cardWidth() {
+        const w = track.parentElement.offsetWidth;
+        if (w > 900) return Math.min(432, w * 0.45);
+        if (w > 600) return w * 0.61;
+        return w * 0.76;
+      }
+
+      function setWidths() {
+        const w = cardWidth();
+        cards.forEach(c => c.style.width = w + 'px');
+      }
+
+      function getOffset(idx) {
+        const wrapW = track.parentElement.offsetWidth;
+        const w = cardWidth();
+        const center = wrapW / 2 - w / 2;
+        return -(idx * (w + 18)) + center;
+      }
+
+      function updateStates() {
+        cards.forEach((c, i) => {
+          c.classList.toggle('active', i === current);
+          c.classList.toggle('side', i !== current);
+        });
+        Array.from(dotsNav.querySelectorAll('.c-dot')).forEach((d, i) => {
+          d.classList.toggle('active', i === current);
+        });
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === total - 1;
+      }
+
+      function goTo(idx, fromUser) {
+        current = Math.max(0, Math.min(total - 1, idx));
+        track.style.transform = `translateX(${getOffset(current)}px)`;
+        updateStates();
+        if (fromUser) { clearInterval(autoTimer); startAuto(); }
+      }
+
+      cards.forEach((_, i) => {
+        const d = document.createElement('button');
+        d.className = 'c-dot' + (i === 0 ? ' active' : '');
+        d.setAttribute('aria-label', 'Slide ' + (i + 1));
+        d.addEventListener('click', () => goTo(i, true));
+        dotsNav.appendChild(d);
+      });
+
+      prevBtn.addEventListener('click', () => goTo(current - 1, true));
+      nextBtn.addEventListener('click', () => goTo(current + 1, true));
+
+      cards.forEach((c, i) => {
+        c.addEventListener('click', e => {
+          if (i !== current) { e.preventDefault(); goTo(i, true); }
+        });
+      });
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') goTo(current - 1, true);
+        if (e.key === 'ArrowRight') goTo(current + 1, true);
+      });
+
+      let tx = 0;
+      track.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+      track.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - tx;
+        if (Math.abs(dx) > 40) goTo(current + (dx < 0 ? 1 : -1), true);
+      });
+
+      function startAuto() {
+        autoTimer = setInterval(() => {
+          goTo(current < total - 1 ? current + 1 : 0, false);
+        }, 4400);
+      }
+
+      const wrap = track.parentElement;
+      wrap.addEventListener('mouseenter', () => clearInterval(autoTimer));
+      wrap.addEventListener('mouseleave', () => startAuto());
+
+      setWidths();
+      goTo(0, false);
+      startAuto();
+
+      let rTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(rTimer);
+        rTimer = setTimeout(() => { setWidths(); goTo(current, false); }, 80);
+      });
+    })();
+  </script>
 
   <script>
     (function () {
