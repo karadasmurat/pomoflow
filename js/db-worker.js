@@ -29,29 +29,6 @@ async function init() {
             console.warn('OPFS support not found in sqlite3 object, falling back to transient/memory storage');
         }
 
-        // --- MIGRATION CHECK START ---
-        const tablesToMigrate = ['settings', 'app_state', 'user_profile'];
-        const migrationsNeeded = {};
-
-        for (const table of tablesToMigrate) {
-            try {
-                // Check if table exists
-                const tableExists = db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'`, { returnValue: 'resultRows' });
-                if (!tableExists || tableExists.length === 0) continue;
-
-                // Check if id column exists
-                const hasId = db.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name='id'`, { returnValue: 'resultRows' });
-                if (!hasId || hasId.length === 0) {
-                    console.log(`Migrating ${table}: missing 'id' column`);
-                    db.exec(`ALTER TABLE ${table} RENAME TO ${table}_legacy_temp`);
-                    migrationsNeeded[table] = true;
-                }
-            } catch (e) {
-                console.warn(`Error checking migration for ${table}`, e);
-            }
-        }
-        // --- MIGRATION CHECK END ---
-
         // Create Tables with definitive schema
         db.exec(`
             CREATE TABLE IF NOT EXISTS focus_areas (
@@ -141,31 +118,6 @@ async function init() {
             CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
             CREATE INDEX IF NOT EXISTS idx_planned_blocks_date ON planned_blocks(planned_date);
         `);
-
-        // --- DATA RESTORATION START ---
-        for (const table of Object.keys(migrationsNeeded)) {
-            try {
-                const rows = db.exec(`SELECT * FROM ${table}_legacy_temp`, {returnValue: 'resultRows', rowMode: 'object'});
-                if (rows && rows.length > 0) {
-                    console.log(`Restoring ${rows.length} rows for ${table}...`);
-                    db.transaction(() => {
-                        for (const row of rows) {
-                            // Simple UUID generator fallback
-                            const id = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substr(2));
-                            
-                            db.exec(`INSERT INTO ${table} (id, key, value) VALUES (?, ?, ?)`, {
-                                bind: [id, row.key, row.value]
-                            });
-                        }
-                    });
-                }
-                db.exec(`DROP TABLE ${table}_legacy_temp`);
-                console.log(`Migration for ${table} completed.`);
-            } catch (e) {
-                console.error(`Failed to restore data for ${table}`, e);
-            }
-        }
-        // --- DATA RESTORATION END ---
 
         // Create Triggers for updated_at
         const tables = ['focus_areas', 'aims', 'sessions', 'settings', 'user_profile', 'app_state'];
@@ -363,6 +315,166 @@ self.onmessage = async (e) => {
                       AND date(s.timestamp) >= ? AND date(s.timestamp) <= ?
                     ORDER BY s.timestamp
                 `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
+                break;
+            // New case for resetting the database
+            case 'reset_db':
+                console.log("Received 'reset_db' action. Performing a full database reset.");
+                const dropSql = `
+                    DROP TABLE IF EXISTS focus_areas;
+                    DROP TABLE IF EXISTS aims;
+                    DROP TABLE IF EXISTS sessions;
+                    DROP TABLE IF EXISTS settings;
+                    DROP TABLE IF EXISTS user_profile;
+                    DROP TABLE IF EXISTS app_state;
+                    DROP TABLE IF EXISTS planned_blocks;
+                    DROP TABLE IF EXISTS settings_legacy_temp;
+                    DROP TABLE IF EXISTS app_state_legacy_temp;
+                    DROP TABLE IF EXISTS user_profile_legacy_temp;
+                `;
+                db.exec(dropSql);
+                console.log("Dropped tables. Recreating schema and triggers.");
+
+                const createSql = `
+                    CREATE TABLE IF NOT EXISTS focus_areas (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        color TEXT DEFAULT '#58a6ff',
+                        category TEXT DEFAULT 'Uncategorized',
+                        is_active INTEGER DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_deleted INTEGER DEFAULT 0,
+                        deleted_at DATETIME
+                    );
+
+                    CREATE TABLE IF NOT EXISTS aims (
+                        id TEXT PRIMARY KEY,
+                        focus_area_id TEXT NOT NULL,
+                        target_minutes INTEGER NOT NULL,
+                        target_date DATE,
+                        is_completed INTEGER DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_deleted INTEGER DEFAULT 0,
+                        deleted_at DATETIME,
+                        FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
+                    );
+
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        id TEXT PRIMARY KEY,
+                        focus_area_id TEXT,
+                        task_name TEXT,
+                        task_color TEXT,
+                        duration_seconds INTEGER NOT NULL,
+                        xp_earned INTEGER DEFAULT 0,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        note TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_deleted INTEGER DEFAULT 0,
+                        deleted_at DATETIME,
+                        FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
+                    );
+
+                    CREATE TABLE IF NOT EXISTS settings (
+                        id TEXT PRIMARY KEY,
+                        key TEXT UNIQUE NOT NULL,
+                        value TEXT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_deleted INTEGER DEFAULT 0,
+                        deleted_at DATETIME
+                    );
+
+                    CREATE TABLE IF NOT EXISTS user_profile (
+                        id TEXT PRIMARY KEY,
+                        key TEXT UNIQUE NOT NULL,
+                        value TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_deleted INTEGER DEFAULT 0,
+                        deleted_at DATETIME
+                    );
+
+                    CREATE TABLE IF NOT EXISTS app_state (
+                        id TEXT PRIMARY KEY,
+                        key TEXT UNIQUE NOT NULL,
+                        value TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_deleted INTEGER DEFAULT 0,
+                        deleted_at DATETIME
+                    );
+
+                    CREATE TABLE IF NOT EXISTS planned_blocks (
+                        id TEXT PRIMARY KEY,
+                        focus_area_id TEXT NOT NULL,
+                        planned_date TEXT NOT NULL,
+                        start_minutes INTEGER NOT NULL,
+                        duration_minutes INTEGER NOT NULL,
+                        notes TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp);
+                    CREATE INDEX IF NOT EXISTS idx_sessions_area ON sessions(focus_area_id);
+                    CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
+                    CREATE INDEX IF NOT EXISTS idx_planned_blocks_date ON planned_blocks(planned_date);
+                `;
+                db.exec(createSql);
+                console.log("Schema created.");
+
+                const triggerSql = `
+                    CREATE TRIGGER IF NOT EXISTS trg_focus_areas_updated_at 
+                    AFTER UPDATE ON focus_areas
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE focus_areas SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_aims_updated_at 
+                    AFTER UPDATE ON aims
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE aims SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_sessions_updated_at 
+                    AFTER UPDATE ON sessions
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_settings_updated_at 
+                    AFTER UPDATE ON settings
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_user_profile_updated_at 
+                    AFTER UPDATE ON user_profile
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE user_profile SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_app_state_updated_at 
+                    AFTER UPDATE ON app_state
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE app_state SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                    END;
+                `;
+                db.exec(triggerSql);
+                console.log("Triggers created.");
+
+                result = { message: "Database reset and schema re-initialized successfully." };
+                break;
+            default:
+                // Handle other actions or throw an error if the action is unknown
                 break;
         }
         self.postMessage({ action: 'success', result, requestId });

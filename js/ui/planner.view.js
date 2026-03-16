@@ -4,8 +4,9 @@
  */
 
 import { state } from '../state/store.js';
-import { dbManager } from '../db.js';
-import { uuidv7 } from '../utils/uuid.js';
+import { HistoryService } from '../services/history.service.js';
+import { FocusService } from '../services/focus.service.js';
+import { dbManager } from '../db.js'; // Import dbManager
 
 export const PlannerView = {
     // ── STATE ──
@@ -37,10 +38,12 @@ export const PlannerView = {
 
     // ── INIT ──
     init() {
+        console.log('PlannerView setupEventListeners called'); // Added for debugging
         this.setupEventListeners();
     },
 
     open() {
+        console.log('PlannerView open called'); // Debugging log
         document.getElementById('focusPlannerOverlay').style.display = 'block';
         this.weekOffset = 0;
         this.loadData().then(() => this.render());
@@ -63,6 +66,14 @@ export const PlannerView = {
             dbBlocks = await dbManager.getPlannedBlocksForWeek(startStr, endStr);
         }
 
+        // Mock Deadlines for now (since no DB support yet)
+        if (this.deadlines.length === 0) {
+            this.deadlines = [
+                { day: 3, name: 'Report due', areas: ['amber', 'violet'], hour: 17, min: 0 },
+                { day: 4, name: 'Sprint end', areas: ['green'], hour: 12, min: 0 },
+            ];
+        }
+        
         // Map DB blocks to UI format
         this.blocks = dbBlocks.map(b => ({
             id: b.id,
@@ -76,14 +87,6 @@ export const PlannerView = {
             type: 'planned',
             label: b.notes
         }));
-
-        // Mock Deadlines for now (since no DB support yet)
-        if (this.deadlines.length === 0) {
-            this.deadlines = [
-                { day: 3, name: 'Report due', areas: ['amber', 'violet'], hour: 17, min: 0 },
-                { day: 4, name: 'Sprint end', areas: ['green'], hour: 12, min: 0 },
-            ];
-        }
     },
 
     async saveBlock(block) {
@@ -272,7 +275,8 @@ export const PlannerView = {
 
             // Drag drop for deadlines
             dh.addEventListener('dragover', e => {
-                if (this.draggingDeadline === null && !this.draggingNewDeadline) return;
+                // Proceed if dragging a deadline (new or existing) OR a block
+                if (!(this.draggingNewDeadline || this.draggingDeadline !== null || this.dragging.areaId)) return;
                 e.preventDefault();
                 dh.classList.add('deadline-drop-target');
             });
@@ -280,18 +284,32 @@ export const PlannerView = {
                 if (!dh.contains(e.relatedTarget)) dh.classList.remove('deadline-drop-target');
             });
             dh.addEventListener('drop', e => {
-                if (this.draggingDeadline === null && !this.draggingNewDeadline) return;
-                e.preventDefault();
-                dh.classList.remove('deadline-drop-target');
+                e.preventDefault(); // Prevent default browser behavior
+                dh.classList.remove('deadline-drop-target'); // Remove visual highlight
 
-                if (this.draggingNewDeadline) {
-                    this.draggingNewDeadline = false;
-                    this.openDeadlineModal(i);
-                } else {
-                    this.deadlines[this.draggingDeadline].day = i;
+                const droppedData = e.dataTransfer.getData('text/plain');
+
+                if (droppedData === 'new-deadline' && this.draggingNewDeadline) {
+                    // This is a new deadline being dropped
+                    this.draggingNewDeadline = false; // Reset flag after successful drop
+                    this.openDeadlineModal(d, h, m);
+                } else if (this.draggingDeadline !== null && droppedData !== 'new-deadline') {
+                    // This is an existing deadline being dropped
+                    this.deadlines[this.draggingDeadline].day = d;
+                    this.deadlines[this.draggingDeadline].hour = h;
+                    this.deadlines[this.draggingDeadline].min = m;
                     this.draggingDeadline = null;
                     this.render();
+                } else if (this.dragging.areaId && droppedData !== 'new-deadline' && droppedData !== 'deadline') { // Dropping a block
+                    this.handleDrop(d, h, m);
+                } else {
+                    // Fallback or unexpected drop scenario
+                    console.warn("Dropped item of unknown type or context mismatch.");
                 }
+                // Ensure state is reset regardless of successful drop for this specific item
+                this.draggingNewDeadline = false;
+                this.draggingDeadline = null;
+                this.dragging = { areaId: null, color: null }; // Reset block drag state
             });
             
             head.appendChild(dh);
@@ -402,6 +420,7 @@ export const PlannerView = {
             const card = document.createElement('div');
             card.className = `area-card ${area.color}`;
             card.draggable = true;
+            card.ondragstart = (e) => this.startDrag(e, area.id, area.name, area.color);
             card.innerHTML = `
                 <div class="area-card-header">
                     <div class="area-card-name">${area.name}</div>
@@ -411,8 +430,6 @@ export const PlannerView = {
                 </div>
                 <div class="area-bar-track"><div class="area-bar-fill" style="width: 0%"></div></div>
             `;
-            
-            card.ondragstart = (e) => this.startDrag(e, area.id, area.name, area.color);
             container.appendChild(card);
         });
     },
@@ -576,50 +593,59 @@ export const PlannerView = {
         };
 
         col.addEventListener('mousemove', e => {
-            if (this.dragging.areaId) return;
-            if (e.target !== col && !e.target.classList.contains('hour-line')) {
-                hideSnapGhost(); return;
+            // Only relevant for block drag if it's active, otherwise use timePip
+            if (!this.dragging.areaId) { 
+                const { h, m, top } = getSnapPos(e);
+                updateTimePip(top, h, m);
+            } else {
+                hideSnapGhost(); // Hide block ghosts if mouse moves off target
             }
-            const { h, m, top } = getSnapPos(e);
-            updateTimePip(top, h, m);
+            // Keep timePip visible if mouse is over col but not on a draggable item
+            if (e.target === col && !this.dragging.areaId && !this.draggingNewDeadline && this.draggingDeadline === null) {
+                 const { h, m, top } = getSnapPos(e);
+                 updateTimePip(top, h, m);
+            }
         });
 
         col.addEventListener('mouseleave', hideSnapGhost);
 
         col.addEventListener('dragover', e => {
+            // Proceed if dragging a deadline (new or existing) OR a block
+            if (!(this.draggingNewDeadline || this.draggingDeadline !== null || this.dragging.areaId)) return;
             e.preventDefault();
-            const { h, m, top } = getSnapPos(e);
-            
-            if (this.draggingNewDeadline || this.draggingDeadline !== null) {
-                updateDeadlineSnapGhost(h, m, top);
-            } else {
-                updateSnapGhost(h, m, top, this.dragging.areaName || 'New Block', this.dragging.color || 'green');
-                updateTimePip(top, h, m);
-            }
+            dh.classList.add('deadline-drop-target');
         });
-
-        col.addEventListener('dragleave', () => hideSnapGhost());
-
+        col.addEventListener('dragleave', e => {
+            if (!dh.contains(e.relatedTarget)) dh.classList.remove('deadline-drop-target');
+        });
         col.addEventListener('drop', e => {
-            e.preventDefault();
-            hideSnapGhost();
+            e.preventDefault(); // Prevent default browser behavior
+            dh.classList.remove('deadline-drop-target'); // Remove visual highlight
             const { h, m } = getSnapPos(e);
             
-            if (this.draggingNewDeadline) {
-                this.draggingNewDeadline = false;
+            const droppedData = e.dataTransfer.getData('text/plain');
+
+            if (droppedData === 'new-deadline' && this.draggingNewDeadline) {
+                // This is a new deadline being dropped
+                this.draggingNewDeadline = false; // Reset flag after successful drop
                 this.openDeadlineModal(d, h, m);
-                return;
-            }
-            if (this.draggingDeadline !== null) {
+            } else if (this.draggingDeadline !== null && droppedData !== 'new-deadline') {
+                // This is an existing deadline being dropped
                 this.deadlines[this.draggingDeadline].day = d;
                 this.deadlines[this.draggingDeadline].hour = h;
                 this.deadlines[this.draggingDeadline].min = m;
                 this.draggingDeadline = null;
                 this.render();
-                return;
+            } else if (this.dragging.areaId && droppedData !== 'new-deadline' && droppedData !== 'deadline') { // Dropping a block
+                this.handleDrop(d, h, m);
+            } else {
+                // Fallback or unexpected drop scenario
+                console.warn("Dropped item of unknown type or context mismatch.");
             }
-
-            this.handleDrop(d, h, m);
+            // Ensure state is reset regardless of successful drop for this specific item
+            this.draggingNewDeadline = false;
+            this.draggingDeadline = null;
+            this.dragging = { areaId: null, color: null }; // Reset block drag state
         });
         
         col.addEventListener('click', e => {
@@ -651,15 +677,18 @@ export const PlannerView = {
         const img = new Image(); img.src = '';
         e.dataTransfer.setDragImage(img, 0, 0);
 
-        const moveHandler = (ev) => {
+        let moveHandler;
+        let endHandler;
+
+        moveHandler = (ev) => {
             if (ghost) {
                 ghost.style.left = `${ev.clientX + 12}px`;
                 ghost.style.top = `${ev.clientY - 16}px`;
             }
         };
 
-        const endHandler = () => {
-            this.dragging = { areaId: null, color: null };
+        endHandler = () => {
+            // Removed premature flag reset: this.dragging = { areaId: null, color: null };
             if (ghost) ghost.classList.remove('active');
             document.removeEventListener('dragover', moveHandler);
             document.removeEventListener('dragend', endHandler);
@@ -676,7 +705,7 @@ export const PlannerView = {
 
     startNewDeadlineDrag(e) {
         this.draggingNewDeadline = true;
-        this.dragging = { areaId: null, color: null };
+        this.dragging = { areaId: null, color: null }; // Clear block drag state
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', 'new-deadline');
         
@@ -702,11 +731,11 @@ export const PlannerView = {
         };
 
         const endHandler = () => {
-            this.draggingNewDeadline = false;
+            // Removed premature flag reset: this.draggingNewDeadline = false;
             if (ghost) ghost.classList.remove('active');
             document.removeEventListener('dragover', moveHandler);
             document.removeEventListener('dragend', endHandler);
-            // clear targets
+            // Clear deadline targets
             document.querySelectorAll('.day-head.deadline-drop-target')
                 .forEach(el => el.classList.remove('deadline-drop-target'));
         };
@@ -742,10 +771,11 @@ export const PlannerView = {
         };
 
         const endHandler = () => {
-            this.draggingDeadline = null;
+            this.draggingDeadline = null; // Reset flag
             if (ghost) ghost.classList.remove('active');
             document.removeEventListener('dragover', moveHandler);
             document.removeEventListener('dragend', endHandler);
+            // Clear deadline targets
             document.querySelectorAll('.day-head.deadline-drop-target')
                 .forEach(el => el.classList.remove('deadline-drop-target'));
         };
@@ -934,38 +964,13 @@ export const PlannerView = {
         document.getElementById('derived-duration').textContent = this.formatDuration(dur);
     },
 
-    confirmBlock() {
-        const timeVal = document.getElementById('popover-time').value;
-        const [h, m] = timeVal.split(':').map(Number);
-        const label = document.getElementById('popover-label').value.trim();
-
-        const block = {
-            day: this.pendingDay,
-            startHour: h,
-            startMin: m,
-            sessions: this.sessionCount,
-            areaId: this.pendingAreaId,
-            color: this.pendingColor,
-            label: label
-        };
-
-        this.saveBlock(block).then(() => {
-            this.blocks.push({
-                ...block,
-                type: 'planned',
-                areaName: document.getElementById('popover-area-name').textContent
-            });
-            this.render();
-            this.closePopover();
-        });
-    },
-
     setupEventListeners() {
         // Bind HTML buttons to class methods
         // Note: HTML onclicks won't work with module methods directly unless exposed to window
         // So we attach listeners here or expose to window.
         // For simplicity in refactoring, we'll attach to window for now or bind IDs.
         
+        console.log('PlannerView setupEventListeners called'); // Added for debugging
         window.shiftWeek = (d) => this.shiftWeek(d);
         window.goToday = () => this.goToday();
         window.setFilter = (f, el) => {
@@ -988,6 +993,9 @@ export const PlannerView = {
         window.closeModalIfBg = (e) => {
             if (e.target === document.getElementById('modal-overlay')) this.closeDeadlineModal();
         };
+        // Expose openPopover globally to fix ReferenceError
+        window.openPopover = () => this.openPopover(); 
+        console.log('openPopover exposed globally'); // Added for debugging
         
         // Navigation buttons
         document.getElementById('focusPlannerNavBtn')?.addEventListener('click', () => {
