@@ -14,6 +14,7 @@ import { uuidv7 } from './utils/uuid.js';
 import { FocusView } from './ui/focus.view.js';
 import { TimerView } from './ui/timer.view.js';
 import { DashboardView } from './ui/dashboard.view.js';
+import { PlannerView } from './ui/planner.view.js';
 
 let currentFilter = 'today';
 let showAllHistory = false;
@@ -76,6 +77,7 @@ async function init() {
 
     setupEventListeners();
     FocusView.populateCategorySelects();
+    PlannerView.init();
     FocusView.init({
         onPlay: (task) => {
             if (state.timerState.activeTaskId === task.id) toggleTimer();
@@ -947,6 +949,7 @@ function setupEventListeners() {
         },
         'focusAreasNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openFocusAreas(); },
         'closeFocusAreaPanel': closeFocusAreas,
+        'focusPlannerNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); PlannerView.open(); },
         'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
