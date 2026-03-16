@@ -678,6 +678,7 @@ export const PlannerView = {
         this.draggingNewDeadline = true;
         this.dragging = { areaId: null, color: null };
         e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('text/plain', 'new-deadline');
         
         const img = new Image(); img.src = '';
         e.dataTransfer.setDragImage(img, 0, 0);
@@ -717,6 +718,7 @@ export const PlannerView = {
     startDeadlineDrag(e, idx) {
         this.draggingDeadline = idx;
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'deadline');
         
         const img = new Image(); img.src = '';
         e.dataTransfer.setDragImage(img, 0, 0);
