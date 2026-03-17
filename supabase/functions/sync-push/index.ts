@@ -20,14 +20,17 @@ Deno.serve(async (req) => {
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) return respond(401, { error: 'Unauthorized' });
 
-        // Verify JWT using anon key + user's auth header (recommended pattern)
-        const supabaseUser = createClient(
-            Deno.env.get('SUPABASE_URL')!,
-            Deno.env.get('SUPABASE_ANON_KEY')!,
-            { global: { headers: { Authorization: authHeader } } }
-        );
-        const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
-        if (authError || !user) return respond(401, { error: 'Unauthorized' });
+        // The Supabase gateway already verified the JWT signature before the function runs.
+        // Decode the payload to extract user ID — no additional network round-trip needed.
+        let userId: string;
+        try {
+            const token = authHeader.replace('Bearer ', '');
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            userId = payload.sub;
+            if (!userId) throw new Error('no sub');
+        } catch {
+            return respond(401, { error: 'Invalid token' });
+        }
 
         // Admin client for privileged DB writes (bypasses RLS)
         const supabaseAdmin = createClient(
