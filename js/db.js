@@ -11,15 +11,16 @@ class DatabaseManager {
         this.requestIdCounter = 0;
         this.initialized = false;
         this.disabled = false;
+        this.deviceId = this._getOrCreateDeviceId();
 
         try {
             this.worker = new Worker(new URL('./db-worker.js', import.meta.url));
-            
+
             // Create a promise that resolves when the worker is initialized
             this.initPromise = new Promise((resolve) => {
                 this.worker.onmessage = (e) => {
                     const { action, success, result, error, requestId } = e.data;
-                    
+
                     if (action === 'init_result') {
                         this.initialized = success;
                         resolve(success);
@@ -35,10 +36,10 @@ class DatabaseManager {
             });
 
             // Trigger actual initialization - NEVER purge automatically anymore
-            this.worker.postMessage({ 
-                action: 'init', 
-                payload: { purge: false },
-                requestId: 'initial-init' 
+            this.worker.postMessage({
+                action: 'init',
+                payload: { purge: false, deviceId: this.deviceId },
+                requestId: 'initial-init'
             });
 
         } catch (e) {
@@ -46,6 +47,16 @@ class DatabaseManager {
             this.disabled = true;
             this.initPromise = Promise.resolve(false);
         }
+    }
+
+    _getOrCreateDeviceId() {
+        const key = 'pf_device_id';
+        let id = localStorage.getItem(key);
+        if (!id) {
+            id = crypto.randomUUID();
+            localStorage.setItem(key, id);
+        }
+        return id;
     }
 
     async init() {
@@ -163,7 +174,16 @@ class DatabaseManager {
         };
     }
 
-    async setSetting(key, value) { 
+    async getPendingSyncLog() {
+        const rows = await this._send('get_pending_sync_log');
+        return rows || [];
+    }
+    async markSynced(ids) {
+        if (!ids || ids.length === 0) return;
+        return this._send('mark_synced', { ids });
+    }
+
+    async setSetting(key, value) {
         return this._send('set_setting', { 
             id: uuidv7(), // New record for this key (ON CONFLICT will update)
             key, 

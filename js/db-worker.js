@@ -19,8 +19,9 @@ let sqlite3 = null;
 //   0 → 1  Base schema (focus_areas, sessions, aims, settings, planned_blocks, …)
 //   1 → 2  Paths feature (paths table, path_id + walked_session_id on planned_blocks)
 //   2 → 3  Repair: ensure path_id + walked_session_id exist (transition detector bug)
+//   3 → 4  Outbox: sync_log table for cross-device sync
 
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 
 function migrate(db) {
     let version = db.exec("PRAGMA user_version", { returnValue: 'resultRows' })[0][0];
@@ -192,6 +193,47 @@ function migrate(db) {
         db.exec("PRAGMA user_version = 3");
         console.log('Migration 2→3 complete');
     }
+
+    // ── v3 → v4: outbox (sync_log) ───────────────────────────────────────────
+    if (version < 4) {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS sync_log (
+                id          TEXT PRIMARY KEY,
+                operation   TEXT NOT NULL,
+                payload     TEXT NOT NULL,
+                changed_at  TEXT NOT NULL,
+                device_id   TEXT NOT NULL,
+                synced      INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_sync_log_pending ON sync_log(synced);
+        `);
+        db.exec("PRAGMA user_version = 4");
+        console.log('Migration 3→4 complete');
+    }
+}
+
+// ── SYNC HELPERS ─────────────────────────────────────────────────────────────
+
+let deviceId = null;
+
+function withTransaction(fn) {
+    db.exec('BEGIN');
+    try {
+        fn();
+        db.exec('COMMIT');
+    } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
+    }
+}
+
+function logSync(operation, logPayload) {
+    if (!deviceId) return;
+    db.exec(
+        `INSERT INTO sync_log (id, operation, payload, changed_at, device_id, synced)
+         VALUES (?, ?, ?, ?, ?, 0)`,
+        { bind: [self.crypto.randomUUID(), operation, JSON.stringify(logPayload), new Date().toISOString(), deviceId] }
+    );
 }
 
 async function init() {
@@ -223,6 +265,7 @@ self.onmessage = async (e) => {
 
     if (action === 'init') {
         const success = await init();
+        if (payload?.deviceId) deviceId = payload.deviceId;
         self.postMessage({ action: 'init_result', success, requestId });
         return;
     }
@@ -239,60 +282,89 @@ self.onmessage = async (e) => {
                 result = db.exec(payload.sql, { returnValue: 'resultRows', bind: payload.bind });
                 break;
             case 'insert_focus_area':
-                db.exec(`
-                    INSERT INTO focus_areas (id, name, color, category, is_active, created_at, updated_at, is_deleted) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-                    ON CONFLICT(id) DO UPDATE SET
-                        name = excluded.name,
-                        color = excluded.color,
-                        category = excluded.category,
-                        is_active = excluded.is_active,
-                        updated_at = CURRENT_TIMESTAMP,
-                        is_deleted = 0
-                `, {
-                    bind: [payload.id, payload.name, payload.color, payload.category, payload.is_active ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
+                withTransaction(() => {
+                    db.exec(`
+                        INSERT INTO focus_areas (id, name, color, category, is_active, created_at, updated_at, is_deleted)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                        ON CONFLICT(id) DO UPDATE SET
+                            name = excluded.name,
+                            color = excluded.color,
+                            category = excluded.category,
+                            is_active = excluded.is_active,
+                            updated_at = CURRENT_TIMESTAMP,
+                            is_deleted = 0
+                    `, {
+                        bind: [payload.id, payload.name, payload.color, payload.category, payload.is_active ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
+                    });
+                    logSync('UPSERT_FOCUS_AREA', {
+                        id: payload.id, name: payload.name, color: payload.color,
+                        category: payload.category, is_active: payload.is_active ? 1 : 0, is_deleted: 0
+                    });
                 });
                 break;
             case 'delete_focus_area':
-                db.exec("UPDATE focus_areas SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
-                    bind: [payload.id]
+                withTransaction(() => {
+                    db.exec("UPDATE focus_areas SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
+                        bind: [payload.id]
+                    });
+                    logSync('DELETE_FOCUS_AREA', { id: payload.id });
                 });
                 break;
             case 'insert_session':
-                db.exec(`
-                    INSERT INTO sessions (id, focus_area_id, task_name, task_color, duration_seconds, xp_earned, timestamp, created_at, updated_at, is_deleted)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-                    ON CONFLICT(id) DO UPDATE SET
-                        duration_seconds = excluded.duration_seconds,
-                        xp_earned = excluded.xp_earned,
-                        updated_at = CURRENT_TIMESTAMP,
-                        is_deleted = 0
-                `, {
-                    bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp, payload.created_at || payload.timestamp, payload.updated_at || new Date().toISOString()]
+                withTransaction(() => {
+                    db.exec(`
+                        INSERT INTO sessions (id, focus_area_id, task_name, task_color, duration_seconds, xp_earned, timestamp, created_at, updated_at, is_deleted)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                        ON CONFLICT(id) DO UPDATE SET
+                            duration_seconds = excluded.duration_seconds,
+                            xp_earned = excluded.xp_earned,
+                            updated_at = CURRENT_TIMESTAMP,
+                            is_deleted = 0
+                    `, {
+                        bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp, payload.created_at || payload.timestamp, payload.updated_at || new Date().toISOString()]
+                    });
+                    logSync('UPSERT_SESSION', {
+                        id: payload.id, focus_area_id: payload.taskId, task_name: payload.taskName,
+                        task_color: payload.taskColor, duration_seconds: payload.duration,
+                        xp_earned: payload.xp || 0, timestamp: payload.timestamp
+                    });
                 });
                 break;
             case 'delete_session':
-                db.exec("UPDATE sessions SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
-                    bind: [payload.id]
+                withTransaction(() => {
+                    db.exec("UPDATE sessions SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
+                        bind: [payload.id]
+                    });
+                    logSync('DELETE_SESSION', { id: payload.id });
                 });
                 break;
             case 'insert_aim':
-                db.exec(`
-                    INSERT INTO aims (id, focus_area_id, target_minutes, target_date, is_completed, created_at, updated_at, is_deleted)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-                    ON CONFLICT(id) DO UPDATE SET
-                        target_minutes = excluded.target_minutes,
-                        target_date = excluded.target_date,
-                        is_completed = excluded.is_completed,
-                        updated_at = CURRENT_TIMESTAMP,
-                        is_deleted = 0
-                `, {
-                    bind: [payload.id, payload.focusAreaId, payload.targetMinutes, payload.deadline, payload.completed ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
+                withTransaction(() => {
+                    db.exec(`
+                        INSERT INTO aims (id, focus_area_id, target_minutes, target_date, is_completed, created_at, updated_at, is_deleted)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                        ON CONFLICT(id) DO UPDATE SET
+                            target_minutes = excluded.target_minutes,
+                            target_date = excluded.target_date,
+                            is_completed = excluded.is_completed,
+                            updated_at = CURRENT_TIMESTAMP,
+                            is_deleted = 0
+                    `, {
+                        bind: [payload.id, payload.focusAreaId, payload.targetMinutes, payload.deadline, payload.completed ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
+                    });
+                    logSync('UPSERT_AIM', {
+                        id: payload.id, focus_area_id: payload.focusAreaId,
+                        target_minutes: payload.targetMinutes, target_date: payload.deadline,
+                        is_completed: payload.completed ? 1 : 0
+                    });
                 });
                 break;
             case 'delete_aim':
-                db.exec("UPDATE aims SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
-                    bind: [payload.id]
+                withTransaction(() => {
+                    db.exec("UPDATE aims SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
+                        bind: [payload.id]
+                    });
+                    logSync('DELETE_AIM', { id: payload.id });
                 });
                 break;
             case 'set_setting':
@@ -358,22 +430,32 @@ self.onmessage = async (e) => {
                 });
                 break;
             case 'insert_planned_block':
-                db.exec(`
-                    INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, path_id, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                    ON CONFLICT(id) DO UPDATE SET
-                        focus_area_id = excluded.focus_area_id,
-                        planned_date = excluded.planned_date,
-                        start_minutes = excluded.start_minutes,
-                        duration_minutes = excluded.duration_minutes,
-                        notes = excluded.notes,
-                        path_id = excluded.path_id
-                `, {
-                    bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null, payload.pathId || null]
+                withTransaction(() => {
+                    db.exec(`
+                        INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, path_id, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(id) DO UPDATE SET
+                            focus_area_id = excluded.focus_area_id,
+                            planned_date = excluded.planned_date,
+                            start_minutes = excluded.start_minutes,
+                            duration_minutes = excluded.duration_minutes,
+                            notes = excluded.notes,
+                            path_id = excluded.path_id
+                    `, {
+                        bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null, payload.pathId || null]
+                    });
+                    logSync('UPSERT_PLANNED_BLOCK', {
+                        id: payload.id, focus_area_id: payload.focusAreaId, planned_date: payload.plannedDate,
+                        start_minutes: payload.startMinutes, duration_minutes: payload.durationMinutes,
+                        notes: payload.notes || null, path_id: payload.pathId || null
+                    });
                 });
                 break;
             case 'delete_planned_block':
-                db.exec("DELETE FROM planned_blocks WHERE id = ?", { bind: [payload.id] });
+                withTransaction(() => {
+                    db.exec("DELETE FROM planned_blocks WHERE id = ?", { bind: [payload.id] });
+                    logSync('DELETE_PLANNED_BLOCK', { id: payload.id });
+                });
                 break;
             case 'get_planned_blocks_for_week':
                 result = db.exec(`
@@ -387,32 +469,48 @@ self.onmessage = async (e) => {
                 `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
                 break;
             case 'walk_planned_block':
-                db.exec(`UPDATE planned_blocks SET walked_session_id = ? WHERE id = ?`, {
-                    bind: [payload.sessionId, payload.blockId]
+                withTransaction(() => {
+                    db.exec(`UPDATE planned_blocks SET walked_session_id = ? WHERE id = ?`, {
+                        bind: [payload.sessionId, payload.blockId]
+                    });
+                    logSync('WALK_PLANNED_BLOCK', { block_id: payload.blockId, session_id: payload.sessionId });
                 });
                 break;
             case 'insert_path':
-                db.exec(`
-                    INSERT INTO paths (id, name, description, color, deadline, status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                    ON CONFLICT(id) DO UPDATE SET
-                        name = excluded.name,
-                        description = excluded.description,
-                        color = excluded.color,
-                        deadline = excluded.deadline,
-                        status = excluded.status,
-                        updated_at = CURRENT_TIMESTAMP
-                `, {
-                    bind: [payload.id, payload.name, payload.description || null, payload.color || '#3D8F5A', payload.deadline || null, payload.status || 'active']
+                withTransaction(() => {
+                    db.exec(`
+                        INSERT INTO paths (id, name, description, color, deadline, status, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        ON CONFLICT(id) DO UPDATE SET
+                            name = excluded.name,
+                            description = excluded.description,
+                            color = excluded.color,
+                            deadline = excluded.deadline,
+                            status = excluded.status,
+                            updated_at = CURRENT_TIMESTAMP
+                    `, {
+                        bind: [payload.id, payload.name, payload.description || null, payload.color || '#3D8F5A', payload.deadline || null, payload.status || 'active']
+                    });
+                    logSync('UPSERT_PATH', {
+                        id: payload.id, name: payload.name, description: payload.description || null,
+                        color: payload.color || '#3D8F5A', deadline: payload.deadline || null,
+                        status: payload.status || 'active'
+                    });
                 });
                 break;
             case 'archive_path':
-                db.exec(`UPDATE paths SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, {
-                    bind: [payload.id]
+                withTransaction(() => {
+                    db.exec(`UPDATE paths SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, {
+                        bind: [payload.id]
+                    });
+                    logSync('ARCHIVE_PATH', { id: payload.id });
                 });
                 break;
             case 'delete_path':
-                db.exec(`DELETE FROM paths WHERE id = ?`, { bind: [payload.id] });
+                withTransaction(() => {
+                    db.exec(`DELETE FROM paths WHERE id = ?`, { bind: [payload.id] });
+                    logSync('DELETE_PATH', { id: payload.id });
+                });
                 break;
             case 'get_all_paths':
                 result = db.exec(`
@@ -455,10 +553,26 @@ self.onmessage = async (e) => {
                     ORDER BY s.timestamp
                 `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
                 break;
+            case 'get_pending_sync_log':
+                result = db.exec(
+                    `SELECT * FROM sync_log WHERE synced = 0 ORDER BY changed_at ASC LIMIT 100`,
+                    { returnValue: 'resultRows', rowMode: 'object' }
+                );
+                break;
+            case 'mark_synced':
+                // payload.ids: array of sync_log ids
+                if (Array.isArray(payload.ids) && payload.ids.length > 0) {
+                    const placeholders = payload.ids.map(() => '?').join(',');
+                    db.exec(`UPDATE sync_log SET synced = 1 WHERE id IN (${placeholders})`, {
+                        bind: payload.ids
+                    });
+                }
+                break;
             // New case for resetting the database
             case 'reset_db':
                 console.log("Resetting database.");
                 db.exec(`
+                    DROP TABLE IF EXISTS sync_log;
                     DROP TABLE IF EXISTS planned_blocks;
                     DROP TABLE IF EXISTS paths;
                     DROP TABLE IF EXISTS aims;

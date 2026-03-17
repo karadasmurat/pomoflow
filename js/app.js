@@ -15,6 +15,7 @@ import { FocusView } from './ui/focus.view.js';
 import { TimerView } from './ui/timer.view.js';
 import { DashboardView } from './ui/dashboard.view.js';
 import { PlannerView } from './ui/planner.view.js';
+import { syncService } from './services/sync.service.js';
 
 let currentFilter = 'today';
 let showAllHistory = false;
@@ -75,6 +76,8 @@ async function init() {
             saveData();
         }
     }
+
+    if (dbManager.initialized) syncService.startPolling();
 
     setupEventListeners();
     FocusView.populateCategorySelects();
