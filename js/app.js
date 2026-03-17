@@ -312,7 +312,7 @@ async function addFocusArea() {
         
         if (task) {
             input.value = '';
-            
+
             const active = state.tasks.filter(t => !(t.completed === true || t.completed === 1 || t.completed === 'true'));
             const grouped = active.reduce((acc, t) => {
                 const c = t.category || 'Uncategorized';
@@ -320,16 +320,17 @@ async function addFocusArea() {
                 acc[c].push(t);
                 return acc;
             }, {});
-            
+
             const order = state.categories.map(c => c.name);
             const activeCats = Object.keys(grouped).sort((a, b) => {
                 const ia = order.indexOf(a), ib = order.indexOf(b);
                 return (ia !== -1 && ib !== -1) ? ia - ib : (ia !== -1 ? -1 : (ib !== -1 ? 1 : a.localeCompare(b)));
             });
-            
+
             state.activeCategoryIndex = activeCats.indexOf(task.category || 'Uncategorized');
-            
-            await saveData(); 
+
+            if (dbManager.initialized) await dbManager.insertFocusArea(task);
+            await saveData();
             
             const wrapper = document.getElementById('focusAreaCreateWrapper');
             wrapper?.classList.remove('open');
@@ -360,6 +361,7 @@ function toggleFocusAreaComplete(id) {
         t.completed = !isComp;
         t.updated_at = now;
         if (t.completed && state.timerState.activeTaskId === id) state.timerState.activeTaskId = null;
+        if (dbManager.initialized) dbManager.insertFocusArea(t);
         saveData(); renderFocusAreas();
         notify(t.completed ? 'Focus area completed! ✅' : 'Focus area reactivated 🔄');
     }
@@ -838,6 +840,8 @@ function moveTaskToCategory(taskId, newCat) {
     const t = state.tasks.find(x => x.id === taskId);
     if (t) {
         t.category = newCat;
+        t.updated_at = new Date().toISOString();
+        if (dbManager.initialized) dbManager.insertFocusArea(t);
         saveData();
         refreshUI();
         notify(`Moved to ${newCat} 📦`);
