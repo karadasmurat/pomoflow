@@ -32,6 +32,7 @@ async function init() {
             if (fullState.tasks?.length > 0) state.tasks = fullState.tasks;
             if (fullState.sessions?.length > 0) state.sessions = fullState.sessions;
             if (fullState.aims?.length > 0) state.aims = fullState.aims;
+            if (fullState.paths?.length > 0) state.paths = fullState.paths;
             if (fullState.settings) state.settings = { ...state.settings, ...fullState.settings };
 
             if (fullState.profile?.full_profile) {
@@ -107,6 +108,25 @@ async function init() {
 
     restoreTimerState();
     checkAchievements();
+    checkPathDeadlines();
+}
+
+function checkPathDeadlines() {
+    if (!dbManager.initialized) return;
+    dbManager.getAllPaths().then(paths => {
+        const today = new Date().toISOString().split('T')[0];
+        const soon = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        paths.forEach(p => {
+            if (p.status !== 'active' || !p.deadline) return;
+            if (p.deadline < today) {
+                // auto-archive
+                dbManager.archivePath(p.id).catch(() => {});
+            } else if (p.deadline <= soon) {
+                const days = Math.ceil((new Date(p.deadline) - new Date(today)) / 86400000);
+                notify(`Path "${p.name}" deadline in ${days} day${days === 1 ? '' : 's'}!`);
+            }
+        });
+    }).catch(() => {});
 }
 
 // --- 2. TIMER LOGIC ---
@@ -192,9 +212,24 @@ function saveSession() {
     FocusService.addXP(session.xp);
     
     if (dbManager.initialized) {
-        dbManager.insertSession(session).catch(e => console.error('Failed to save session:', e));
+        console.log('[saveSession] inserting session:', session);
+        dbManager.insertSession(session)
+            .then(async () => {
+                console.log('[saveSession] saved:', session.id);
+                if (!session.taskId) return;
+                const today = new Date().toISOString().split('T')[0];
+                const block = await dbManager.getUnwalkedBlockForSession(session.taskId, today);
+                if (block) {
+                    console.log('[walkPlannedBlock] walking block:', block.id, 'with session:', session.id);
+                    await dbManager.walkPlannedBlock(block.id, session.id);
+                    if (block.pathName) {
+                        notify(`Path "${block.pathName}" — block walked!`);
+                    }
+                }
+            })
+            .catch(e => console.error('Failed to save session:', e));
     }
-    
+
     saveData();
 }
 
@@ -331,8 +366,8 @@ function deleteFocusArea(id) {
         if (conf) { 
             const t = state.tasks.find(x => x.id === id);
             const name = t ? t.name : '';
-            FocusService.deleteFocusArea(id); 
-            if (dbManager.initialized) dbManager.deleteFocusArea(id);
+            FocusService.deleteFocusArea(id);
+            if (dbManager.initialized) { console.log('[deleteFocusArea]', id); dbManager.deleteFocusArea(id); }
             saveData(); renderFocusAreas(); 
             notify(`Deleted: ${name} 🗑️`);
         }
@@ -343,7 +378,7 @@ function deleteSession(id) {
     confirmAction('Delete session record?').then(conf => {
         if (conf) {
             state.sessions = state.sessions.filter(s => s.id !== id);
-            if (dbManager.initialized) dbManager.deleteSession(id);
+            if (dbManager.initialized) { console.log('[deleteSession]', id); dbManager.deleteSession(id); }
             saveData(); refreshUI();
             notify('Session deleted 🗑️');
         }
@@ -355,8 +390,8 @@ function renderPlan() {
         onEditAim: (id) => editAim(id),
         onGoAgain: (a) => goAgain(a),
         onDeleteAim: (id) => { 
-            state.aims = state.aims.filter(x => x.id !== id); 
-            if (dbManager.initialized) dbManager.deleteAim(id);
+            state.aims = state.aims.filter(x => x.id !== id);
+            if (dbManager.initialized) { console.log('[deleteAim]', id); dbManager.deleteAim(id); }
             saveData(); renderPlan(); notify('Aim removed 🗑️'); 
         },
         onShare: (name, mins) => SettingsService.handleShare('x', 'milestone', { focusArea: name, duration: mins }, notify)
@@ -385,7 +420,7 @@ function addAim() {
             ex.targetMinutes = mins; 
             ex.deadline = date; 
             ex.updated_at = now;
-            if (dbManager.initialized) dbManager.insertAim(ex).catch(e => console.error('Failed to save aim:', e));
+            if (dbManager.initialized) { console.log('[insertAim] updating:', ex); dbManager.insertAim(ex).catch(e => console.error('Failed to save aim:', e)); }
         } else {
             const newAim = { 
                 id: uuidv7(), 
@@ -397,7 +432,7 @@ function addAim() {
                 deadline: date 
             };
             state.aims.push(newAim);
-            if (dbManager.initialized) dbManager.insertAim(newAim).catch(e => console.error('Failed to save aim:', e));
+            if (dbManager.initialized) { console.log('[insertAim] new:', newAim); dbManager.insertAim(newAim).catch(e => console.error('Failed to save aim:', e)); }
         }
     });
 
@@ -573,10 +608,15 @@ function updateProfileUI() {
     
     if (circle) circle.textContent = avatar;
     if (headerAvatar) headerAvatar.textContent = avatar;
-    
+    const sidenavAvatar = document.getElementById('sidenavAvatar');
+    if (sidenavAvatar) sidenavAvatar.textContent = avatar;
+
     const option = document.querySelector(`.avatar-option[data-avatar="${avatar}"]`);
     if (option && moodLabel) {
-        moodLabel.textContent = option.querySelector('.avatar-mood')?.textContent || option.title;
+        const name = option.querySelector('.avatar-mood')?.textContent || option.title;
+        moodLabel.textContent = name;
+        const sidenavUserName = document.getElementById('sidenavUserName');
+        if (sidenavUserName) sidenavUserName.textContent = name;
     }
 }
 
@@ -802,8 +842,9 @@ function moveTaskToCategory(taskId, newCat) {
 
 // --- 5. PERSISTENCE & SYSTEM ---
 
-function saveData() { 
+function saveData() {
     if (dbManager.initialized) {
+        console.log('[saveData] persisting full state');
         dbManager.saveFullState(state).catch(e => console.error('Failed to save to DB:', e));
     }
 }
@@ -937,9 +978,9 @@ function setupEventListeners() {
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
-        'settingsBtn': openSettings, 'closeSettings': closeSettings,
+        'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
-        'headerAvatar': openProfile, 'closeProfile': closeProfile,
+        'headerAvatar': openProfile, 'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
         'editPersonaBtn': () => togglePersonaEdit(true),
         'cancelPersonaEdit': () => togglePersonaEdit(false),
         'shareMoodBtn': () => {
@@ -948,9 +989,12 @@ function setupEventListeners() {
             SettingsService.handleShare('x', 'mood', { avatar, mood }, notify);
         },
         'focusAreasNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openFocusAreas(); },
+        'sidenavFocusAreasBtn': () => openFocusAreas(),
         'closeFocusAreaPanel': closeFocusAreas,
         'focusPlannerNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); PlannerView.open(); },
+        'sidenavFocusPlannerBtn': () => PlannerView.open(),
         'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
+        'sidenavFocusPlanBtn': () => openPlan(),
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
         'toggleFocusAreaCreate': (e) => {
