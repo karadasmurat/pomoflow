@@ -29,14 +29,17 @@ class SyncService {
 
             console.log(`[Sync] pushing ${pending.length} operation(s)…`);
 
-            const { error } = await supabase.functions.invoke(EDGE_FN, {
+            const { data, error } = await supabase.functions.invoke(EDGE_FN, {
                 body: {
                     device_id: dbManager.deviceId,
                     operations: pending,
                 },
             });
 
-            if (error) throw error;
+            if (error) {
+                console.warn('[Sync] edge function error:', error, data);
+                throw error;
+            }
 
             await dbManager.markSynced(pending.map(op => op.id));
             console.log(`[Sync] ${pending.length} operation(s) synced ✓`);
