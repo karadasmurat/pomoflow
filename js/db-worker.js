@@ -53,8 +53,8 @@ function migrate(db) {
             db.exec("CREATE INDEX IF NOT EXISTS idx_planned_blocks_path ON planned_blocks(path_id)");
             db.exec("CREATE TRIGGER IF NOT EXISTS trg_paths_updated_at AFTER UPDATE ON paths FOR EACH ROW BEGIN UPDATE paths SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;");
             db.exec("PRAGMA user_version = 3");
+            version = 3;
             console.log('Transition complete, stamped user_version = 3');
-            return;
         }
     }
 
