@@ -573,10 +573,15 @@ function updateProfileUI() {
     
     if (circle) circle.textContent = avatar;
     if (headerAvatar) headerAvatar.textContent = avatar;
-    
+    const sidenavAvatar = document.getElementById('sidenavAvatar');
+    if (sidenavAvatar) sidenavAvatar.textContent = avatar;
+
     const option = document.querySelector(`.avatar-option[data-avatar="${avatar}"]`);
     if (option && moodLabel) {
-        moodLabel.textContent = option.querySelector('.avatar-mood')?.textContent || option.title;
+        const name = option.querySelector('.avatar-mood')?.textContent || option.title;
+        moodLabel.textContent = name;
+        const sidenavUserName = document.getElementById('sidenavUserName');
+        if (sidenavUserName) sidenavUserName.textContent = name;
     }
 }
 
@@ -937,9 +942,9 @@ function setupEventListeners() {
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
-        'settingsBtn': openSettings, 'closeSettings': closeSettings,
+        'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
-        'headerAvatar': openProfile, 'closeProfile': closeProfile,
+        'headerAvatar': openProfile, 'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
         'editPersonaBtn': () => togglePersonaEdit(true),
         'cancelPersonaEdit': () => togglePersonaEdit(false),
         'shareMoodBtn': () => {
@@ -948,9 +953,12 @@ function setupEventListeners() {
             SettingsService.handleShare('x', 'mood', { avatar, mood }, notify);
         },
         'focusAreasNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openFocusAreas(); },
+        'sidenavFocusAreasBtn': () => openFocusAreas(),
         'closeFocusAreaPanel': closeFocusAreas,
         'focusPlannerNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); PlannerView.open(); },
+        'sidenavFocusPlannerBtn': () => PlannerView.open(),
         'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
+        'sidenavFocusPlanBtn': () => openPlan(),
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
         'toggleFocusAreaCreate': (e) => {

@@ -1,17 +1,5 @@
 /* ── TOKENS ── */
 :root {
-  --bg: #F0EFED;
-  --bg-card: #FAFAF8;
-  --white: #FFFFFF;
-  --ink: #1A1917;
-  --ink-mid: #6B6860;
-  --ink-soft: #A8A49E;
-  --rule: #E2DFD9;
-  --accent: #2D4A3E;
-  --accent-dim: #E6EDEA;
-  --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  --r: 6px;
-
   /* Focus Area colors */
   --green-bg: #DDE8DF;
   --green-txt: #2D4A3E;
@@ -53,7 +41,7 @@
 /* ── NAV ── */
 .nav {
   height: 52px;
-  background: rgba(240, 239, 237, 0.92);
+  background: rgba(24, 24, 26, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--rule);

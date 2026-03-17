@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8">
@@ -43,21 +43,21 @@
       <div class="sidenav-menu">
         <ul class="sidenav-menu-list">
           <li class="sidenav-menu-item active">
-            <a href="#">
-              <i class="ph ph-house"></i>
-              <span class="sidenav-text">Dashboard</span>
+            <a href="#" id="sidenavFocusAreasBtn">
+              <i class="ph ph-bookmarks"></i>
+              <span class="sidenav-text">Focus Areas</span>
             </a>
           </li>
           <li class="sidenav-menu-item">
-            <a href="#">
-              <i class="ph ph-chart-bar"></i>
-              <span class="sidenav-text">Orders</span>
+            <a href="#" id="sidenavFocusPlannerBtn">
+              <i class="ph ph-calendar-dots"></i>
+              <span class="sidenav-text">Focus Planner</span>
             </a>
           </li>
           <li class="sidenav-menu-item">
-            <a href="#">
-              <i class="ph ph-users"></i>
-              <span class="sidenav-text">Customers</span>
+            <a href="#" id="sidenavFocusPlanBtn">
+              <i class="ph ph-calendar-blank"></i>
+              <span class="sidenav-text">Focus Plan</span>
             </a>
           </li>
           <li class="sidenav-menu-item has-submenu">
@@ -105,23 +105,23 @@
       <div class="sidenav-footer">
         <ul class="sidenav-menu-list">
           <li class="sidenav-menu-item">
-            <a href="#">
+            <a href="help.html" target="_blank">
               <i class="ph ph-life-buoy"></i>
-              <span class="sidenav-text">Support</span>
+              <span class="sidenav-text">Help</span>
             </a>
           </li>
           <li class="sidenav-menu-item">
-            <a href="#">
+            <a href="#" id="sidenavSettingsBtn">
               <i class="ph ph-gear"></i>
               <span class="sidenav-text">Settings</span>
             </a>
           </li>
         </ul>
-        <div class="sidenav-user-profile">
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Avatar" class="sidenav-avatar">
+        <div class="sidenav-user-profile" id="sidenav-user-profile">
+          <div class="sidenav-avatar" id="sidenavAvatar">🦉</div>
           <div class="sidenav-user-info">
-            <span class="sidenav-user-name">Caitlyn King</span>
-            <span class="sidenav-user-email">caitlyn@untitledui.com</span>
+            <span class="sidenav-user-name" id="sidenavUserName">Caitlyn King</span>
+            <span class="sidenav-user-email" id="sidenavUserXP">0 XP</span>
           </div>
           <button class="sidenav-logout-btn">
             <i class="ph ph-sign-out"></i>

@@ -658,6 +658,30 @@ td code { font-size: 12px; }
 }
 
 
+/* ── DARK THEME ─────────────────────────────────────────────── */
+/*
+ * Derived from the Void dark surface tokens in the shwn. design system.
+ * Dark is the app default (styles.css :root overrides base.css light values).
+ * Light theme activates via [data-theme="light"] in styles.css.
+ */
+
+[data-theme="dark"] {
+  --bg:         #18181A;                /* Void primary surface             */
+  --bg-card:    #1F1F22;                /* Elevated card / panel surface     */
+  --white:      #1F1F22;                /* Elevated surfaces in dark context  */
+
+  --ink:        rgba(255,255,255,0.92); /* Primary text on dark              */
+  --ink-mid:    rgba(255,255,255,0.52); /* Secondary text                    */
+  --ink-soft:   rgba(255,255,255,0.32); /* Tertiary / decorative only        */
+
+  --rule:       rgba(255,255,255,0.06); /* Dividers, separators              */
+
+  --accent:     #3D8F5A;                /* Grove green — unchanged per spec  */
+  --grove:      #3D8F5A;                /* Alias — unchanged                 */
+  --accent-dim: rgba(61,143,90,0.15);   /* Tint adapted for dark surface     */
+}
+
+
 /* ── SECTION COMMONS ────────────────────────────────────────── */
 
 .section { padding: clamp(48px,6vh,80px) 0; }
