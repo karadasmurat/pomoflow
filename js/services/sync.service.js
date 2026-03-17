@@ -24,6 +24,10 @@ class SyncService {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
+            console.log('[Sync] session user:', session.user?.email,
+                '| expires:', new Date((session.expires_at ?? 0) * 1000).toISOString(),
+                '| token prefix:', session.access_token?.slice(0, 20));
+
             const pending = await dbManager.getPendingSyncLog();
             if (!pending || pending.length === 0) return;
 
@@ -33,6 +37,9 @@ class SyncService {
                 body: {
                     device_id: dbManager.deviceId,
                     operations: pending,
+                },
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
                 },
             });
 
