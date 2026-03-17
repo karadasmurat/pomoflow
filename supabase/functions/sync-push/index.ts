@@ -17,18 +17,23 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const supabase = createClient(
-            Deno.env.get('SUPABASE_URL')!,
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
-
-        // Verify JWT and get user
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) return respond(401, { error: 'Unauthorized' });
 
-        const { data: { user }, error: authError } =
-            await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+        // Verify JWT using anon key + user's auth header (recommended pattern)
+        const supabaseUser = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_ANON_KEY')!,
+            { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
         if (authError || !user) return respond(401, { error: 'Unauthorized' });
+
+        // Admin client for privileged DB writes (bypasses RLS)
+        const supabaseAdmin = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        );
 
         const { operations } = await req.json();
         if (!Array.isArray(operations) || operations.length === 0) {
@@ -42,7 +47,7 @@ Deno.serve(async (req) => {
             try {
                 const payload = typeof op.payload === 'string'
                     ? JSON.parse(op.payload) : op.payload;
-                await replayOperation(supabase, user.id, op.operation, payload, op.changed_at);
+                await replayOperation(supabaseAdmin, user.id, op.operation, payload, op.changed_at);
                 processed++;
             } catch (e: any) {
                 console.error(`[sync-push] ${op.operation} failed:`, e.message);
@@ -50,6 +55,7 @@ Deno.serve(async (req) => {
             }
         }
 
+        console.log(`[sync-push] user=${user.id} processed=${processed} errors=${errors.length}`);
         return respond(200, { ok: true, processed, errors });
     } catch (err: any) {
         console.error('[sync-push] unexpected error:', err);
