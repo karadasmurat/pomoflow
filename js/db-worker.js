@@ -229,11 +229,14 @@ function withTransaction(fn) {
 
 function logSync(operation, logPayload) {
     if (!deviceId) return;
+    const id = self.crypto.randomUUID();
+    const changed_at = new Date().toISOString();
     db.exec(
         `INSERT INTO sync_log (id, operation, payload, changed_at, device_id, synced)
          VALUES (?, ?, ?, ?, ?, 0)`,
-        { bind: [self.crypto.randomUUID(), operation, JSON.stringify(logPayload), new Date().toISOString(), deviceId] }
+        { bind: [id, operation, JSON.stringify(logPayload), changed_at, deviceId] }
     );
+    console.log(`[sync_log] ${operation}`, logPayload);
 }
 
 async function init() {
