@@ -27,8 +27,11 @@ let editingTaskId = null;
 
 async function init() {
     // ── Auth gate ────────────────────────────────────────────────────────────
-    // Handle magic link token in URL hash before anything else
-    await supabase.auth.exchangeCodeForSession(window.location.search).catch(() => {});
+    // Handle magic link callback — only when code param is present
+    if (new URLSearchParams(window.location.search).has('code')) {
+        await supabase.auth.exchangeCodeForSession(window.location.search).catch(() => {});
+        history.replaceState(null, '', window.location.pathname);
+    }
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
