@@ -300,11 +300,6 @@ class DatabaseManager {
             await this.setSetting(key, value);
         }
 
-        // Save Tasks (Small collection, usually < 50 items)
-        for (const task of state.tasks) {
-            await this.insertFocusArea(task);
-        }
-
         // Save Profile
         await this.setUserProfile('full_profile', {
             xp: state.xp,
