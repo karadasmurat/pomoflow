@@ -335,7 +335,8 @@ async function addFocusArea() {
             
             editingTaskId = null;
 
-            renderFocusAreas(); 
+            renderFocusAreas();
+            if (!isEdit && task.category) FocusView.drillInto(task.category);
             notify(isEdit ? `Updated: ${name} ✅` : `Added: ${name} ✨`);
         }
     } catch (e) {
@@ -997,6 +998,26 @@ function setupEventListeners() {
         'sidenavFocusPlanBtn': () => openPlan(),
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
+        'toggleTaskCreate': () => {
+            const category = FocusView.activeCategory;
+            FocusView.goBack();
+            editingTaskId = null;
+            const wrapper = document.getElementById('focusAreaCreateWrapper');
+            wrapper?.classList.add('open');
+            const btn = document.getElementById('toggleFocusAreaCreate');
+            if (btn) btn.classList.add('active');
+            const header = document.getElementById('faCreateHeader');
+            if (header) header.textContent = 'Create Focus Area';
+            const btnText = document.getElementById('addFocusAreaBtnText');
+            if (btnText) btnText.textContent = 'Create';
+            document.getElementById('focusAreaInput').value = '';
+            FocusView.populateCategorySelects();
+            if (category) {
+                const sel = document.getElementById('focusAreaCategorySelect');
+                if (sel) sel.value = category;
+            }
+            document.getElementById('focusAreaInput')?.focus();
+        },
         'toggleFocusAreaCreate': (e) => {
             const wrapper = document.getElementById('focusAreaCreateWrapper');
             const isOpen = wrapper?.classList.toggle('open');
