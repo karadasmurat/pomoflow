@@ -9,27 +9,57 @@ const SQLITE_WASM_URL = 'sqlite3.js';
 let db = null;
 let sqlite3 = null;
 
-async function init() {
-    try {
-        // Load the SQLite3 loader script
-        importScripts(SQLITE_WASM_URL);
-        
-        // Initialize SQLite3
-        sqlite3 = await sqlite3InitModule({
-            print: console.log,
-            printErr: console.error,
-        });
-        
-        // Check for OPFS support (requires cross-origin isolation)
-        if (sqlite3.opfs) {
-            db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
-            console.log('SQLite OPFS Database initialized:', db.filename);
-        } else {
-            db = new sqlite3.oo1.DB('/pomoflow.db', 'ct');
-            console.warn('OPFS support not found in sqlite3 object, falling back to transient/memory storage');
-        }
+// ── SCHEMA MIGRATIONS ────────────────────────────────────────────────────────
+// Each block runs only when the stored user_version is below the target.
+// user_version is written at the end of each block, so a crash mid-migration
+// will re-run that block on the next start (all DDL statements are idempotent
+// within a block via IF NOT EXISTS where needed).
+//
+// Version history:
+//   0 → 1  Base schema (focus_areas, sessions, aims, settings, planned_blocks, …)
+//   1 → 2  Paths feature (paths table, path_id + walked_session_id on planned_blocks)
+//   2 → 3  Repair: ensure path_id + walked_session_id exist (transition detector bug)
 
-        // Create Tables with definitive schema
+const CURRENT_SCHEMA_VERSION = 3;
+
+function migrate(db) {
+    let version = db.exec("PRAGMA user_version", { returnValue: 'resultRows' })[0][0];
+
+    // One-time fix for databases created before versioned migrations were introduced.
+    // Those DBs have the full v2 schema but user_version was never set (stays at 0).
+    // Detect by checking if the 'paths' table already exists and stamp the version.
+    // One-time transition: databases created before versioned migrations have the
+    // 'paths' table but user_version was never set, and some columns may be partially
+    // applied. Detect, complete anything missing, then stamp the version so this
+    // never runs again.
+    if (version < CURRENT_SCHEMA_VERSION) {
+        const tables = db.exec(
+            "SELECT name FROM sqlite_master WHERE type='table'",
+            { returnValue: 'resultRows', rowMode: 'object' }
+        ).map(r => r.name);
+        if (tables.includes('paths')) {
+            const pbCols = db.exec(
+                "PRAGMA table_info(planned_blocks)",
+                { returnValue: 'resultRows', rowMode: 'object' }
+            ).map(r => r.name);
+            if (!pbCols.includes('path_id'))
+                db.exec("ALTER TABLE planned_blocks ADD COLUMN path_id TEXT REFERENCES paths(id) ON DELETE SET NULL");
+            if (!pbCols.includes('walked_session_id'))
+                db.exec("ALTER TABLE planned_blocks ADD COLUMN walked_session_id TEXT");
+            db.exec("CREATE INDEX IF NOT EXISTS idx_paths_status ON paths(status)");
+            db.exec("CREATE INDEX IF NOT EXISTS idx_planned_blocks_path ON planned_blocks(path_id)");
+            db.exec("CREATE TRIGGER IF NOT EXISTS trg_paths_updated_at AFTER UPDATE ON paths FOR EACH ROW BEGIN UPDATE paths SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;");
+            db.exec(`PRAGMA user_version = ${CURRENT_SCHEMA_VERSION}`);
+            console.log(`Transition complete, stamped user_version = ${CURRENT_SCHEMA_VERSION}`);
+            return;
+        }
+    }
+
+    console.log(`DB schema version: ${version}, target: ${CURRENT_SCHEMA_VERSION}`);
+    if (version >= CURRENT_SCHEMA_VERSION) return;
+
+    // ── v0 → v1: base schema ─────────────────────────────────────────────────
+    if (version < 1) {
         db.exec(`
             CREATE TABLE IF NOT EXISTS focus_areas (
                 id TEXT PRIMARY KEY,
@@ -42,7 +72,6 @@ async function init() {
                 is_deleted INTEGER DEFAULT 0,
                 deleted_at DATETIME
             );
-
             CREATE TABLE IF NOT EXISTS aims (
                 id TEXT PRIMARY KEY,
                 focus_area_id TEXT NOT NULL,
@@ -55,7 +84,6 @@ async function init() {
                 deleted_at DATETIME,
                 FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
             );
-
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 focus_area_id TEXT,
@@ -71,7 +99,6 @@ async function init() {
                 deleted_at DATETIME,
                 FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
             );
-
             CREATE TABLE IF NOT EXISTS settings (
                 id TEXT PRIMARY KEY,
                 key TEXT UNIQUE NOT NULL,
@@ -81,7 +108,6 @@ async function init() {
                 is_deleted INTEGER DEFAULT 0,
                 deleted_at DATETIME
             );
-
             CREATE TABLE IF NOT EXISTS user_profile (
                 id TEXT PRIMARY KEY,
                 key TEXT UNIQUE NOT NULL,
@@ -91,7 +117,6 @@ async function init() {
                 is_deleted INTEGER DEFAULT 0,
                 deleted_at DATETIME
             );
-
             CREATE TABLE IF NOT EXISTS app_state (
                 id TEXT PRIMARY KEY,
                 key TEXT UNIQUE NOT NULL,
@@ -101,7 +126,6 @@ async function init() {
                 is_deleted INTEGER DEFAULT 0,
                 deleted_at DATETIME
             );
-
             CREATE TABLE IF NOT EXISTS planned_blocks (
                 id TEXT PRIMARY KEY,
                 focus_area_id TEXT NOT NULL,
@@ -112,26 +136,81 @@ async function init() {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
             );
-
             CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp);
             CREATE INDEX IF NOT EXISTS idx_sessions_area ON sessions(focus_area_id);
             CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
             CREATE INDEX IF NOT EXISTS idx_planned_blocks_date ON planned_blocks(planned_date);
+            CREATE TRIGGER IF NOT EXISTS trg_focus_areas_updated_at AFTER UPDATE ON focus_areas FOR EACH ROW BEGIN UPDATE focus_areas SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+            CREATE TRIGGER IF NOT EXISTS trg_aims_updated_at AFTER UPDATE ON aims FOR EACH ROW BEGIN UPDATE aims SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+            CREATE TRIGGER IF NOT EXISTS trg_sessions_updated_at AFTER UPDATE ON sessions FOR EACH ROW BEGIN UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+            CREATE TRIGGER IF NOT EXISTS trg_settings_updated_at AFTER UPDATE ON settings FOR EACH ROW BEGIN UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+            CREATE TRIGGER IF NOT EXISTS trg_user_profile_updated_at AFTER UPDATE ON user_profile FOR EACH ROW BEGIN UPDATE user_profile SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+            CREATE TRIGGER IF NOT EXISTS trg_app_state_updated_at AFTER UPDATE ON app_state FOR EACH ROW BEGIN UPDATE app_state SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
         `);
+        db.exec("PRAGMA user_version = 1");
+        console.log('Migration 0→1 complete');
+    }
 
-        // Create Triggers for updated_at
-        const tables = ['focus_areas', 'aims', 'sessions', 'settings', 'user_profile', 'app_state'];
-        for (const table of tables) {
-            db.exec(`
-                CREATE TRIGGER IF NOT EXISTS trg_${table}_updated_at 
-                AFTER UPDATE ON ${table}
-                FOR EACH ROW
-                BEGIN
-                    UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                END;
-            `);
+    // ── v1 → v2: paths feature ───────────────────────────────────────────────
+    if (version < 2) {
+        db.exec(`
+            CREATE TABLE paths (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                color TEXT DEFAULT '#3D8F5A',
+                deadline TEXT,
+                status TEXT DEFAULT 'active',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            ALTER TABLE planned_blocks ADD COLUMN path_id TEXT REFERENCES paths(id) ON DELETE SET NULL;
+            ALTER TABLE planned_blocks ADD COLUMN walked_session_id TEXT;
+            CREATE INDEX idx_paths_status ON paths(status);
+            CREATE INDEX idx_planned_blocks_path ON planned_blocks(path_id);
+            CREATE TRIGGER IF NOT EXISTS trg_paths_updated_at AFTER UPDATE ON paths FOR EACH ROW BEGIN UPDATE paths SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+        `);
+        db.exec("PRAGMA user_version = 2");
+        console.log('Migration 1→2 complete');
+    }
+
+    // ── v2 → v3: repair missing columns ──────────────────────────────────────
+    // The transition detector in v2 had a bug where it stamped user_version = 2
+    // without reliably adding path_id / walked_session_id. This migration checks
+    // via raw array rows (avoiding the rowMode:'object' issue) and adds any
+    // columns that are still missing.
+    if (version < 3) {
+        const existingCols = db.exec(
+            "SELECT name FROM pragma_table_info('planned_blocks')",
+            { returnValue: 'resultRows' }
+        ).map(r => r[0]);
+        if (!existingCols.includes('path_id'))
+            db.exec("ALTER TABLE planned_blocks ADD COLUMN path_id TEXT REFERENCES paths(id) ON DELETE SET NULL");
+        if (!existingCols.includes('walked_session_id'))
+            db.exec("ALTER TABLE planned_blocks ADD COLUMN walked_session_id TEXT");
+        db.exec("CREATE INDEX IF NOT EXISTS idx_planned_blocks_path ON planned_blocks(path_id)");
+        db.exec("PRAGMA user_version = 3");
+        console.log('Migration 2→3 complete');
+    }
+}
+
+async function init() {
+    try {
+        importScripts(SQLITE_WASM_URL);
+        sqlite3 = await sqlite3InitModule({
+            print: console.log,
+            printErr: console.error,
+        });
+
+        if (sqlite3.opfs) {
+            db = new sqlite3.oo1.OpfsDb('/pomoflow.db');
+            console.log('SQLite OPFS Database initialized:', db.filename);
+        } else {
+            db = new sqlite3.oo1.DB('/pomoflow.db', 'ct');
+            console.warn('OPFS not available, falling back to in-memory storage');
         }
-        
+
+        migrate(db);
         return true;
     } catch (err) {
         console.error('Failed to initialize SQLite:', err);
@@ -280,16 +359,17 @@ self.onmessage = async (e) => {
                 break;
             case 'insert_planned_block':
                 db.exec(`
-                    INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, path_id, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(id) DO UPDATE SET
                         focus_area_id = excluded.focus_area_id,
                         planned_date = excluded.planned_date,
                         start_minutes = excluded.start_minutes,
                         duration_minutes = excluded.duration_minutes,
-                        notes = excluded.notes
+                        notes = excluded.notes,
+                        path_id = excluded.path_id
                 `, {
-                    bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null]
+                    bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null, payload.pathId || null]
                 });
                 break;
             case 'delete_planned_block':
@@ -297,12 +377,71 @@ self.onmessage = async (e) => {
                 break;
             case 'get_planned_blocks_for_week':
                 result = db.exec(`
-                    SELECT pb.*, f.name as area_name, f.color as area_color
+                    SELECT pb.*, f.name as area_name, f.color as area_color,
+                           p.name as path_name, p.color as path_color, p.status as path_status
                     FROM planned_blocks pb
                     LEFT JOIN focus_areas f ON pb.focus_area_id = f.id
+                    LEFT JOIN paths p ON pb.path_id = p.id
                     WHERE pb.planned_date >= ? AND pb.planned_date <= ?
                     ORDER BY pb.planned_date, pb.start_minutes
                 `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
+                break;
+            case 'walk_planned_block':
+                db.exec(`UPDATE planned_blocks SET walked_session_id = ? WHERE id = ?`, {
+                    bind: [payload.sessionId, payload.blockId]
+                });
+                break;
+            case 'insert_path':
+                db.exec(`
+                    INSERT INTO paths (id, name, description, color, deadline, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT(id) DO UPDATE SET
+                        name = excluded.name,
+                        description = excluded.description,
+                        color = excluded.color,
+                        deadline = excluded.deadline,
+                        status = excluded.status,
+                        updated_at = CURRENT_TIMESTAMP
+                `, {
+                    bind: [payload.id, payload.name, payload.description || null, payload.color || '#3D8F5A', payload.deadline || null, payload.status || 'active']
+                });
+                break;
+            case 'archive_path':
+                db.exec(`UPDATE paths SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, {
+                    bind: [payload.id]
+                });
+                break;
+            case 'delete_path':
+                db.exec(`DELETE FROM paths WHERE id = ?`, { bind: [payload.id] });
+                break;
+            case 'get_all_paths':
+                result = db.exec(`
+                    SELECT p.*,
+                           COUNT(pb.id) as total_planned,
+                           SUM(CASE WHEN pb.walked_session_id IS NOT NULL THEN 1 ELSE 0 END) as total_walked
+                    FROM paths p
+                    LEFT JOIN planned_blocks pb ON pb.path_id = p.id
+                    GROUP BY p.id
+                    ORDER BY p.status ASC, p.deadline ASC, p.created_at ASC
+                `, { returnValue: 'resultRows', rowMode: 'object' });
+                break;
+            case 'get_unwalked_block_for_session':
+                // Find earliest unwalked planned block for a focus area on a given date, linked to an active path
+                result = db.exec(`
+                    SELECT pb.*, p.name as path_name, p.color as path_color,
+                           COUNT(pb2.id) as total_planned,
+                           SUM(CASE WHEN pb2.walked_session_id IS NOT NULL THEN 1 ELSE 0 END) as total_walked
+                    FROM planned_blocks pb
+                    JOIN paths p ON pb.path_id = p.id
+                    LEFT JOIN planned_blocks pb2 ON pb2.path_id = p.id
+                    WHERE pb.focus_area_id = ?
+                      AND pb.planned_date = ?
+                      AND pb.walked_session_id IS NULL
+                      AND p.status = 'active'
+                    GROUP BY pb.id
+                    ORDER BY pb.start_minutes ASC
+                    LIMIT 1
+                `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.focusAreaId, payload.date] });
                 break;
             case 'get_sessions_for_week':
                 result = db.exec(`
@@ -318,160 +457,23 @@ self.onmessage = async (e) => {
                 break;
             // New case for resetting the database
             case 'reset_db':
-                console.log("Received 'reset_db' action. Performing a full database reset.");
-                const dropSql = `
-                    DROP TABLE IF EXISTS focus_areas;
+                console.log("Resetting database.");
+                db.exec(`
+                    DROP TABLE IF EXISTS planned_blocks;
+                    DROP TABLE IF EXISTS paths;
                     DROP TABLE IF EXISTS aims;
                     DROP TABLE IF EXISTS sessions;
+                    DROP TABLE IF EXISTS focus_areas;
                     DROP TABLE IF EXISTS settings;
                     DROP TABLE IF EXISTS user_profile;
                     DROP TABLE IF EXISTS app_state;
-                    DROP TABLE IF EXISTS planned_blocks;
                     DROP TABLE IF EXISTS settings_legacy_temp;
                     DROP TABLE IF EXISTS app_state_legacy_temp;
                     DROP TABLE IF EXISTS user_profile_legacy_temp;
-                `;
-                db.exec(dropSql);
-                console.log("Dropped tables. Recreating schema and triggers.");
-
-                const createSql = `
-                    CREATE TABLE IF NOT EXISTS focus_areas (
-                        id TEXT PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        color TEXT DEFAULT '#58a6ff',
-                        category TEXT DEFAULT 'Uncategorized',
-                        is_active INTEGER DEFAULT 1,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted INTEGER DEFAULT 0,
-                        deleted_at DATETIME
-                    );
-
-                    CREATE TABLE IF NOT EXISTS aims (
-                        id TEXT PRIMARY KEY,
-                        focus_area_id TEXT NOT NULL,
-                        target_minutes INTEGER NOT NULL,
-                        target_date DATE,
-                        is_completed INTEGER DEFAULT 0,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted INTEGER DEFAULT 0,
-                        deleted_at DATETIME,
-                        FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS sessions (
-                        id TEXT PRIMARY KEY,
-                        focus_area_id TEXT,
-                        task_name TEXT,
-                        task_color TEXT,
-                        duration_seconds INTEGER NOT NULL,
-                        xp_earned INTEGER DEFAULT 0,
-                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        note TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted INTEGER DEFAULT 0,
-                        deleted_at DATETIME,
-                        FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS settings (
-                        id TEXT PRIMARY KEY,
-                        key TEXT UNIQUE NOT NULL,
-                        value TEXT NOT NULL,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted INTEGER DEFAULT 0,
-                        deleted_at DATETIME
-                    );
-
-                    CREATE TABLE IF NOT EXISTS user_profile (
-                        id TEXT PRIMARY KEY,
-                        key TEXT UNIQUE NOT NULL,
-                        value TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted INTEGER DEFAULT 0,
-                        deleted_at DATETIME
-                    );
-
-                    CREATE TABLE IF NOT EXISTS app_state (
-                        id TEXT PRIMARY KEY,
-                        key TEXT UNIQUE NOT NULL,
-                        value TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        is_deleted INTEGER DEFAULT 0,
-                        deleted_at DATETIME
-                    );
-
-                    CREATE TABLE IF NOT EXISTS planned_blocks (
-                        id TEXT PRIMARY KEY,
-                        focus_area_id TEXT NOT NULL,
-                        planned_date TEXT NOT NULL,
-                        start_minutes INTEGER NOT NULL,
-                        duration_minutes INTEGER NOT NULL,
-                        notes TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (focus_area_id) REFERENCES focus_areas(id) ON DELETE CASCADE
-                    );
-
-                    CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp);
-                    CREATE INDEX IF NOT EXISTS idx_sessions_area ON sessions(focus_area_id);
-                    CREATE INDEX IF NOT EXISTS idx_aims_date ON aims(target_date);
-                    CREATE INDEX IF NOT EXISTS idx_planned_blocks_date ON planned_blocks(planned_date);
-                `;
-                db.exec(createSql);
-                console.log("Schema created.");
-
-                const triggerSql = `
-                    CREATE TRIGGER IF NOT EXISTS trg_focus_areas_updated_at 
-                    AFTER UPDATE ON focus_areas
-                    FOR EACH ROW
-                    BEGIN
-                        UPDATE focus_areas SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_aims_updated_at 
-                    AFTER UPDATE ON aims
-                    FOR EACH ROW
-                    BEGIN
-                        UPDATE aims SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_sessions_updated_at 
-                    AFTER UPDATE ON sessions
-                    FOR EACH ROW
-                    BEGIN
-                        UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_settings_updated_at 
-                    AFTER UPDATE ON settings
-                    FOR EACH ROW
-                    BEGIN
-                        UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_user_profile_updated_at 
-                    AFTER UPDATE ON user_profile
-                    FOR EACH ROW
-                    BEGIN
-                        UPDATE user_profile SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_app_state_updated_at 
-                    AFTER UPDATE ON app_state
-                    FOR EACH ROW
-                    BEGIN
-                        UPDATE app_state SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
-                    END;
-                `;
-                db.exec(triggerSql);
-                console.log("Triggers created.");
-
-                result = { message: "Database reset and schema re-initialized successfully." };
+                    PRAGMA user_version = 0;
+                `);
+                migrate(db);
+                result = { message: "Database reset successfully." };
                 break;
             default:
                 // Handle other actions or throw an error if the action is unknown

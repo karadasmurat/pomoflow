@@ -82,6 +82,7 @@ export let state = {
     tasks: [],
     sessions: [],
     aims: [],
+    paths: [],
     settings: {
         workDuration: 25,
         shortBreakDuration: 5,

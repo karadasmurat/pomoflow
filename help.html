@@ -18,6 +18,10 @@
       --nav-w: 220px;
     }
 
+    html {
+      overflow: visible;
+    }
+
     /* ── NAV CHROME (help-specific) ── */
     .topnav-left {
       display: flex;
@@ -68,8 +72,10 @@
     /* ── SIDEBAR ── */
     .sidebar {
       position: sticky;
-      top: 72px;
+      top: calc(var(--nav-h) + 20px);
       padding: 40px 0 80px;
+      max-height: calc(100vh - var(--nav-h) - 40px);
+      overflow-y: auto;
     }
 
     .sidebar-label {
