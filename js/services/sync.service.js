@@ -1,14 +1,15 @@
 /**
- * PomoFlow Sync Service — Phase 1 (Outbox foundation)
+ * PomoFlow Sync Service — Phase 2 (Auth + cloud push)
  *
- * Reads pending sync_log entries and will push them to Supabase in Phase 2.
- * Currently a no-op on the network side: it reads the outbox and logs pending
- * operations so the infrastructure is exercised and ready for Phase 2 wiring.
+ * Reads pending sync_log entries and pushes them to the sync-push Edge Function.
+ * Only runs when the user is signed in. Marks entries synced after a successful push.
  */
 
 import { dbManager } from '../db.js';
+import { supabase } from './supabase.js';
 
 const POLL_INTERVAL_MS = 30_000;
+const EDGE_FN = 'sync-push';
 
 class SyncService {
     constructor() {
@@ -16,25 +17,29 @@ class SyncService {
         this._flushing = false;
     }
 
-    /**
-     * Read all pending sync_log rows and attempt to push them.
-     * Phase 1: logs only. Phase 2: calls Supabase Edge Function.
-     */
     async flush() {
         if (this._flushing) return;
         this._flushing = true;
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
             const pending = await dbManager.getPendingSyncLog();
             if (!pending || pending.length === 0) return;
 
-            // ── Phase 2: replace this block with Supabase push ───────────────
-            // const { error } = await supabase.functions.invoke('sync-push', {
-            //     body: { device_id: dbManager.deviceId, operations: pending }
-            // });
-            // if (error) throw error;
-            // ─────────────────────────────────────────────────────────────────
+            console.log(`[Sync] pushing ${pending.length} operation(s)…`);
 
-            console.log(`[Sync] ${pending.length} pending operation(s) queued — cloud sync not yet enabled`);
+            const { error } = await supabase.functions.invoke(EDGE_FN, {
+                body: {
+                    device_id: dbManager.deviceId,
+                    operations: pending,
+                },
+            });
+
+            if (error) throw error;
+
+            await dbManager.markSynced(pending.map(op => op.id));
+            console.log(`[Sync] ${pending.length} operation(s) synced ✓`);
         } catch (err) {
             console.warn('[Sync] flush error:', err);
         } finally {
@@ -44,7 +49,7 @@ class SyncService {
 
     startPolling(intervalMs = POLL_INTERVAL_MS) {
         this.stopPolling();
-        this.flush(); // immediate check on start
+        this.flush();
         this._timer = setInterval(() => this.flush(), intervalMs);
     }
 

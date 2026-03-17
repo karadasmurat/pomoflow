@@ -16,6 +16,7 @@ import { TimerView } from './ui/timer.view.js';
 import { DashboardView } from './ui/dashboard.view.js';
 import { PlannerView } from './ui/planner.view.js';
 import { syncService } from './services/sync.service.js';
+import { supabase } from './services/supabase.js';
 
 let currentFilter = 'today';
 let showAllHistory = false;
@@ -25,6 +26,25 @@ let editingTaskId = null;
 // --- 1. INITIALIZATION ---
 
 async function init() {
+    // ── Auth gate ────────────────────────────────────────────────────────────
+    // Handle magic link token in URL hash before anything else
+    await supabase.auth.exchangeCodeForSession(window.location.search).catch(() => {});
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        showAuthOverlay();
+        return;
+    }
+
+    supabase.auth.onAuthStateChange((event, newSession) => {
+        if (event === 'SIGNED_IN' && newSession) {
+            hideAuthOverlay();
+            if (!dbManager.initialized) init();
+        }
+        if (event === 'SIGNED_OUT') showAuthOverlay();
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     try { await dbManager.init(); } catch (e) { console.error('DB Init failed', e); }
 
     if (dbManager.initialized) {
@@ -1210,5 +1230,65 @@ function refreshUI() {
     FocusView.updateLevelUI();
     updateProfileUI();
 }
+
+// ── Auth UI ───────────────────────────────────────────────────────────────────
+
+function showAuthOverlay() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.style.display = 'flex';
+
+    // Wire up auth form (idempotent — safe to call multiple times)
+    const btn = document.getElementById('authSubmitBtn');
+    const input = document.getElementById('authEmail');
+    const errorEl = document.getElementById('authError');
+
+    async function sendMagicLink() {
+        const email = input?.value.trim();
+        if (!email) return;
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+        errorEl.style.display = 'none';
+
+        const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        });
+
+        if (error) {
+            errorEl.textContent = error.message;
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Send magic link';
+        } else {
+            document.getElementById('authForm').style.display = 'none';
+            document.getElementById('authConfirm').style.display = 'block';
+            document.getElementById('authConfirmEmail').textContent = email;
+        }
+    }
+
+    btn?.addEventListener('click', sendMagicLink);
+    input?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMagicLink(); });
+    document.getElementById('authResendBtn')?.addEventListener('click', () => {
+        document.getElementById('authForm').style.display = 'block';
+        document.getElementById('authConfirm').style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'Send magic link';
+    });
+}
+
+function hideAuthOverlay() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Handle SIGNED_IN on first page load (e.g. user clicked magic link)
+supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+        hideAuthOverlay();
+        // If init() returned early due to no session, run it now
+        if (!dbManager.initialized) init();
+    }
+    if (event === 'SIGNED_OUT') showAuthOverlay();
+});
 
 (async () => { await init(); })();

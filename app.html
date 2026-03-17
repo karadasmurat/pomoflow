@@ -21,6 +21,84 @@
 </head>
 
 <body>
+
+  <!-- AUTH OVERLAY — shown when no session, hides app-shell -->
+  <div id="authOverlay" class="auth-overlay" style="display:none">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <i class="ph-fill ph-paw-print"></i>
+      </div>
+      <div class="auth-title">PomoFlow</div>
+      <div class="auth-subtitle">Sign in to sync your data across devices</div>
+
+      <div id="authForm">
+        <input id="authEmail" class="auth-input" type="email" placeholder="your@email.com" autocomplete="email" />
+        <button id="authSubmitBtn" class="auth-btn">Send magic link</button>
+        <div id="authError" class="auth-error" style="display:none"></div>
+      </div>
+
+      <div id="authConfirm" style="display:none">
+        <div class="auth-confirm-icon">✉️</div>
+        <div class="auth-confirm-text">Check your inbox — we sent a magic link to <strong id="authConfirmEmail"></strong></div>
+        <button class="auth-btn-secondary" id="authResendBtn">Resend</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: var(--bg-base, #0d1117);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card {
+      width: 100%; max-width: 360px; padding: 40px 32px;
+      background: var(--bg-card, #161b22);
+      border: 1px solid var(--border, rgba(255,255,255,0.08));
+      border-radius: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .auth-logo {
+      font-size: 36px; color: var(--accent, #3fb950); margin-bottom: 4px;
+    }
+    .auth-title {
+      font-size: 20px; font-weight: 600; color: var(--text-primary, #e6edf3);
+    }
+    .auth-subtitle {
+      font-size: 13px; color: var(--text-muted, #8b949e);
+      text-align: center; margin-bottom: 16px;
+    }
+    .auth-input {
+      width: 100%; box-sizing: border-box;
+      padding: 10px 14px; border-radius: 8px;
+      border: 1px solid var(--border, rgba(255,255,255,0.12));
+      background: var(--bg-input, rgba(255,255,255,0.05));
+      color: var(--text-primary, #e6edf3); font-size: 14px;
+      outline: none; margin-bottom: 10px;
+    }
+    .auth-input:focus { border-color: var(--accent, #3fb950); }
+    .auth-btn {
+      width: 100%; padding: 11px; border-radius: 8px; border: none; cursor: pointer;
+      background: var(--accent, #3fb950); color: #fff;
+      font-size: 14px; font-weight: 600;
+    }
+    .auth-btn:hover { opacity: 0.9; }
+    .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-btn-secondary {
+      margin-top: 16px; background: none; border: 1px solid var(--border, rgba(255,255,255,0.12));
+      color: var(--text-muted, #8b949e); padding: 8px 20px; border-radius: 8px;
+      cursor: pointer; font-size: 13px;
+    }
+    .auth-error {
+      margin-top: 8px; font-size: 13px; color: #f85149; text-align: center;
+    }
+    .auth-confirm-icon { font-size: 40px; margin: 8px 0; }
+    .auth-confirm-text {
+      font-size: 14px; color: var(--text-muted, #8b949e);
+      text-align: center; line-height: 1.5;
+    }
+  </style>
+
   <div class="app-shell">
     <nav class="sidenav" id="sidenav">
       <div class="sidenav-header">
