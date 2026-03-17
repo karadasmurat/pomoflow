@@ -15,10 +15,121 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/planner.css">
+  <link rel="stylesheet" href="css/sidenav.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="coi-serviceworker.js"></script>
 </head>
 
 <body>
+  <div class="app-shell">
+    <nav class="sidenav" id="sidenav">
+      <div class="sidenav-header">
+        <div class="sidenav-logo-wrapper">
+          <div class="sidenav-logo-icon">
+            <i class="ph-fill ph-paw-print"></i>
+          </div>
+          <span class="sidenav-logo-text">Untitled UI</span>
+        </div>
+        <button class="sidenav-toggle-btn" id="sidenav-toggle-btn">
+          <i class="ph ph-caret-left"></i>
+        </button>
+      </div>
+
+      <div class="sidenav-search-wrapper">
+        <i class="ph ph-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+
+      <div class="sidenav-menu">
+        <ul class="sidenav-menu-list">
+          <li class="sidenav-menu-item active">
+            <a href="#">
+              <i class="ph ph-house"></i>
+              <span class="sidenav-text">Dashboard</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-chart-bar"></i>
+              <span class="sidenav-text">Orders</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-users"></i>
+              <span class="sidenav-text">Customers</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item has-submenu">
+            <a href="#" class="sidenav-submenu-toggle">
+              <div class="sidenav-menu-link-content">
+                <i class="ph ph-bank"></i>
+                <span class="sidenav-text">Bank accounts</span>
+              </div>
+              <i class="ph ph-caret-down sidenav-submenu-icon"></i>
+            </a>
+            <ul class="sidenav-submenu">
+              <li><a href="#"><span class="sidenav-text">Local currency</span></a></li>
+              <li><a href="#"><span class="sidenav-text">Foreign currency</span></a></li>
+              <li><a href="#"><span class="sidenav-text">Beneficiaries</span></a></li>
+              <li><a href="#"><span class="sidenav-text">Transactions</span></a></li>
+            </ul>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-wallet"></i>
+              <span class="sidenav-text">Wallet</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-arrows-left-right"></i>
+              <span class="sidenav-text">Transfers</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-credit-card"></i>
+              <span class="sidenav-text">Cards</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-user"></i>
+              <span class="sidenav-text">Account</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidenav-footer">
+        <ul class="sidenav-menu-list">
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-life-buoy"></i>
+              <span class="sidenav-text">Support</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-gear"></i>
+              <span class="sidenav-text">Settings</span>
+            </a>
+          </li>
+        </ul>
+        <div class="sidenav-user-profile">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Avatar" class="sidenav-avatar">
+          <div class="sidenav-user-info">
+            <span class="sidenav-user-name">Caitlyn King</span>
+            <span class="sidenav-user-email">caitlyn@untitledui.com</span>
+          </div>
+          <button class="sidenav-logout-btn">
+            <i class="ph ph-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
   <div class="app">
     <!-- SVG Filters for Liquid Animations -->
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display: none;">
@@ -3352,10 +3463,39 @@
       </div>
     </div>
   </div>
+  </div><!-- /.app-shell -->
 
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidenav = document.getElementById('sidenav');
+      const toggleBtn = document.getElementById('sidenav-toggle-btn');
+      const submenuToggles = document.querySelectorAll('.sidenav-submenu-toggle');
+      const searchInput = document.querySelector('.sidenav-search-wrapper input');
 
+      toggleBtn.addEventListener('click', () => {
+        sidenav.classList.toggle('collapsed');
+      });
 
+      submenuToggles.forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (sidenav.classList.contains('collapsed')) {
+            sidenav.classList.remove('collapsed');
+            setTimeout(() => {
+              toggle.closest('.sidenav-menu-item').classList.toggle('open');
+            }, 300);
+          } else {
+            toggle.closest('.sidenav-menu-item').classList.toggle('open');
+          }
+        });
+      });
 
-
+      searchInput.addEventListener('focus', () => {
+        if (sidenav.classList.contains('collapsed')) {
+          sidenav.classList.remove('collapsed');
+        }
+      });
+    });
+  </script>
 </body>
 </html>
