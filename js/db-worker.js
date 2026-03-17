@@ -20,8 +20,10 @@ let sqlite3 = null;
 //   1 → 2  Paths feature (paths table, path_id + walked_session_id on planned_blocks)
 //   2 → 3  Repair: ensure path_id + walked_session_id exist (transition detector bug)
 //   3 → 4  Outbox: sync_log table for cross-device sync
+//   4 → 5  Fix: transition detector was stamping CURRENT_SCHEMA_VERSION (4) directly,
+//           skipping sync_log creation. Re-create idempotently for affected databases.
 
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 
 function migrate(db) {
     let version = db.exec("PRAGMA user_version", { returnValue: 'resultRows' })[0][0];
@@ -50,8 +52,8 @@ function migrate(db) {
             db.exec("CREATE INDEX IF NOT EXISTS idx_paths_status ON paths(status)");
             db.exec("CREATE INDEX IF NOT EXISTS idx_planned_blocks_path ON planned_blocks(path_id)");
             db.exec("CREATE TRIGGER IF NOT EXISTS trg_paths_updated_at AFTER UPDATE ON paths FOR EACH ROW BEGIN UPDATE paths SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;");
-            db.exec(`PRAGMA user_version = ${CURRENT_SCHEMA_VERSION}`);
-            console.log(`Transition complete, stamped user_version = ${CURRENT_SCHEMA_VERSION}`);
+            db.exec("PRAGMA user_version = 3");
+            console.log('Transition complete, stamped user_version = 3');
             return;
         }
     }
@@ -209,6 +211,25 @@ function migrate(db) {
         `);
         db.exec("PRAGMA user_version = 4");
         console.log('Migration 3→4 complete');
+    }
+
+    // ── v4 → v5: ensure sync_log exists ──────────────────────────────────────
+    // The transition detector previously stamped user_version = 4 directly,
+    // bypassing v3→v4 and leaving sync_log missing. Re-create idempotently.
+    if (version < 5) {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS sync_log (
+                id          TEXT PRIMARY KEY,
+                operation   TEXT NOT NULL,
+                payload     TEXT NOT NULL,
+                changed_at  TEXT NOT NULL,
+                device_id   TEXT NOT NULL,
+                synced      INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_sync_log_pending ON sync_log(synced);
+        `);
+        db.exec("PRAGMA user_version = 5");
+        console.log('Migration 4→5 complete');
     }
 }
 
