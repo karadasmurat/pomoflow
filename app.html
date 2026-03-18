@@ -3684,15 +3684,23 @@
       const submenuToggles = document.querySelectorAll('.sidenav-submenu-toggle');
       const searchInput = document.querySelector('.sidenav-search-wrapper input');
 
+      const isMobile = () => window.innerWidth <= 768;
+
       toggleBtn.addEventListener('click', () => {
-        sidenav.classList.toggle('collapsed');
+        if (isMobile()) {
+          sidenav.classList.toggle('expanded-mobile');
+        } else {
+          sidenav.classList.toggle('collapsed');
+        }
       });
 
       submenuToggles.forEach(toggle => {
         toggle.addEventListener('click', (e) => {
           e.preventDefault();
-          if (sidenav.classList.contains('collapsed')) {
-            sidenav.classList.remove('collapsed');
+          const collapsed = isMobile() ? !sidenav.classList.contains('expanded-mobile') : sidenav.classList.contains('collapsed');
+          if (collapsed) {
+            if (isMobile()) sidenav.classList.add('expanded-mobile');
+            else sidenav.classList.remove('collapsed');
             setTimeout(() => {
               toggle.closest('.sidenav-menu-item').classList.toggle('open');
             }, 300);
@@ -3703,8 +3711,13 @@
       });
 
       searchInput.addEventListener('focus', () => {
-        if (sidenav.classList.contains('collapsed')) {
-          sidenav.classList.remove('collapsed');
+        if (isMobile()) sidenav.classList.add('expanded-mobile');
+        else sidenav.classList.remove('collapsed');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (isMobile() && sidenav.classList.contains('expanded-mobile') && !sidenav.contains(e.target)) {
+          sidenav.classList.remove('expanded-mobile');
         }
       });
     });
