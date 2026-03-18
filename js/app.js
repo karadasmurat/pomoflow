@@ -82,12 +82,24 @@ async function init() {
         }
     }
 
+    if (state.tasks.length === 0 && dbManager.initialized) {
+        // Try to pull from cloud before falling back to demo data
+        const seeded = await syncService.seedFromCloud();
+        if (seeded) {
+            const cloudState = await dbManager.getFullState();
+            if (cloudState?.tasks?.length > 0) state.tasks = cloudState.tasks;
+            if (cloudState?.sessions?.length > 0) state.sessions = cloudState.sessions;
+            if (cloudState?.aims?.length > 0) state.aims = cloudState.aims;
+            if (cloudState?.paths?.length > 0) state.paths = cloudState.paths;
+        }
+    }
+
     if (state.tasks.length === 0) {
         const now = new Date().toISOString();
         state.tasks = DEFAULT_FOCUS_AREAS.map((t, index) => ({
             id: uuidv7(),
             name: t.name, category: t.category, color: t.color,
-            completed: false, 
+            completed: false,
             createdAt: now, created_at: now, updated_at: now,
             totalTime: 0
         }));

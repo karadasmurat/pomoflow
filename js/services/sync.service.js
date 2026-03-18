@@ -17,6 +17,71 @@ class SyncService {
         this._flushing = false;
     }
 
+    /**
+     * Pull all cloud data into the local DB.
+     * Safe to call on any device — all inserts are upserts.
+     * Returns true if any data was seeded.
+     */
+    async seedFromCloud() {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return false;
+
+            console.log('[Sync] seeding from cloud…');
+
+            const [
+                { data: focusAreas },
+                { data: paths },
+                { data: plannedBlocks },
+                { data: sessions },
+                { data: aims },
+            ] = await Promise.all([
+                supabase.from('focus_areas').select('*').eq('is_deleted', false),
+                supabase.from('paths').select('*').neq('status', 'deleted'),
+                supabase.from('planned_blocks').select('*').eq('is_deleted', false),
+                supabase.from('sessions').select('*').eq('is_deleted', false).order('timestamp', { ascending: false }).limit(500),
+                supabase.from('aims').select('*').eq('is_deleted', false),
+            ]);
+
+            // Insert in dependency order: paths before planned_blocks
+            for (const fa of focusAreas || []) {
+                await dbManager.insertFocusArea({
+                    id: fa.id, name: fa.name, color: fa.color,
+                    category: fa.category,
+                    completed: fa.is_active === false,
+                    created_at: fa.created_at, updated_at: fa.updated_at,
+                });
+            }
+            for (const p of paths || []) {
+                await dbManager.insertPath(p);
+            }
+            for (const b of plannedBlocks || []) {
+                await dbManager.insertPlannedBlock({
+                    id: b.id,
+                    focusAreaId: b.focus_area_id,
+                    plannedDate: b.planned_date,
+                    startMinutes: b.start_minutes,
+                    durationMinutes: b.duration_minutes,
+                    notes: b.notes,
+                    pathId: b.path_id,
+                });
+            }
+            for (const s of sessions || []) {
+                await dbManager.insertSession(s);
+            }
+            for (const a of aims || []) {
+                await dbManager.insertAim(a);
+            }
+
+            const total = (focusAreas?.length || 0) + (paths?.length || 0) + (plannedBlocks?.length || 0) + (sessions?.length || 0) + (aims?.length || 0);
+            console.log(`[Sync] seeded ${total} records from cloud ✓`);
+            return (focusAreas?.length || 0) > 0;
+        } catch (err) {
+            console.warn('[Sync] seedFromCloud error:', err);
+            return false;
+        }
+    }
+
     async flush() {
         if (this._flushing) return;
         this._flushing = true;
