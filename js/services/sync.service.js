@@ -18,16 +18,24 @@ class SyncService {
     }
 
     /**
-     * Pull all cloud data into the local DB.
-     * Safe to call on any device — all inserts are upserts.
-     * Returns true if any data was seeded.
+     * Pull records from Supabase into local DB.
+     * Uses last_pulled_at for delta sync — only fetches records changed since last pull.
+     * On first call (no timestamp), fetches everything.
+     * Safe to call on every init — all writes are upserts.
+     * Returns number of focus areas pulled (>0 means data exists in cloud).
      */
-    async seedFromCloud() {
+    async pullFromCloud() {
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return false;
+            if (!session) return 0;
 
-            console.log('[Sync] seeding from cloud…');
+            const LAST_PULLED_KEY = 'pf_last_pulled_at';
+            const since = localStorage.getItem(LAST_PULLED_KEY);
+            const pullStart = new Date().toISOString();
+
+            console.log(`[Sync] pulling from cloud${since ? ` (since ${since})` : ' (full)'}…`);
+
+            const filter = (q) => since ? q.gt('updated_at', since) : q;
 
             const [
                 { data: focusAreas },
@@ -36,14 +44,14 @@ class SyncService {
                 { data: sessions },
                 { data: aims },
             ] = await Promise.all([
-                supabase.from('focus_areas').select('*').eq('is_deleted', false),
-                supabase.from('paths').select('*').neq('status', 'deleted'),
-                supabase.from('planned_blocks').select('*').eq('is_deleted', false),
-                supabase.from('sessions').select('*').eq('is_deleted', false).order('timestamp', { ascending: false }).limit(500),
-                supabase.from('aims').select('*').eq('is_deleted', false),
+                filter(supabase.from('focus_areas').select('*')),
+                filter(supabase.from('paths').select('*')),
+                filter(supabase.from('planned_blocks').select('*')),
+                filter(supabase.from('sessions').select('*').order('timestamp', { ascending: false }).limit(500)),
+                filter(supabase.from('aims').select('*')),
             ]);
 
-            // Insert in dependency order: paths before planned_blocks
+            // Upsert in dependency order: paths before planned_blocks
             for (const fa of focusAreas || []) {
                 await dbManager.insertFocusArea({
                     id: fa.id, name: fa.name, color: fa.color,
@@ -67,18 +75,38 @@ class SyncService {
                 });
             }
             for (const s of sessions || []) {
-                await dbManager.insertSession(s);
+                await dbManager.insertSession({
+                    id: s.id,
+                    taskId: s.focus_area_id,
+                    taskName: s.task_name,
+                    taskColor: s.task_color,
+                    duration: s.duration_seconds,
+                    xp: s.xp_earned,
+                    timestamp: s.timestamp,
+                    created_at: s.created_at,
+                    updated_at: s.updated_at,
+                });
             }
             for (const a of aims || []) {
-                await dbManager.insertAim(a);
+                await dbManager.insertAim({
+                    id: a.id,
+                    focusAreaId: a.focus_area_id,
+                    targetMinutes: a.target_minutes,
+                    deadline: a.target_date,
+                    completed: a.is_completed,
+                    created_at: a.created_at,
+                    updated_at: a.updated_at,
+                });
             }
 
             const total = (focusAreas?.length || 0) + (paths?.length || 0) + (plannedBlocks?.length || 0) + (sessions?.length || 0) + (aims?.length || 0);
-            console.log(`[Sync] seeded ${total} records from cloud ✓`);
-            return (focusAreas?.length || 0) > 0;
+            if (total > 0) console.log(`[Sync] pulled ${total} record(s) from cloud ✓`);
+
+            localStorage.setItem(LAST_PULLED_KEY, pullStart);
+            return focusAreas?.length || 0;
         } catch (err) {
-            console.warn('[Sync] seedFromCloud error:', err);
-            return false;
+            console.warn('[Sync] pullFromCloud error:', err);
+            return 0;
         }
     }
 

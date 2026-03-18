@@ -51,6 +51,8 @@ async function init() {
     try { await dbManager.init(); } catch (e) { console.error('DB Init failed', e); }
 
     if (dbManager.initialized) {
+        await syncService.pullFromCloud();
+
         const fullState = await dbManager.getFullState();
         if (fullState) {
             if (fullState.tasks?.length > 0) state.tasks = fullState.tasks;
@@ -79,18 +81,6 @@ async function init() {
                     state.selectedFocusAreaIds = ui.selectedFocusAreaIds || [];
                 }
             }
-        }
-    }
-
-    if (state.tasks.length === 0 && dbManager.initialized) {
-        // Try to pull from cloud before falling back to demo data
-        const seeded = await syncService.seedFromCloud();
-        if (seeded) {
-            const cloudState = await dbManager.getFullState();
-            if (cloudState?.tasks?.length > 0) state.tasks = cloudState.tasks;
-            if (cloudState?.sessions?.length > 0) state.sessions = cloudState.sessions;
-            if (cloudState?.aims?.length > 0) state.aims = cloudState.aims;
-            if (cloudState?.paths?.length > 0) state.paths = cloudState.paths;
         }
     }
 
