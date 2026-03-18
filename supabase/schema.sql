@@ -77,11 +77,17 @@ ALTER TABLE aims           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE paths          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planned_blocks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "users see own data" ON focus_areas    USING (user_id = auth.uid());
-CREATE POLICY "users see own data" ON sessions       USING (user_id = auth.uid());
-CREATE POLICY "users see own data" ON aims           USING (user_id = auth.uid());
-CREATE POLICY "users see own data" ON paths          USING (user_id = auth.uid());
-CREATE POLICY "users see own data" ON planned_blocks USING (user_id = auth.uid());
+-- Full CRUD — users can only read/write their own rows
+CREATE POLICY "users manage own data" ON focus_areas
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users manage own data" ON sessions
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users manage own data" ON aims
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users manage own data" ON paths
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users manage own data" ON planned_blocks
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- ── INDEXES ───────────────────────────────────────────────────────────────────
 
