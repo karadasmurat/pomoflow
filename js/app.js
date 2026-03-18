@@ -102,6 +102,15 @@ async function init() {
 
     if (dbManager.initialized) syncService.startPolling();
 
+    // Show auth user email in sidenav
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        const email = session?.user?.email;
+        if (email) {
+            const el = document.getElementById('sidenavUserEmail');
+            if (el) el.textContent = email;
+        }
+    });
+
     setupEventListeners();
     FocusView.populateCategorySelects();
     PlannerView.init();
@@ -1009,6 +1018,10 @@ function setupEventListeners() {
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
+        'sidenav-logout-btn': async () => {
+            await supabase.auth.signOut();
+            showAuthOverlay();
+        },
         'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
         'headerAvatar': openProfile, 'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
