@@ -358,12 +358,20 @@
   border: none;
   color: var(--sidenav-text-secondary);
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
+  border-radius: 6px;
   opacity: 0.4;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
 }
 
 .sidenav-user-profile:hover .sidenav-logout-btn {
+  opacity: 1;
+}
+
+.sidenav-logout-btn:hover {
+  background: rgba(248, 81, 73, 0.12);
+  color: #f85149;
   opacity: 1;
 }
 
