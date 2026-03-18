@@ -1018,7 +1018,8 @@ function setupEventListeners() {
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
-        'sidenav-logout-btn': async () => {
+        'sidenav-logout-btn': async (e) => {
+            e.stopPropagation();
             await supabase.auth.signOut();
             showAuthOverlay();
         },
