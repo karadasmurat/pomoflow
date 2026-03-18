@@ -11,15 +11,16 @@ class DatabaseManager {
         this.requestIdCounter = 0;
         this.initialized = false;
         this.disabled = false;
+        this.deviceId = this._getOrCreateDeviceId();
 
         try {
             this.worker = new Worker(new URL('./db-worker.js', import.meta.url));
-            
+
             // Create a promise that resolves when the worker is initialized
             this.initPromise = new Promise((resolve) => {
                 this.worker.onmessage = (e) => {
                     const { action, success, result, error, requestId } = e.data;
-                    
+
                     if (action === 'init_result') {
                         this.initialized = success;
                         resolve(success);
@@ -35,10 +36,10 @@ class DatabaseManager {
             });
 
             // Trigger actual initialization - NEVER purge automatically anymore
-            this.worker.postMessage({ 
-                action: 'init', 
-                payload: { purge: false },
-                requestId: 'initial-init' 
+            this.worker.postMessage({
+                action: 'init',
+                payload: { purge: false, deviceId: this.deviceId },
+                requestId: 'initial-init'
             });
 
         } catch (e) {
@@ -46,6 +47,16 @@ class DatabaseManager {
             this.disabled = true;
             this.initPromise = Promise.resolve(false);
         }
+    }
+
+    _getOrCreateDeviceId() {
+        const key = 'pf_device_id';
+        let id = localStorage.getItem(key);
+        if (!id) {
+            id = crypto.randomUUID();
+            localStorage.setItem(key, id);
+        }
+        return id;
     }
 
     async init() {
@@ -104,10 +115,14 @@ class DatabaseManager {
             plannedDate: block.plannedDate,
             startMinutes: block.startMinutes,
             durationMinutes: block.durationMinutes,
-            notes: block.notes || null
+            notes: block.notes || null,
+            pathId: block.pathId || null
         });
     }
     async deletePlannedBlock(id) { return this._send('delete_planned_block', { id }); }
+    async walkPlannedBlock(blockId, sessionId) {
+        return this._send('walk_planned_block', { blockId, sessionId });
+    }
     async getPlannedBlocksForWeek(startDate, endDate) {
         const rows = await this._send('get_planned_blocks_for_week', { startDate, endDate });
         return rows || [];
@@ -117,7 +132,58 @@ class DatabaseManager {
         return rows || [];
     }
 
-    async setSetting(key, value) { 
+    async insertPath(path) {
+        return this._send('insert_path', {
+            id: path.id || uuidv7(),
+            name: path.name,
+            description: path.description || null,
+            color: path.color || '#3D8F5A',
+            deadline: path.deadline || null,
+            status: path.status || 'active'
+        });
+    }
+    async archivePath(id) { return this._send('archive_path', { id }); }
+    async deletePath(id) { return this._send('delete_path', { id }); }
+    async getAllPaths() {
+        const rows = await this._send('get_all_paths');
+        if (!rows) return [];
+        return rows.map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            color: p.color || '#3D8F5A',
+            deadline: p.deadline,
+            status: p.status || 'active',
+            totalPlanned: p.total_planned || 0,
+            totalWalked: p.total_walked || 0,
+            createdAt: p.created_at,
+            updatedAt: p.updated_at
+        }));
+    }
+    async getUnwalkedBlockForSession(focusAreaId, date) {
+        const rows = await this._send('get_unwalked_block_for_session', { focusAreaId, date });
+        if (!rows || rows.length === 0) return null;
+        const r = rows[0];
+        return {
+            id: r.id,
+            pathId: r.path_id,
+            pathName: r.path_name,
+            pathColor: r.path_color,
+            totalPlanned: r.total_planned || 0,
+            totalWalked: r.total_walked || 0
+        };
+    }
+
+    async getPendingSyncLog() {
+        const rows = await this._send('get_pending_sync_log');
+        return rows || [];
+    }
+    async markSynced(ids) {
+        if (!ids || ids.length === 0) return;
+        return this._send('mark_synced', { ids });
+    }
+
+    async setSetting(key, value) {
         return this._send('set_setting', { 
             id: uuidv7(), // New record for this key (ON CONFLICT will update)
             key, 
@@ -205,19 +271,21 @@ class DatabaseManager {
     async getFullState() {
         if (this.disabled) return null;
         
-        const [tasks, sessions, aims, settings, profile, appState] = await Promise.all([
+        const [tasks, sessions, aims, settings, profile, appState, paths] = await Promise.all([
             this.getAllFocusAreas(),
             this.getAllSessions(),
             this.getAllAims(),
             this.getAllSettings(),
             this.getUserProfile(),
-            this.getAppState()
+            this.getAppState(),
+            this.getAllPaths()
         ]);
 
         return {
             tasks: tasks || [],
             sessions: sessions || [],
             aims: aims || [],
+            paths: paths || [],
             settings: Object.keys(settings).length > 0 ? settings : null,
             profile: Object.keys(profile).length > 0 ? profile : null,
             appState: Object.keys(appState).length > 0 ? appState : null
@@ -230,11 +298,6 @@ class DatabaseManager {
         // Save Settings
         for (const [key, value] of Object.entries(state.settings)) {
             await this.setSetting(key, value);
-        }
-
-        // Save Tasks (Small collection, usually < 50 items)
-        for (const task of state.tasks) {
-            await this.insertFocusArea(task);
         }
 
         // Save Profile

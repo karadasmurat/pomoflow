@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8">
@@ -15,10 +15,222 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/planner.css">
+  <link rel="stylesheet" href="css/sidenav.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="coi-serviceworker.js"></script>
 </head>
 
 <body>
+
+  <!-- AUTH OVERLAY — shown when no session, hides app-shell -->
+  <div id="authOverlay" class="auth-overlay" style="display:none">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <i class="ph-fill ph-paw-print"></i>
+      </div>
+      <div class="auth-title">PomoFlow</div>
+      <div class="auth-subtitle">Sign in to sync your data across devices</div>
+
+      <div id="authForm">
+        <button id="authGoogleBtn" class="auth-btn-google">
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <div class="auth-divider"><span>or</span></div>
+        <input id="authEmail" class="auth-input" type="email" placeholder="your@email.com" autocomplete="email" />
+        <button id="authSubmitBtn" class="auth-btn">Send magic link</button>
+        <div id="authError" class="auth-error" style="display:none"></div>
+      </div>
+
+      <div id="authConfirm" style="display:none">
+        <div class="auth-confirm-icon">✉️</div>
+        <div class="auth-confirm-text">Check your inbox — we sent a magic link to <strong id="authConfirmEmail"></strong></div>
+        <button class="auth-btn-secondary" id="authResendBtn">Resend</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: var(--bg-base, #0d1117);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card {
+      width: 100%; max-width: 360px; padding: 40px 32px;
+      background: var(--bg-card, #161b22);
+      border: 1px solid var(--border, rgba(255,255,255,0.08));
+      border-radius: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .auth-logo {
+      font-size: 36px; color: var(--accent, #3fb950); margin-bottom: 4px;
+    }
+    .auth-title {
+      font-size: 20px; font-weight: 600; color: var(--text-primary, #e6edf3);
+    }
+    .auth-subtitle {
+      font-size: 13px; color: var(--text-muted, #8b949e);
+      text-align: center; margin-bottom: 16px;
+    }
+    .auth-input {
+      width: 100%; box-sizing: border-box;
+      padding: 10px 14px; border-radius: 8px;
+      border: 1px solid var(--border, rgba(255,255,255,0.12));
+      background: var(--bg-input, rgba(255,255,255,0.05));
+      color: var(--text-primary, #e6edf3); font-size: 14px;
+      outline: none; margin-bottom: 10px;
+    }
+    .auth-input:focus { border-color: var(--accent, #3fb950); }
+    .auth-btn {
+      width: 100%; padding: 11px; border-radius: 8px; border: none; cursor: pointer;
+      background: var(--accent, #3fb950); color: #fff;
+      font-size: 14px; font-weight: 600;
+    }
+    .auth-btn:hover { opacity: 0.9; }
+    .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-btn-secondary {
+      margin-top: 16px; background: none; border: 1px solid var(--border, rgba(255,255,255,0.12));
+      color: var(--text-muted, #8b949e); padding: 8px 20px; border-radius: 8px;
+      cursor: pointer; font-size: 13px;
+    }
+    .auth-btn-google {
+      width: 100%; padding: 11px; border-radius: 8px; cursor: pointer;
+      background: var(--bg-input, rgba(255,255,255,0.05));
+      border: 1px solid var(--border, rgba(255,255,255,0.12));
+      color: var(--text-primary, #e6edf3);
+      font-size: 14px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 4px;
+    }
+    .auth-btn-google:hover { background: var(--bg-card-hover, rgba(255,255,255,0.08)); }
+    .auth-divider {
+      width: 100%; display: flex; align-items: center; gap: 12px;
+      margin: 8px 0; color: var(--text-muted, #8b949e); font-size: 12px;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border, rgba(255,255,255,0.08));
+    }
+    .auth-error {
+      margin-top: 8px; font-size: 13px; color: #f85149; text-align: center;
+    }
+    .auth-confirm-icon { font-size: 40px; margin: 8px 0; }
+    .auth-confirm-text {
+      font-size: 14px; color: var(--text-muted, #8b949e);
+      text-align: center; line-height: 1.5;
+    }
+  </style>
+
+  <div class="app-shell">
+    <nav class="sidenav" id="sidenav">
+      <div class="sidenav-header">
+        <div class="sidenav-logo-wrapper">
+          <div class="sidenav-logo-icon">
+            <i class="ph-fill ph-paw-print"></i>
+          </div>
+          <span class="sidenav-logo-text">Untitled UI</span>
+        </div>
+        <button class="sidenav-toggle-btn" id="sidenav-toggle-btn">
+          <i class="ph ph-caret-left"></i>
+        </button>
+      </div>
+
+      <div class="sidenav-search-wrapper">
+        <i class="ph ph-magnifying-glass"></i>
+        <input type="text" placeholder="Search">
+      </div>
+
+      <div class="sidenav-menu">
+        <ul class="sidenav-menu-list">
+          <li class="sidenav-menu-item active">
+            <a href="#" id="sidenavTimerBtn">
+              <i class="ph ph-clock-countdown"></i>
+              <span class="sidenav-text">Timer</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#" id="sidenavFocusAreasBtn">
+              <i class="ph ph-bookmarks"></i>
+              <span class="sidenav-text">Focus Areas</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#" id="sidenavFocusPlannerBtn">
+              <i class="ph ph-calendar-dots"></i>
+              <span class="sidenav-text">Focus Planner</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#" id="sidenavFocusPlanBtn">
+              <i class="ph ph-calendar-blank"></i>
+              <span class="sidenav-text">Focus Plan</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item has-submenu">
+            <a href="#" class="sidenav-submenu-toggle">
+              <div class="sidenav-menu-link-content">
+                <i class="ph ph-bank"></i>
+                <span class="sidenav-text">Bank accounts</span>
+              </div>
+              <i class="ph ph-caret-down sidenav-submenu-icon"></i>
+            </a>
+            <ul class="sidenav-submenu">
+              <li><a href="#"><span class="sidenav-text">Local currency</span></a></li>
+              <li><a href="#"><span class="sidenav-text">Foreign currency</span></a></li>
+              <li><a href="#"><span class="sidenav-text">Beneficiaries</span></a></li>
+              <li><a href="#"><span class="sidenav-text">Transactions</span></a></li>
+            </ul>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-wallet"></i>
+              <span class="sidenav-text">Wallet</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-arrows-left-right"></i>
+              <span class="sidenav-text">Transfers</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="#">
+              <i class="ph ph-credit-card"></i>
+              <span class="sidenav-text">Cards</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
+            <a href="help.html" target="_blank">
+              <i class="ph ph-question"></i>
+              <span class="sidenav-text">Help</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidenav-footer">
+        <ul class="sidenav-menu-list">
+          <li class="sidenav-menu-item">
+            <a href="#" id="sidenavSettingsBtn">
+              <i class="ph ph-gear"></i>
+              <span class="sidenav-text">Settings</span>
+            </a>
+          </li>
+        </ul>
+        <div class="sidenav-user-profile" id="sidenav-user-profile">
+          <div class="sidenav-avatar" id="sidenavAvatar">🦉</div>
+          <div class="sidenav-user-info">
+            <span class="sidenav-user-name" id="sidenavUserName">Caitlyn King</span>
+            <span class="sidenav-user-email" id="sidenavUserEmail"></span>
+          </div>
+          <button class="sidenav-logout-btn" id="sidenav-logout-btn" title="Sign out">
+            <i class="ph ph-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
   <div class="app">
     <!-- SVG Filters for Liquid Animations -->
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display: none;">
@@ -270,6 +482,13 @@
                 <div class="fa-title" id="faTaskPanelTitle">Tasks</div>
                 <div class="fa-subtitle" id="faTaskPanelSub">Select a task</div>
               </div>
+              <button class="fa-back-btn" id="toggleTaskCreate" aria-label="New focus area">
+                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                  <path
+                    d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z">
+                  </path>
+                </svg>
+              </button>
               <button class="fa-back-btn" id="toggleTaskPanelManagement">
                 <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
                   <path
@@ -1131,7 +1350,7 @@
         color: var(--ink);
         -webkit-font-smoothing: antialiased;
         height: 100vh;
-        overflow: hidden;
+        overflow: hidden !important;
         display: flex;
         flex-direction: column;
       }
@@ -1285,9 +1504,8 @@
       }
 
       #focusPlannerOverlay .sidebar-areas {
-        flex: 1;
+        flex: 1 1 0;
         min-height: 0;
-        max-height: 55%;
         overflow-y: auto;
         padding: 10px 10px;
         display: flex;
@@ -1609,6 +1827,89 @@
         padding: 3px;
       }
 
+      /* ── PATH FILTER CHIP ── */
+      #focusPlannerOverlay .path-filter-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px 4px 7px;
+        background: var(--bg-card);
+        border: 1px solid var(--rule);
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink);
+        transition: border-color 0.15s, box-shadow 0.15s;
+        white-space: nowrap;
+        max-width: 160px;
+      }
+      #focusPlannerOverlay .path-filter-chip:hover {
+        border-color: var(--ink-soft);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      }
+      #focusPlannerOverlay .path-filter-chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      #focusPlannerOverlay .path-filter-chip-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #focusPlannerOverlay .path-filter-chip-clear {
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--ink-soft);
+        line-height: 1;
+        flex-shrink: 0;
+        margin-left: 2px;
+      }
+      #focusPlannerOverlay .path-filter-chip:hover .path-filter-chip-clear {
+        color: var(--ink);
+      }
+      #focusPlannerOverlay .path-filter-chip-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-right: 4px;
+        flex-shrink: 0;
+      }
+      #focusPlannerOverlay .new-path-btn {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-dim);
+        border: none;
+        border-radius: 5px;
+        padding: 3px 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        align-self: center;
+        flex-shrink: 0;
+      }
+      #focusPlannerOverlay .new-path-btn:hover {
+        background: rgba(61,143,90,0.25);
+      }
+      /* Path card progress bar */
+      #focusPlannerOverlay .path-card-bar {
+        height: 3px;
+        background: var(--rule);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+      #focusPlannerOverlay .path-card-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s ease;
+        min-width: 0;
+      }
+
       #focusPlannerOverlay .filter-btn {
         font-size: 12px;
         font-weight: 600;
@@ -1673,6 +1974,7 @@
         border-bottom: 1px solid var(--rule);
         flex-shrink: 0;
         background: var(--white);
+        z-index: 50;
       }
 
       #focusPlannerOverlay .cal-time-gutter-head {
@@ -2753,7 +3055,7 @@
       .drag-ghost {
         position: fixed;
         pointer-events: none;
-        z-index: 500;
+        z-index: 9999;
         opacity: 0.75;
         display: none;
       }
@@ -2762,17 +3064,18 @@
         display: block;
       }
 
-      #focusPlannerOverlay .drag-ghost-inner {
-        background: var(--green-bg);
-        border: 1.5px dashed var(--green-bar);
-        border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--green-txt);
+      .drag-ghost-inner {
+        background: rgba(22, 22, 22, 0.85);
+        border: none;
+        border-radius: 8px;
+        padding: 7px 13px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #ffffff;
         white-space: nowrap;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
         transform: rotate(1.5deg);
+        letter-spacing: 0.01em;
       }
 
       #focusPlannerOverlay
@@ -3157,13 +3460,17 @@
           <!-- area cards injected by renderSidebarAreas() -->
         </div>
 
-        <!-- DEADLINES SECTION -->
-        <div class="sidebar-deadlines">
-          <div class="sidebar-deadlines-head">
-            <div class="sidebar-eyebrow">Deadlines</div>
+        <!-- PATHS SECTION -->
+        <div class="sidebar-paths">
+          <div class="sidebar-paths-head">
+            <div>
+              <div class="sidebar-eyebrow">Paths</div>
+              <div class="sidebar-paths-hint">Click a path to filter the calendar</div>
+            </div>
+            <button class="new-path-btn" id="newPathBtn" onclick="openPathModal()">+ New</button>
           </div>
-          <div class="sidebar-deadlines-list" id="sidebar-deadlines-list">
-            <!-- filled by JS -->
+          <div class="sidebar-paths-list" id="sidebar-paths-list">
+            <!-- filled by renderPathsSidebar() -->
           </div>
         </div>
 
@@ -3180,6 +3487,8 @@
             <button class="week-nav-btn" onclick="shiftWeek(1)">→</button>
           </div>
           <button class="today-btn" onclick="goToday()">Today</button>
+
+          <div id="path-filter-chip" class="path-filter-chip" style="display:none" onclick="setActivePath(null)"></div>
 
           <div class="header-spacer"></div>
 
@@ -3199,11 +3508,11 @@
                   <span class="new-menu-hint">Plan a session on the calendar</span>
                 </div>
               </div>
-              <div class="new-menu-item" onclick="openDeadlineModal(); closeNewMenu()">
-                <span class="new-menu-icon">⚑</span>
+              <div class="new-menu-item" onclick="openPathModal(); closeNewMenu()">
+                <span class="new-menu-icon">◎</span>
                 <div class="new-menu-text">
-                  <span class="new-menu-label">Deadline</span>
-                  <span class="new-menu-hint">Mark a due date or time</span>
+                  <span class="new-menu-label">Path</span>
+                  <span class="new-menu-hint">Create a goal with a deadline</span>
                 </div>
               </div>
             </div>
@@ -3279,6 +3588,16 @@
         </div>
       </div>
 
+      <div class="popover-field" id="popover-path-field">
+        <label>Path <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
+        <div class="popover-path-pill" id="popover-path-pill" onclick="togglePathPicker()">
+          <div class="popover-path-dot" id="popover-path-dot" style="display:none;"></div>
+          <span id="popover-path-name">No path</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--ink-soft);">▾</span>
+        </div>
+        <div class="popover-path-picker" id="popover-path-picker"></div>
+      </div>
+
       <button class="popover-confirm" onclick="confirmBlock()">Confirm block</button>
     </div>
 
@@ -3316,46 +3635,92 @@
       </div>
     </div>
 
-    <!-- ── DEADLINE MODAL ── -->
-    <div class="modal-overlay" id="modal-overlay" onclick="closeModalIfBg(event)">
+    <!-- ── PATH MODAL ── -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closePathModalIfBg(event)">
       <div class="modal">
         <div class="modal-header">
-          <div class="modal-title"><span class="modal-title-icon">⚑</span> New deadline</div>
-          <button class="popover-close" onclick="closeDeadlineModal()">×</button>
+          <div class="modal-title"><span class="modal-title-icon">◎</span> New Path</div>
+          <button class="popover-close" onclick="closePathModal()">×</button>
         </div>
         <div class="modal-body">
           <div class="modal-field">
             <label>Name <span style="color:#e55;font-size:9px;">required</span></label>
-            <input type="text" placeholder="e.g. Report submission">
+            <input type="text" id="path-modal-name" placeholder="e.g. Thesis · Q2 Sprint">
           </div>
           <div class="modal-field">
-            <label>Date <span style="color:#e55;font-size:9px;">required</span></label>
-            <input type="date" value="2026-03-13">
+            <label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
+            <input type="text" id="path-modal-desc" placeholder="What is this path for?">
           </div>
           <div class="modal-field">
-            <label>Time <span
-                style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
-            <input type="time" value="17:00">
+            <label>Deadline <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
+            <input type="date" id="path-modal-deadline">
           </div>
           <div class="modal-field">
-            <label>Focus Areas <span
-                style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
-            <div class="modal-area-list" id="modal-area-list">
-              <!-- populated by openDeadlineModal() -->
+            <label>Colour</label>
+            <div class="path-color-picker" id="path-color-picker">
+              <div class="path-color-swatch active" data-color="#3D8F5A" style="background:#3D8F5A;" onclick="selectPathColor('#3D8F5A', this)"></div>
+              <div class="path-color-swatch" data-color="#58a6ff" style="background:#58a6ff;" onclick="selectPathColor('#58a6ff', this)"></div>
+              <div class="path-color-swatch" data-color="#a855f7" style="background:#a855f7;" onclick="selectPathColor('#a855f7', this)"></div>
+              <div class="path-color-swatch" data-color="#f97316" style="background:#f97316;" onclick="selectPathColor('#f97316', this)"></div>
+              <div class="path-color-swatch" data-color="#ec4899" style="background:#ec4899;" onclick="selectPathColor('#ec4899', this)"></div>
+              <div class="path-color-swatch" data-color="#eab308" style="background:#eab308;" onclick="selectPathColor('#eab308', this)"></div>
+              <div class="path-color-swatch" data-color="#ef4444" style="background:#ef4444;" onclick="selectPathColor('#ef4444', this)"></div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="modal-cancel" onclick="closeDeadlineModal()">Cancel</button>
-          <button class="modal-save" onclick="saveDeadline()">Save deadline</button>
+          <button class="modal-cancel" onclick="closePathModal()">Cancel</button>
+          <button class="modal-save" onclick="savePath()">Create Path</button>
         </div>
       </div>
     </div>
   </div>
+  </div><!-- /.app-shell -->
 
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidenav = document.getElementById('sidenav');
+      const toggleBtn = document.getElementById('sidenav-toggle-btn');
+      const submenuToggles = document.querySelectorAll('.sidenav-submenu-toggle');
+      const searchInput = document.querySelector('.sidenav-search-wrapper input');
 
+      const isMobile = () => window.innerWidth <= 768;
 
+      toggleBtn.addEventListener('click', () => {
+        if (isMobile()) {
+          sidenav.classList.toggle('expanded-mobile');
+        } else {
+          sidenav.classList.toggle('collapsed');
+        }
+      });
 
+      submenuToggles.forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          const collapsed = isMobile() ? !sidenav.classList.contains('expanded-mobile') : sidenav.classList.contains('collapsed');
+          if (collapsed) {
+            if (isMobile()) sidenav.classList.add('expanded-mobile');
+            else sidenav.classList.remove('collapsed');
+            setTimeout(() => {
+              toggle.closest('.sidenav-menu-item').classList.toggle('open');
+            }, 300);
+          } else {
+            toggle.closest('.sidenav-menu-item').classList.toggle('open');
+          }
+        });
+      });
 
+      searchInput.addEventListener('focus', () => {
+        if (isMobile()) sidenav.classList.add('expanded-mobile');
+        else sidenav.classList.remove('collapsed');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (isMobile() && sidenav.classList.contains('expanded-mobile') && !sidenav.contains(e.target)) {
+          sidenav.classList.remove('expanded-mobile');
+        }
+      });
+    });
+  </script>
 </body>
 </html>

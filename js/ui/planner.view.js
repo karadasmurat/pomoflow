@@ -6,7 +6,8 @@
 import { state } from '../state/store.js';
 import { HistoryService } from '../services/history.service.js';
 import { FocusService } from '../services/focus.service.js';
-import { dbManager } from '../db.js'; // Import dbManager
+import { dbManager } from '../db.js';
+import { uuidv7 } from '../utils/uuid.js';
 
 export const PlannerView = {
     // ── STATE ──
@@ -28,13 +29,15 @@ export const PlannerView = {
     ROW_HEIGHT: 72, // px per hour
 
     blocks: [],
-    deadlines: [],
-    
+    paths: [],        // loaded from DB
+    activePath: null, // currently selected path filter (id string or null)
+    pendingPathId: null, // path selected in block popover
+    selectedPathColor: '#3D8F5A', // for path creation modal
+
     // Drag state
     dragging: { areaId: null, color: null },
-    draggingNewDeadline: false,
-    draggingDeadline: null,
-    pendingDeadlineDay: null,
+    draggingPath: null,     // { id, name, color } when dragging a path card
+    draggingDeadline: false, // true when dragging the "set deadline" card
 
     // ── INIT ──
     init() {
@@ -56,28 +59,33 @@ export const PlannerView = {
 
     // ── DATA LOADING ──
     async loadData() {
-        // Fetch planned blocks from DB
         const dates = this.getWeekDates(this.weekOffset);
         const startStr = dates[0].toISOString().split('T')[0];
         const endStr = dates[6].toISOString().split('T')[0];
-        
+
+        // Load paths
+        if (dbManager.initialized) {
+            this.paths = await dbManager.getAllPaths();
+            // Auto-archive paths whose deadline has passed
+            const today = new Date().toISOString().split('T')[0];
+            for (const p of this.paths) {
+                if (p.status === 'active' && p.deadline && p.deadline < today) {
+                    console.log('[archivePath] auto-archiving expired path:', p.id, p.name);
+                    await dbManager.archivePath(p.id);
+                    p.status = 'archived';
+                }
+            }
+        }
+
+        // Load planned blocks
         let dbBlocks = [];
         if (dbManager.initialized) {
             dbBlocks = await dbManager.getPlannedBlocksForWeek(startStr, endStr);
         }
 
-        // Mock Deadlines for now (since no DB support yet)
-        if (this.deadlines.length === 0) {
-            this.deadlines = [
-                { day: 3, name: 'Report due', areas: ['amber', 'violet'], hour: 17, min: 0 },
-                { day: 4, name: 'Sprint end', areas: ['green'], hour: 12, min: 0 },
-            ];
-        }
-        
-        // Map DB blocks to UI format
         this.blocks = dbBlocks.map(b => ({
             id: b.id,
-            day: new Date(b.planned_date).getDay() === 0 ? 6 : new Date(b.planned_date).getDay() - 1, // Sun=0 in JS, Mon=0 in Planner
+            day: new Date(b.planned_date + 'T00:00:00').getDay() === 0 ? 6 : new Date(b.planned_date + 'T00:00:00').getDay() - 1,
             startHour: Math.floor(b.start_minutes / 60),
             startMin: b.start_minutes % 60,
             sessions: this.calcSessionsFromDuration(b.duration_minutes),
@@ -85,7 +93,11 @@ export const PlannerView = {
             areaName: b.area_name || 'Unknown',
             color: this.mapColor(b.area_color),
             type: 'planned',
-            label: b.notes
+            label: b.notes,
+            pathId: b.path_id || null,
+            pathName: b.path_name || null,
+            pathColor: b.path_color || null,
+            walked: !!b.walked_session_id
         }));
     },
 
@@ -103,17 +115,19 @@ export const PlannerView = {
             plannedDate: dateStr,
             startMinutes: startMins,
             durationMinutes: durationMins,
-            notes: block.label
+            notes: block.label,
+            pathId: block.pathId || null
         };
 
+        console.log('[saveBlock] inserting planned block:', dbBlock);
         await dbManager.insertPlannedBlock(dbBlock);
-        
-        // Update local block ID if it was new
         if (!block.id) block.id = dbBlock.id;
+        console.log('[saveBlock] saved with id:', dbBlock.id);
     },
 
     async deleteBlock(blockId) {
         if (dbManager.initialized) {
+            console.log('[deleteBlock]', blockId);
             await dbManager.deletePlannedBlock(blockId);
         }
         this.blocks = this.blocks.filter(b => b.id !== blockId);
@@ -203,7 +217,7 @@ export const PlannerView = {
         this.renderHead();
         this.renderBody();
         this.renderSidebarAreas();
-        this.renderDeadlineSidebar();
+        this.renderPathsSidebar();
     },
 
     renderHead() {
@@ -228,7 +242,8 @@ export const PlannerView = {
 
         dates.forEach((date, i) => {
             const isToday = isCurrentWeek && date.getDate() === today.getDate() && date.getMonth() === today.getMonth();
-            const dayDeadlines = this.deadlines.filter(d => d.day === i);
+            const dateStr = date.toISOString().split('T')[0];
+            const pathsEndingToday = this.paths.filter(p => p.status === 'active' && p.deadline === dateStr);
 
             const dh = document.createElement('div');
             dh.className = 'day-head' + (isToday ? ' today' : '');
@@ -253,65 +268,31 @@ export const PlannerView = {
             row.appendChild(numEl);
             dh.appendChild(row);
 
-            // Deadline flags
+            // Path deadline flags
             const flagsEl = document.createElement('div');
             flagsEl.className = 'deadline-flags';
-
-            if (dayDeadlines.length > 0) {
+            pathsEndingToday.forEach(p => {
                 const flag = document.createElement('div');
-                flag.className = 'deadline-flag';
-                flag.innerHTML = `<span class="deadline-flag-icon">⚑</span>${dayDeadlines.length === 1 ? dayDeadlines[0].name : `${dayDeadlines.length} deadlines`}`;
-                const chips = document.createElement('div');
-                chips.className = 'area-chips';
-                dayDeadlines.forEach(dl => dl.areas.forEach(color => {
-                    const chip = document.createElement('div');
-                    chip.className = `area-chip ${color}`;
-                    chips.appendChild(chip);
-                }));
-                if (chips.children.length) flag.appendChild(chips);
+                flag.className = 'deadline-flag path-deadline-flag';
+                flag.style.setProperty('--path-color', p.color);
+                flag.innerHTML = `<span class="deadline-flag-icon" style="color:${p.color}">◎</span>${p.name}`;
                 flagsEl.appendChild(flag);
-            }
+            });
             dh.appendChild(flagsEl);
 
-            // Drag drop for deadlines
+            // Deadline drag target on day header
             dh.addEventListener('dragover', e => {
-                // Proceed if dragging a deadline (new or existing) OR a block
-                if (!(this.draggingNewDeadline || this.draggingDeadline !== null || this.dragging.areaId)) return;
+                if (!this.draggingDeadline) return;
                 e.preventDefault();
                 dh.classList.add('deadline-drop-target');
             });
-            dh.addEventListener('dragleave', e => {
-                if (!dh.contains(e.relatedTarget)) dh.classList.remove('deadline-drop-target');
-            });
+            dh.addEventListener('dragleave', () => dh.classList.remove('deadline-drop-target'));
             dh.addEventListener('drop', e => {
-                e.preventDefault(); // Prevent default browser behavior
-                dh.classList.remove('deadline-drop-target'); // Remove visual highlight
-
-                const droppedData = e.dataTransfer.getData('text/plain');
-
-                if (droppedData === 'new-deadline' && this.draggingNewDeadline) {
-                    // This is a new deadline being dropped
-                    this.draggingNewDeadline = false; // Reset flag after successful drop
-                    this.openDeadlineModal(d, h, m);
-                } else if (this.draggingDeadline !== null && droppedData !== 'new-deadline') {
-                    // This is an existing deadline being dropped
-                    this.deadlines[this.draggingDeadline].day = d;
-                    this.deadlines[this.draggingDeadline].hour = h;
-                    this.deadlines[this.draggingDeadline].min = m;
-                    this.draggingDeadline = null;
-                    this.render();
-                } else if (this.dragging.areaId && droppedData !== 'new-deadline' && droppedData !== 'deadline') { // Dropping a block
-                    this.handleDrop(d, h, m);
-                } else {
-                    // Fallback or unexpected drop scenario
-                    console.warn("Dropped item of unknown type or context mismatch.");
-                }
-                // Ensure state is reset regardless of successful drop for this specific item
-                this.draggingNewDeadline = false;
-                this.draggingDeadline = null;
-                this.dragging = { areaId: null, color: null }; // Reset block drag state
+                e.preventDefault();
+                dh.classList.remove('deadline-drop-target');
+                if (this.draggingDeadline) this.handleDeadlineDrop(i);
             });
-            
+
             head.appendChild(dh);
         });
     },
@@ -369,26 +350,31 @@ export const PlannerView = {
                 }
             }
 
-            // Blocks
+            // Blocks (with filter awareness)
             const dayBlocks = this.blocks.filter(b => b.day === d && this.shouldShow(b.type));
             dayBlocks.forEach(b => {
-                col.appendChild(this.createBlockEl(b));
+                const el = this.createBlockEl(b);
+                // Apply filter dim: if a path is active, dim blocks not in that path
+                if (this.activePath && b.pathId !== this.activePath) {
+                    el.classList.add('path-dimmed');
+                }
+                col.appendChild(el);
             });
 
-            // Deadline Markers
-            this.deadlines.filter(dl => dl.day === d).forEach(dl => {
-                const top = (dl.hour - this.HOURS[0]) * this.ROW_HEIGHT + (dl.min / 60) * this.ROW_HEIGHT;
-                if (top < 0 || top > this.HOURS.length * this.ROW_HEIGHT) return;
-                
+            // Path deadline markers (paths ending on this day at 17:00 default)
+            const dateStr = this.getWeekDates(this.weekOffset)[d].toISOString().split('T')[0];
+            this.paths.filter(p => p.status === 'active' && p.deadline === dateStr).forEach(p => {
+                const markerHour = 17;
+                const top = (markerHour - this.HOURS[0]) * this.ROW_HEIGHT;
                 const marker = document.createElement('div');
-                marker.className = 'deadline-marker';
+                marker.className = 'deadline-marker path-deadline-marker';
                 marker.style.top = `${top}px`;
+                marker.style.setProperty('--path-color', p.color);
                 marker.innerHTML = `
-                    <div class="deadline-marker-line"></div>
+                    <div class="deadline-marker-line" style="background:${p.color};"></div>
                     <div class="deadline-marker-label">
-                        ⚑ ${dl.name}
-                        <span class="dm-time">${this.formatTime(dl.hour, dl.min)}</span>
-                        ${dl.areas.map(c => `<span style="width:5px;height:5px;border-radius:50%;background:var(--${c}-bar);display:inline-block;"></span>`).join('')}
+                        <span style="color:${p.color}">◎</span> ${p.name}
+                        <span class="dm-time">end of day</span>
                     </div>
                 `;
                 col.appendChild(marker);
@@ -434,51 +420,122 @@ export const PlannerView = {
         });
     },
 
-    renderDeadlineSidebar() {
-        const list = document.getElementById('sidebar-deadlines-list');
+    renderPathsSidebar() {
+        const list = document.getElementById('sidebar-paths-list');
         if (!list) return;
         list.innerHTML = '';
 
-        // New deadline chip
-        const newChip = document.createElement('div');
-        newChip.className = 'creation-chip';
-        newChip.draggable = true;
-        newChip.ondragstart = (e) => this.startNewDeadlineDrag(e);
-        newChip.innerHTML = `
-            <span class="creation-chip-icon">⚑</span>
-            <div class="creation-chip-text">
-                <span class="creation-chip-label">New deadline</span>
-                <span class="creation-chip-hint">Drag to a day</span>
+        const activePaths = this.paths.filter(p => p.status === 'active');
+        const archivedPaths = this.paths.filter(p => p.status === 'archived');
+
+        // Drag-to-deadline card
+        const deadlineDragCard = document.createElement('div');
+        deadlineDragCard.className = 'path-deadline-drag-card';
+        deadlineDragCard.draggable = true;
+        deadlineDragCard.innerHTML = `
+            <div class="path-deadline-drag-icon">◎</div>
+            <div class="path-deadline-drag-text">
+                <div class="path-deadline-drag-label">New Path</div>
+                <div class="path-deadline-drag-hint">Drag to set deadline</div>
             </div>
-            <span class="creation-chip-handle">⠿ →</span>
         `;
-        list.appendChild(newChip);
+        deadlineDragCard.addEventListener('dragstart', e => this.startDeadlineDrag(e));
+        list.appendChild(deadlineDragCard);
 
-        const dates = this.getWeekDates(this.weekOffset);
-        
-        this.deadlines.forEach((dl, i) => {
-            const dayDate = dates[dl.day];
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const dateStr = `${this.DAYS[dl.day]}, ${months[dayDate.getMonth()]} ${dayDate.getDate()}`;
 
-            const chip = document.createElement('div');
-            chip.className = 'deadline-chip';
-            chip.draggable = true;
-            chip.ondragstart = (e) => this.startDeadlineDrag(e, i);
+        // Active paths
+        if (activePaths.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'path-empty';
+            empty.textContent = 'No active paths. Create one to get started.';
+            list.appendChild(empty);
+        } else {
+            activePaths.forEach(p => list.appendChild(this.createPathCard(p)));
+        }
 
-            chip.innerHTML = `
-                <div class="deadline-chip-icon">⚑</div>
-                <div class="deadline-chip-body">
-                    <div class="deadline-chip-name">${dl.name}</div>
-                    <div class="deadline-chip-meta">
-                        ${dateStr} · ${this.formatTime(dl.hour, dl.min)}
-                        ${dl.areas.length > 0 ? `<span style="display:flex;gap:3px;margin-left:2px;">${dl.areas.map(c => `<span style="width:6px;height:6px;border-radius:50%;background:var(--${c}-bar);display:inline-block;"></span>`).join('')}</span>` : ''}
-                    </div>
+        // Archived section
+        if (archivedPaths.length > 0) {
+            const archiveHeader = document.createElement('div');
+            archiveHeader.className = 'path-archive-header';
+            archiveHeader.textContent = '── Archived ──';
+            list.appendChild(archiveHeader);
+            archivedPaths.forEach(p => {
+                const card = this.createPathCard(p);
+                card.classList.add('archived');
+                list.appendChild(card);
+            });
+        }
+    },
+
+    createPathCard(p) {
+        const card = document.createElement('div');
+        card.className = 'path-card' + (this.activePath === p.id ? ' active' : '');
+        card.onclick = () => this.setActivePath(p.id);
+
+        if (p.status === 'active') {
+            card.draggable = true;
+            card.addEventListener('dragstart', e => this.startPathDrag(e, p));
+        }
+
+        const daysLeft = p.deadline ? this.daysUntil(p.deadline) : null;
+        const deadlineStr = daysLeft === null ? '' :
+            daysLeft < 0 ? 'past deadline' :
+            daysLeft === 0 ? 'due today' :
+            daysLeft === 1 ? '1 day left' :
+            `${daysLeft} days left`;
+
+        const progress = p.totalPlanned > 0 ? `${p.totalWalked}/${p.totalPlanned}` : '0 sessions';
+        const pct = p.totalPlanned > 0 ? Math.round((p.totalWalked / p.totalPlanned) * 100) : 0;
+
+        card.innerHTML = `
+            <div class="path-card-top">
+                <div class="path-card-dot" style="background:${p.color};"></div>
+                <div class="path-card-name">${p.name}</div>
+                <div class="path-card-actions">
+                    <button class="path-card-archive-btn" title="Archive path" onclick="archivePath('${p.id}', event)">↓</button>
                 </div>
-                <div class="deadline-chip-drag">⠿</div>
-            `;
-            list.appendChild(chip);
-        });
+            </div>
+            <div class="path-card-meta">
+                ${deadlineStr ? `<span class="path-card-deadline${daysLeft !== null && daysLeft <= 2 ? ' urgent' : ''}">${deadlineStr}</span>` : ''}
+                <span class="path-card-progress">${progress}</span>
+            </div>
+            ${p.totalPlanned > 0 ? `<div class="path-card-bar"><div class="path-card-bar-fill" style="width:${pct}%;background:${p.color};"></div></div>` : ''}
+        `;
+        return card;
+    },
+
+    setActivePath(pathId) {
+        this.activePath = pathId;
+        this.pendingPathId = pathId;
+        this.updatePathFilterChip();
+        this.renderPathsSidebar();
+        this.renderBody();
+    },
+
+    updatePathFilterChip() {
+        const chip = document.getElementById('path-filter-chip');
+        if (!chip) return;
+        if (this.activePath) {
+            const path = this.paths.find(p => p.id === this.activePath);
+            if (path) {
+                chip.style.display = 'flex';
+                chip.style.setProperty('--chip-color', path.color);
+                chip.innerHTML = `
+                    <span class="path-filter-chip-label">Filtering:</span>
+                    <span class="path-filter-chip-dot" style="background:${path.color}"></span>
+                    <span class="path-filter-chip-name">${path.name}</span>
+                    <span class="path-filter-chip-clear" title="Clear filter">×</span>
+                `;
+            }
+        } else {
+            chip.style.display = 'none';
+        }
+    },
+
+    daysUntil(dateStr) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const target = new Date(dateStr + 'T00:00:00');
+        return Math.round((target - today) / 86400000);
     },
 
     shouldShow(type) {
@@ -494,9 +551,15 @@ export const PlannerView = {
         const height = Math.max((dur / 60) * this.ROW_HEIGHT, 28);
 
         const el = document.createElement('div');
-        el.className = `block ${b.type} ${b.color}`;
+        el.className = `block ${b.type} ${b.color}${b.walked ? ' walked' : ''}`;
         el.style.top = `${top}px`;
         el.style.height = `${height}px`;
+
+        // Path stripe
+        if (b.pathColor) {
+            el.style.setProperty('--block-path-color', b.pathColor);
+            el.classList.add('has-path');
+        }
 
         if (b.type === 'actual') {
             el.style.left = '10px';
@@ -505,20 +568,42 @@ export const PlannerView = {
 
         const endStr = this.addMinutes(b.startHour, b.startMin, dur);
         const startStr = this.formatTime(b.startHour, b.startMin);
+        const walkedMark = b.walked ? '<span class="block-walked-mark">✓</span>' : '';
 
         el.innerHTML = `
-            <div class="block-name">${b.areaName}${b.label ? ` · ${b.label}` : ''}</div>
+            ${b.pathColor ? `<div class="block-path-stripe" style="background:${b.pathColor};"></div>` : ''}
+            <div class="block-name">${b.areaName}${b.label ? ` · ${b.label}` : ''}${walkedMark}</div>
             <div class="block-meta">${startStr} – ${endStr} · ${b.sessions} sess</div>
             ${b.type === 'planned' ? `<div class="resize-handle"><div class="resize-handle-bar"></div></div>` : ''}
         `;
 
-        el.addEventListener('click', e => { 
-            e.stopPropagation(); 
-            // showDetail(b); // TODO: Implement detail view
+        el.addEventListener('click', e => {
+            e.stopPropagation();
             if (b.type === 'planned') {
-                this.deleteBlock(b.id); // Simple delete on click for now (or open detail)
+                this.deleteBlock(b.id);
             }
         });
+
+        // Path drag-and-drop target
+        if (b.type === 'planned') {
+            el.addEventListener('dragover', e => {
+                if (!this.draggingPath) return;
+                e.preventDefault();
+                e.stopPropagation();
+                el.classList.add('path-drop-target');
+                el.style.setProperty('--drop-path-color', this.draggingPath.color);
+            });
+            el.addEventListener('dragleave', () => {
+                el.classList.remove('path-drop-target');
+            });
+            el.addEventListener('drop', e => {
+                if (!this.draggingPath) return;
+                e.preventDefault();
+                e.stopPropagation();
+                el.classList.remove('path-drop-target');
+                this.assignPathToBlock(b.id, this.draggingPath.id);
+            });
+        }
 
         return el;
     },
@@ -570,15 +655,6 @@ export const PlannerView = {
             `;
         };
 
-        const updateDeadlineSnapGhost = (h, m, top) => {
-            dlSnapGhost.classList.add('visible');
-            dlSnapGhost.style.top = `${top}px`;
-            dlSnapGhost.innerHTML = `
-                <div class="dl-snap-line"></div>
-                <div class="dl-snap-label">⚑ <span class="dl-snap-time">${this.formatTime(h, m)}</span></div>
-            `;
-        };
-
         const updateTimePip = (top, h, m) => {
             timePip.classList.add('visible');
             pipLine.style.top = `${top}px`;
@@ -593,59 +669,49 @@ export const PlannerView = {
         };
 
         col.addEventListener('mousemove', e => {
-            // Only relevant for block drag if it's active, otherwise use timePip
-            if (!this.dragging.areaId) { 
+            if (!this.dragging.areaId) {
                 const { h, m, top } = getSnapPos(e);
                 updateTimePip(top, h, m);
-            } else {
-                hideSnapGhost(); // Hide block ghosts if mouse moves off target
-            }
-            // Keep timePip visible if mouse is over col but not on a draggable item
-            if (e.target === col && !this.dragging.areaId && !this.draggingNewDeadline && this.draggingDeadline === null) {
-                 const { h, m, top } = getSnapPos(e);
-                 updateTimePip(top, h, m);
             }
         });
 
         col.addEventListener('mouseleave', hideSnapGhost);
 
+        const showDeadlineGhost = (e) => {
+            const { h, m, top } = getSnapPos(e);
+            const timeStr = this.formatTime(h, m);
+            dlSnapGhost.className = 'deadline-snap-ghost visible';
+            dlSnapGhost.style.top = `${top}px`;
+            dlSnapGhost.innerHTML = `
+                <div class="deadline-snap-line"></div>
+                <div class="deadline-snap-label">◎ New Path deadline · ${timeStr}</div>
+            `;
+        };
+
         col.addEventListener('dragover', e => {
-            // Proceed if dragging a deadline (new or existing) OR a block
-            if (!(this.draggingNewDeadline || this.draggingDeadline !== null || this.dragging.areaId)) return;
+            if (this.draggingDeadline) { e.preventDefault(); showDeadlineGhost(e); return; }
+            if (this.draggingPath) { e.preventDefault(); return; }
+            if (!this.dragging.areaId) return;
             e.preventDefault();
-            dh.classList.add('deadline-drop-target');
+            const { h, m, top } = getSnapPos(e);
+            updateSnapGhost(h, m, top, this.dragging.areaName || 'Block', this.dragging.color || 'green');
         });
         col.addEventListener('dragleave', e => {
-            if (!dh.contains(e.relatedTarget)) dh.classList.remove('deadline-drop-target');
+            if (!col.contains(e.relatedTarget)) {
+                snapGhost.classList.remove('visible');
+                dlSnapGhost.classList.remove('visible');
+            }
         });
         col.addEventListener('drop', e => {
-            e.preventDefault(); // Prevent default browser behavior
-            dh.classList.remove('deadline-drop-target'); // Remove visual highlight
-            const { h, m } = getSnapPos(e);
-            
-            const droppedData = e.dataTransfer.getData('text/plain');
-
-            if (droppedData === 'new-deadline' && this.draggingNewDeadline) {
-                // This is a new deadline being dropped
-                this.draggingNewDeadline = false; // Reset flag after successful drop
-                this.openDeadlineModal(d, h, m);
-            } else if (this.draggingDeadline !== null && droppedData !== 'new-deadline') {
-                // This is an existing deadline being dropped
-                this.deadlines[this.draggingDeadline].day = d;
-                this.deadlines[this.draggingDeadline].hour = h;
-                this.deadlines[this.draggingDeadline].min = m;
-                this.draggingDeadline = null;
-                this.render();
-            } else if (this.dragging.areaId && droppedData !== 'new-deadline' && droppedData !== 'deadline') { // Dropping a block
+            e.preventDefault();
+            dlSnapGhost.classList.remove('visible');
+            if (this.draggingDeadline) {
+                this.handleDeadlineDrop(d);
+            } else if (this.dragging.areaId) {
+                const { h, m } = getSnapPos(e);
                 this.handleDrop(d, h, m);
-            } else {
-                // Fallback or unexpected drop scenario
-                console.warn("Dropped item of unknown type or context mismatch.");
             }
-            // Ensure state is reset regardless of successful drop for this specific item
-            this.draggingNewDeadline = false;
-            this.draggingDeadline = null;
-            this.dragging = { areaId: null, color: null }; // Reset block drag state
+            this.dragging = { areaId: null, color: null };
         });
         
         col.addEventListener('click', e => {
@@ -703,25 +769,22 @@ export const PlannerView = {
         this.startDrag(e, null, 'New Block', 'green');
     },
 
-    startNewDeadlineDrag(e) {
-        this.draggingNewDeadline = true;
-        this.dragging = { areaId: null, color: null }; // Clear block drag state
+    startPathDrag(e, path) {
+        this.draggingPath = { id: path.id, name: path.name, color: path.color };
         e.dataTransfer.effectAllowed = 'copy';
-        e.dataTransfer.setData('text/plain', 'new-deadline');
-        
-        const img = new Image(); img.src = '';
-        e.dataTransfer.setDragImage(img, 0, 0);
+        e.dataTransfer.setData('text/plain', `path:${path.id}`);
 
         const ghost = document.getElementById('drag-ghost');
         const ghostInner = document.getElementById('drag-ghost-inner');
         if (ghost && ghostInner) {
             ghost.classList.add('active');
-            ghostInner.className = 'drag-ghost-inner';
-            ghostInner.style.background = 'var(--bg-card)';
-            ghostInner.style.borderColor = 'var(--ink-soft)';
-            ghostInner.style.color = 'var(--ink)';
-            ghostInner.textContent = '⚑ New deadline';
+            ghostInner.className = 'drag-ghost-inner path-ghost';
+            ghostInner.style.setProperty('--path-ghost-color', path.color);
+            ghostInner.textContent = path.name;
         }
+
+        const img = new Image(); img.src = '';
+        e.dataTransfer.setDragImage(img, 0, 0);
 
         const moveHandler = (ev) => {
             if (ghost) {
@@ -729,39 +792,31 @@ export const PlannerView = {
                 ghost.style.top = `${ev.clientY - 16}px`;
             }
         };
-
         const endHandler = () => {
-            // Removed premature flag reset: this.draggingNewDeadline = false;
             if (ghost) ghost.classList.remove('active');
+            this.draggingPath = null;
             document.removeEventListener('dragover', moveHandler);
             document.removeEventListener('dragend', endHandler);
-            // Clear deadline targets
-            document.querySelectorAll('.day-head.deadline-drop-target')
-                .forEach(el => el.classList.remove('deadline-drop-target'));
         };
-
         document.addEventListener('dragover', moveHandler);
         document.addEventListener('dragend', endHandler);
     },
 
-    startDeadlineDrag(e, idx) {
-        this.draggingDeadline = idx;
-        e.dataTransfer.effectAllowed = 'move';
+    startDeadlineDrag(e) {
+        this.draggingDeadline = true;
+        e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', 'deadline');
-        
-        const img = new Image(); img.src = '';
-        e.dataTransfer.setDragImage(img, 0, 0);
 
         const ghost = document.getElementById('drag-ghost');
         const ghostInner = document.getElementById('drag-ghost-inner');
         if (ghost && ghostInner) {
             ghost.classList.add('active');
-            ghostInner.className = 'drag-ghost-inner';
-            ghostInner.style.background = 'var(--bg-card)';
-            ghostInner.style.borderColor = 'var(--ink-soft)';
-            ghostInner.style.color = 'var(--ink)';
-            ghostInner.textContent = `⚑ ${this.deadlines[idx].name}`;
+            ghostInner.className = 'drag-ghost-inner deadline-ghost';
+            ghostInner.textContent = 'Set deadline →';
         }
+
+        const img = new Image(); img.src = '';
+        e.dataTransfer.setDragImage(img, 0, 0);
 
         const moveHandler = (ev) => {
             if (ghost) {
@@ -769,19 +824,48 @@ export const PlannerView = {
                 ghost.style.top = `${ev.clientY - 16}px`;
             }
         };
-
         const endHandler = () => {
-            this.draggingDeadline = null; // Reset flag
             if (ghost) ghost.classList.remove('active');
+            this.draggingDeadline = false;
             document.removeEventListener('dragover', moveHandler);
             document.removeEventListener('dragend', endHandler);
-            // Clear deadline targets
-            document.querySelectorAll('.day-head.deadline-drop-target')
-                .forEach(el => el.classList.remove('deadline-drop-target'));
         };
-
         document.addEventListener('dragover', moveHandler);
         document.addEventListener('dragend', endHandler);
+    },
+
+    handleDeadlineDrop(dayIndex) {
+        const date = this.getWeekDates(this.weekOffset)[dayIndex];
+        const dateStr = date.toISOString().split('T')[0];
+        this.draggingDeadline = false;
+        this.openPathModal(dateStr);
+    },
+
+    async assignPathToBlock(blockId, pathId) {
+        const block = this.blocks.find(b => b.id === blockId);
+        if (!block) return;
+
+        const path = this.paths.find(p => p.id === pathId);
+        block.pathId = pathId;
+        block.pathName = path?.name || null;
+        block.pathColor = path?.color || null;
+
+        if (dbManager.initialized) {
+            const dateStr = this.getWeekDates(this.weekOffset)[block.day].toISOString().split('T')[0];
+            console.log('[assignPathToBlock] block:', blockId, '→ path:', pathId);
+            await dbManager.insertPlannedBlock({
+                id: block.id,
+                focusAreaId: block.areaId,
+                plannedDate: dateStr,
+                startMinutes: block.startHour * 60 + block.startMin,
+                durationMinutes: this.calcDuration(block.sessions),
+                notes: block.label,
+                pathId: pathId
+            });
+        }
+
+        this.renderBody();
+        this.renderPathsSidebar();
     },
 
     handleDrop(day, h, m) {
@@ -819,13 +903,19 @@ export const PlannerView = {
         this.sessionCount = 2;
         this.updateSessionDisplay();
 
-        // Simple positioning
+        // Pre-select active path
+        if (this.activePath) {
+            this.pendingPathId = this.activePath;
+        }
+        this.updatePathDisplay();
+
         pop.style.top = '130px';
         pop.style.left = '220px';
 
         overlay.classList.add('visible');
         pop.classList.add('visible');
         this.populateAreaPicker();
+        this.populatePathPicker();
     },
 
     closePopover() {
@@ -833,90 +923,72 @@ export const PlannerView = {
         document.getElementById('popover').classList.remove('visible');
     },
 
-    // ── DEADLINE MODAL ──
-    openDeadlineModal(dayIndex, hour, min) {
-        const modal = document.getElementById('modal-overlay');
-        const dateInput = modal.querySelector('input[type="date"]');
-        const timeInput = modal.querySelector('input[type="time"]');
-        const nameInput = modal.querySelector('input[type="text"]');
-
-        if (dayIndex !== undefined) {
-            const dates = this.getWeekDates(this.weekOffset);
-            const d = dates[dayIndex];
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            dateInput.value = `${yyyy}-${mm}-${dd}`;
-            this.pendingDeadlineDay = dayIndex;
+    // ── PATH MODAL ──
+    openPathModal(presetDeadline = null) {
+        console.log('[openPathModal] called');
+        const nameEl = document.getElementById('path-modal-name');
+        const descEl = document.getElementById('path-modal-desc');
+        const deadlineEl = document.getElementById('path-modal-deadline');
+        const overlayEl = document.getElementById('modal-overlay');
+        console.log('[openPathModal] elements:', { nameEl, descEl, deadlineEl, overlayEl });
+        if (nameEl) nameEl.value = '';
+        if (descEl) descEl.value = '';
+        if (deadlineEl) deadlineEl.value = presetDeadline || '';
+        this.selectedPathColor = '#3D8F5A';
+        document.querySelectorAll('.path-color-swatch').forEach(s => {
+            s.classList.toggle('active', s.dataset.color === '#3D8F5A');
+        });
+        if (overlayEl) {
+            overlayEl.classList.add('visible');
+            console.log('[openPathModal] overlay classes after:', overlayEl.className, 'computed display:', getComputedStyle(overlayEl).display);
         } else {
-            this.pendingDeadlineDay = null;
+            console.error('[openPathModal] #modal-overlay not found in DOM!');
         }
-
-        if (hour !== undefined && timeInput) {
-            timeInput.value = `${String(hour).padStart(2, '0')}:${String(min || 0).padStart(2, '0')}`;
-        }
-
-        // populate area list
-        const areaList = modal.querySelector('#modal-area-list');
-        if (areaList) {
-            areaList.innerHTML = '';
-            this.getAreas().forEach(a => {
-                const row = document.createElement('div');
-                row.className = 'modal-area-row';
-                row.innerHTML = `
-                    <div class="modal-area-dot" style="background:var(--${a.color}-bar)"></div>
-                    <div class="modal-area-name">${a.name}</div>
-                    <div class="modal-area-check"></div>
-                `;
-                row.onclick = () => {
-                    row.classList.toggle('selected');
-                    row.querySelector('.modal-area-check').textContent = row.classList.contains('selected') ? '✓' : '';
-                };
-                areaList.appendChild(row);
-            });
-        }
-
-        nameInput.value = '';
-        modal.classList.add('visible');
     },
 
-    closeDeadlineModal() {
+    closePathModal() {
         document.getElementById('modal-overlay').classList.remove('visible');
     },
 
-    saveDeadline() {
-        const modal = document.getElementById('modal-overlay');
-        const name = modal.querySelector('input[type="text"]').value.trim();
-        const dateVal = modal.querySelector('input[type="date"]').value;
-        const timeVal = modal.querySelector('input[type="time"]').value;
-        if (!name || !dateVal) return;
+    selectPathColor(color, el) {
+        this.selectedPathColor = color;
+        document.querySelectorAll('.path-color-swatch').forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+    },
 
-        const dates = this.getWeekDates(this.weekOffset);
-        const picked = new Date(dateVal + 'T00:00:00');
-        let day = this.pendingDeadlineDay !== null ? this.pendingDeadlineDay : 0;
-        
-        // Find if picked date is in current week view
-        dates.forEach((d, i) => {
-            if (d.getFullYear() === picked.getFullYear() &&
-                d.getMonth() === picked.getMonth() &&
-                d.getDate() === picked.getDate()) day = i;
-        });
+    async savePath() {
+        const name = document.getElementById('path-modal-name').value.trim();
+        if (!name) { document.getElementById('path-modal-name').focus(); return; }
 
-        const [hour, min] = timeVal ? timeVal.split(':').map(Number) : [17, 0];
+        const path = {
+            id: uuidv7(),
+            name,
+            description: document.getElementById('path-modal-desc').value.trim() || null,
+            deadline: document.getElementById('path-modal-deadline').value || null,
+            color: this.selectedPathColor,
+            status: 'active'
+        };
 
-        const selectedAreas = [...modal.querySelectorAll('.modal-area-row.selected')]
-            .map(r => {
-                // HACK: Extract color from style because we didn't store it cleanly in dataset
-                // Better: use dataset in openDeadlineModal
-                const style = r.querySelector('.modal-area-dot').getAttribute('style');
-                const match = style.match(/var\(--(.*?)-bar\)/);
-                return match ? match[1] : 'blue'; 
-            });
+        if (dbManager.initialized) {
+            console.log('[insertPath]', path);
+            await dbManager.insertPath(path);
+        }
 
-        this.deadlines.push({ day, name, areas: selectedAreas, hour, min });
+        this.paths.push({ ...path, totalPlanned: 0, totalWalked: 0 });
+        this.closePathModal();
 
-        this.closeDeadlineModal();
+        // Auto-select the new path (like git checkout -b)
+        this.setActivePath(path.id);
         this.render();
+    },
+
+    async archivePath(pathId, e) {
+        e.stopPropagation();
+        if (dbManager.initialized) { console.log('[archivePath] manual:', pathId); await dbManager.archivePath(pathId); }
+        const p = this.paths.find(p => p.id === pathId);
+        if (p) p.status = 'archived';
+        if (this.activePath === pathId) this.setActivePath(null);
+        else this.renderPathsSidebar();
     },
 
     populateAreaPicker() {
@@ -944,6 +1016,98 @@ export const PlannerView = {
 
     toggleAreaPicker() {
         document.getElementById('popover-area-picker').classList.toggle('open');
+        document.getElementById('popover-path-picker').classList.remove('open');
+    },
+
+    populatePathPicker() {
+        const picker = document.getElementById('popover-path-picker');
+        if (!picker) return;
+        picker.innerHTML = '';
+
+        // "No path" option
+        const noneOpt = document.createElement('div');
+        noneOpt.className = `popover-area-option${!this.pendingPathId ? ' active' : ''}`;
+        noneOpt.innerHTML = `<div class="popover-area-option-dot" style="background:var(--ink-soft)"></div> No path`;
+        noneOpt.onclick = (e) => {
+            e.stopPropagation();
+            this.pendingPathId = null;
+            this.updatePathDisplay();
+            picker.classList.remove('open');
+        };
+        picker.appendChild(noneOpt);
+
+        this.paths.filter(p => p.status === 'active').forEach(p => {
+            const opt = document.createElement('div');
+            opt.className = `popover-area-option${p.id === this.pendingPathId ? ' active' : ''}`;
+            opt.innerHTML = `<div class="popover-area-option-dot" style="background:${p.color}"></div> ${p.name}`;
+            opt.onclick = (e) => {
+                e.stopPropagation();
+                this.pendingPathId = p.id;
+                this.updatePathDisplay();
+                picker.classList.remove('open');
+            };
+            picker.appendChild(opt);
+        });
+    },
+
+    togglePathPicker() {
+        document.getElementById('popover-path-picker').classList.toggle('open');
+        document.getElementById('popover-area-picker').classList.remove('open');
+    },
+
+    updatePathDisplay() {
+        const path = this.paths.find(p => p.id === this.pendingPathId);
+        const dot = document.getElementById('popover-path-dot');
+        const name = document.getElementById('popover-path-name');
+        if (!dot || !name) return;
+        if (path) {
+            dot.style.background = path.color;
+            dot.style.display = 'inline-block';
+            name.textContent = path.name;
+        } else {
+            dot.style.display = 'none';
+            name.textContent = 'No path';
+        }
+    },
+
+    confirmBlock() {
+        const areas = this.getAreas();
+        const area = areas.find(a => a.id === this.pendingAreaId) || areas[0];
+        if (!area) return;
+
+        const timeVal = document.getElementById('popover-time').value;
+        const [h, m] = timeVal ? timeVal.split(':').map(Number) : [this.pendingHour, this.pendingMinutes];
+        const label = document.getElementById('popover-label')?.value.trim() || null;
+
+        const path = this.paths.find(p => p.id === this.pendingPathId);
+
+        const block = {
+            id: uuidv7(),
+            day: this.pendingDay,
+            startHour: h,
+            startMin: m,
+            sessions: this.sessionCount,
+            areaId: area.id,
+            areaName: area.name,
+            color: area.color,
+            type: 'planned',
+            label: label || null,
+            pathId: this.pendingPathId || null,
+            pathName: path?.name || null,
+            pathColor: path?.color || null,
+            walked: false
+        };
+
+        this.blocks.push(block);
+        this.saveBlock(block);
+
+        // Update path progress count in memory
+        if (path) path.totalPlanned = (path.totalPlanned || 0) + this.sessionCount;
+
+        this.closePopover();
+        if (document.getElementById('popover-label')) document.getElementById('popover-label').value = '';
+        this.renderBody();
+        this.renderPathsSidebar();
     },
 
     adjustSessions(delta) {
@@ -987,15 +1151,17 @@ export const PlannerView = {
         window.updateDerivedTime = () => this.updateDerivedTime();
         window.confirmBlock = () => this.confirmBlock();
         window.startNewBlockDrag = (e) => this.startNewBlockDrag(e);
-        window.openDeadlineModal = () => this.openDeadlineModal(); // default arg
-        window.closeDeadlineModal = () => this.closeDeadlineModal();
-        window.saveDeadline = () => this.saveDeadline();
-        window.closeModalIfBg = (e) => {
-            if (e.target === document.getElementById('modal-overlay')) this.closeDeadlineModal();
+        window.openPathModal = () => this.openPathModal();
+        window.closePathModal = () => this.closePathModal();
+        window.savePath = () => this.savePath();
+        window.archivePath = (id, e) => this.archivePath(id, e);
+        window.selectPathColor = (color, el) => this.selectPathColor(color, el);
+        window.togglePathPicker = () => this.togglePathPicker();
+        window.closePathModalIfBg = (e) => {
+            if (e.target === document.getElementById('modal-overlay')) this.closePathModal();
         };
-        // Expose openPopover globally to fix ReferenceError
-        window.openPopover = () => this.openPopover(); 
-        console.log('openPopover exposed globally'); // Added for debugging
+        window.openPopover = () => this.openPopover();
+        window.setActivePath = (id) => this.setActivePath(id);
         
         // Navigation buttons
         document.getElementById('focusPlannerNavBtn')?.addEventListener('click', () => {

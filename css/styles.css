@@ -1,85 +1,109 @@
 :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface-elevated: #21262d;
-    --primary: #58a6ff;
-    --success: #3fb950;
-    --warning: #d29922;
-    --danger: #f85149;
-    --text-primary: #f0f6fc;
-    --text-secondary: #8b949e;
-    --border: #30363d;
-    --radius: 12px; /* Global Rounding Standard */
+    /* ── Base tokens: Void dark defaults (shwn. design system) ── */
+    --bg:       #18181A;
+    --bg-card:  #1F1F22;
+    --white:    #1F1F22;
+    --ink:      rgba(255,255,255,0.92);
+    --ink-mid:  rgba(255,255,255,0.52);
+    --ink-soft: rgba(255,255,255,0.32);
+    --rule:     rgba(255,255,255,0.06);
+    --accent:   #3D8F5A;
+    --grove:    #3D8F5A;
+    --accent-dim: rgba(61,143,90,0.15);
+
+    /* ── Semantic aliases ── */
+    --text-primary:   var(--ink);
+    --text-secondary: var(--ink-mid);
+    --border:         var(--rule);
+    --surface:        var(--bg-card);
+
+    /* ── App-specific tokens (dark defaults; light overrides below) ── */
+    --surface-elevated: #26262A;
+    --primary:   #58a6ff;
+    --success:   #3fb950;
+    --warning:   #d29922;
+    --danger:    #f85149;
+
+    --radius: 12px;
     --font-mono: 'JetBrains Mono', monospace;
     --font-sans: 'DM Sans', sans-serif;
     --font-time: 'Roboto', sans-serif;
-    --shadow-main: 0 8px 24px rgba(0, 0, 0, 0.4);
-    --shadow-modal: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-focus-area: 10px 0 30px rgba(0, 0, 0, 0.5);
-    --overlay-bg: rgba(0, 0, 0, 0.6);
-    --glow-primary: 0 0 16px rgba(88, 166, 255, 0.5);
-    --danger-glow: rgba(248, 81, 73, 0.4);
-    --success-glow: rgba(63, 185, 80, 0.4);
-    --active-dot-border: #ffffff;
-    --active-dot-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-    --danger-muted: rgba(248, 81, 73, 0.15);
-    --success-muted: rgba(63, 185, 80, 0.15);
-    --text-on-accent: #ffffff;
-    --hover-glow: rgba(255, 255, 255, 0.05);
-    
+
+    --shadow-main:        0 8px 24px rgba(0, 0, 0, 0.4);
+    --shadow-modal:       0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-focus-area:  10px 0 30px rgba(0, 0, 0, 0.5);
+    --overlay-bg:         rgba(0, 0, 0, 0.6);
+    --glow-primary:       0 0 16px rgba(88, 166, 255, 0.5);
+    --danger-glow:        rgba(248, 81, 73, 0.4);
+    --success-glow:       rgba(63, 185, 80, 0.4);
+    --active-dot-border:  #ffffff;
+    --active-dot-shadow:  0 0 8px rgba(255, 255, 255, 0.2);
+    --danger-muted:       rgba(248, 81, 73, 0.15);
+    --success-muted:      rgba(63, 185, 80, 0.15);
+    --text-on-accent:     #ffffff;
+    --hover-glow:         rgba(255, 255, 255, 0.05);
+
     /* Gold Watch Crown Tokens */
-    --gold: #FFD700;
-    --gold-glow: rgba(255, 215, 0, 0.4);
-    --gold-muted: #b8860b;
-    --timer-accent: var(--gold);
+    --gold:              #FFD700;
+    --gold-glow:         rgba(255, 215, 0, 0.4);
+    --gold-muted:        #b8860b;
+    --timer-accent:      var(--gold);
     --timer-accent-glow: var(--gold-glow);
-    
-    /* Skeuo Adaptive Tokens - DARK (Crystal Clear) */
-    --skeuo-trench: #0f172a; 
-    --skeuo-face: #21262d;   
-    --skeuo-rim: #4a5568;    
-    --skeuo-well: rgba(0, 0, 0, 0.6);
+
+    /* Skeuo Adaptive Tokens - DARK */
+    --skeuo-trench: #0f172a;
+    --skeuo-face:   #21262d;
+    --skeuo-rim:    #4a5568;
+    --skeuo-well:   rgba(0, 0, 0, 0.6);
     --primary-muted: rgba(88, 166, 255, 0.1);
 
     /* Button Sizing Standards */
-    --btn-size-lg: 44px; /* Standard touch target */
+    --btn-size-lg: 44px;
     --btn-size-md: 36px;
     --btn-size-sm: 28px;
-    --btn-size-xs: 20px; /* Micro actions */
+    --btn-size-xs: 20px;
 }
 
+/* ── Light theme overrides ── */
 [data-theme="light"] {
-    --bg: #ffffff;
-    --surface: #f6f8fa;
+    /* Base tokens: shwn. light palette */
+    --bg:       #F0EFED;
+    --bg-card:  #FAFAF8;
+    --white:    #FFFFFF;
+    --ink:      #1A1917;
+    --ink-mid:  #6B6860;
+    --ink-soft: #A8A49E;
+    --rule:     #E2DFD9;
+    --accent:   #2D4A3E;
+    --accent-dim: #E6EDEA;
+
+    /* App-specific token overrides for light mode */
     --surface-elevated: #eaeef2;
-    --primary: #0969da;
-    --success: #1a7f37;
-    --warning: #9a6700;
-    --danger: #cf222e;
-    --text-primary: #1f2328;
-    --text-secondary: #656d76;
-    --border: #d0d7de;
-    --shadow-main: 0 8px 24px rgba(0, 0, 0, 0.1);
-    --shadow-modal: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-focus-area: 10px 0 30px rgba(0, 0, 0, 0.2);
-    --overlay-bg: rgba(0, 0, 0, 0.4);
-    --glow-primary: 0 0 16px rgba(9, 105, 218, 0.3);
-    --active-dot-border: #000000;
-    --active-dot-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-    --danger-muted: rgba(207, 34, 46, 0.1);
-    --success-muted: rgba(26, 127, 55, 0.1);
-    --text-on-accent: #ffffff;
-    --hover-glow: rgba(0, 0, 0, 0.1);
-    
-    /* Skeuo Adaptive Tokens - LIGHT (Crystal Clear) */
-    --skeuo-trench: #f1f5f9; 
-    --skeuo-face: #ffffff;   
-    --skeuo-rim: #cbd5e1;    
-    --skeuo-well: rgba(0, 0, 0, 0.12);
+    --primary:   #0969da;
+    --success:   #1a7f37;
+    --warning:   #9a6700;
+    --danger:    #cf222e;
+
+    --shadow-main:        0 8px 24px rgba(0, 0, 0, 0.1);
+    --shadow-modal:       0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-focus-area:  10px 0 30px rgba(0, 0, 0, 0.2);
+    --overlay-bg:         rgba(0, 0, 0, 0.4);
+    --glow-primary:       0 0 16px rgba(9, 105, 218, 0.3);
+    --active-dot-border:  #000000;
+    --active-dot-shadow:  0 0 8px rgba(0, 0, 0, 0.1);
+    --danger-muted:       rgba(207, 34, 46, 0.1);
+    --success-muted:      rgba(26, 127, 55, 0.1);
+    --hover-glow:         rgba(0, 0, 0, 0.1);
+
+    /* Skeuo Adaptive Tokens - LIGHT */
+    --skeuo-trench: #f1f5f9;
+    --skeuo-face:   #ffffff;
+    --skeuo-rim:    #cbd5e1;
+    --skeuo-well:   rgba(0, 0, 0, 0.12);
     --primary-muted: rgba(9, 105, 218, 0.05);
 
     /* Gold Watch Crown Tokens - LIGHT */
-    --gold: #9a6700; /* Deeper bronze-gold for high visibility */
+    --gold:      #9a6700;
     --gold-glow: rgba(154, 103, 0, 0.3);
     --gold-muted: #734d00;
 }
@@ -514,14 +538,14 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 .focus-area-panel {
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     width: 350px;
     height: 100vh;
     z-index: 4000;
-    transform: translateX(100%);
+    transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-focus-area);
-    border-radius: 12px 0 0 12px;
+    border-radius: 0 12px 12px 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -535,14 +559,14 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 .plan-panel {
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     width: 400px;
     height: 100vh;
     z-index: 4000;
-    transform: translateX(100%);
+    transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-focus-area);
-    border-radius: 12px 0 0 12px;
+    border-radius: 0 12px 12px 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -556,14 +580,14 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 .settings-panel {
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     width: 400px;
     height: 100vh;
     z-index: 4000;
-    transform: translateX(100%);
+    transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-focus-area);
-    border-radius: 12px 0 0 12px;
+    border-radius: 0 12px 12px 0;
 }
 
 .settings-panel.open {

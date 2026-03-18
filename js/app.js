@@ -15,6 +15,8 @@ import { FocusView } from './ui/focus.view.js';
 import { TimerView } from './ui/timer.view.js';
 import { DashboardView } from './ui/dashboard.view.js';
 import { PlannerView } from './ui/planner.view.js';
+import { syncService } from './services/sync.service.js';
+import { supabase } from './services/supabase.js';
 
 let currentFilter = 'today';
 let showAllHistory = false;
@@ -24,6 +26,28 @@ let editingTaskId = null;
 // --- 1. INITIALIZATION ---
 
 async function init() {
+    // ── Auth gate ────────────────────────────────────────────────────────────
+    // Handle magic link callback — only when code param is present
+    if (new URLSearchParams(window.location.search).has('code')) {
+        await supabase.auth.exchangeCodeForSession(window.location.search).catch(() => {});
+        history.replaceState(null, '', window.location.pathname);
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        showAuthOverlay();
+        return;
+    }
+
+    supabase.auth.onAuthStateChange((event, newSession) => {
+        if (event === 'SIGNED_IN' && newSession) {
+            hideAuthOverlay();
+            if (!dbManager.initialized) init();
+        }
+        if (event === 'SIGNED_OUT') showAuthOverlay();
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     try { await dbManager.init(); } catch (e) { console.error('DB Init failed', e); }
 
     if (dbManager.initialized) {
@@ -32,6 +56,7 @@ async function init() {
             if (fullState.tasks?.length > 0) state.tasks = fullState.tasks;
             if (fullState.sessions?.length > 0) state.sessions = fullState.sessions;
             if (fullState.aims?.length > 0) state.aims = fullState.aims;
+            if (fullState.paths?.length > 0) state.paths = fullState.paths;
             if (fullState.settings) state.settings = { ...state.settings, ...fullState.settings };
 
             if (fullState.profile?.full_profile) {
@@ -75,6 +100,30 @@ async function init() {
         }
     }
 
+    if (dbManager.initialized) syncService.startPolling();
+
+    // Show auth user email in sidenav
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        const email = session?.user?.email;
+        if (email) {
+            const el = document.getElementById('sidenavUserEmail');
+            if (el) el.textContent = email;
+        }
+        const avatarEl = document.getElementById('sidenavAvatar');
+        if (avatarEl) {
+            const avatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
+            if (avatarUrl) {
+                fetch(avatarUrl, { mode: 'cors' })
+                    .then(r => r.blob())
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        avatarEl.innerHTML = `<img src="${blobUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                    })
+                    .catch(() => {}); // keep emoji fallback on error
+            }
+        }
+    });
+
     setupEventListeners();
     FocusView.populateCategorySelects();
     PlannerView.init();
@@ -107,6 +156,25 @@ async function init() {
 
     restoreTimerState();
     checkAchievements();
+    checkPathDeadlines();
+}
+
+function checkPathDeadlines() {
+    if (!dbManager.initialized) return;
+    dbManager.getAllPaths().then(paths => {
+        const today = new Date().toISOString().split('T')[0];
+        const soon = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        paths.forEach(p => {
+            if (p.status !== 'active' || !p.deadline) return;
+            if (p.deadline < today) {
+                // auto-archive
+                dbManager.archivePath(p.id).catch(() => {});
+            } else if (p.deadline <= soon) {
+                const days = Math.ceil((new Date(p.deadline) - new Date(today)) / 86400000);
+                notify(`Path "${p.name}" deadline in ${days} day${days === 1 ? '' : 's'}!`);
+            }
+        });
+    }).catch(() => {});
 }
 
 // --- 2. TIMER LOGIC ---
@@ -192,9 +260,24 @@ function saveSession() {
     FocusService.addXP(session.xp);
     
     if (dbManager.initialized) {
-        dbManager.insertSession(session).catch(e => console.error('Failed to save session:', e));
+        console.log('[saveSession] inserting session:', session);
+        dbManager.insertSession(session)
+            .then(async () => {
+                console.log('[saveSession] saved:', session.id);
+                if (!session.taskId) return;
+                const today = new Date().toISOString().split('T')[0];
+                const block = await dbManager.getUnwalkedBlockForSession(session.taskId, today);
+                if (block) {
+                    console.log('[walkPlannedBlock] walking block:', block.id, 'with session:', session.id);
+                    await dbManager.walkPlannedBlock(block.id, session.id);
+                    if (block.pathName) {
+                        notify(`Path "${block.pathName}" — block walked!`);
+                    }
+                }
+            })
+            .catch(e => console.error('Failed to save session:', e));
     }
-    
+
     saveData();
 }
 
@@ -274,7 +357,7 @@ async function addFocusArea() {
         
         if (task) {
             input.value = '';
-            
+
             const active = state.tasks.filter(t => !(t.completed === true || t.completed === 1 || t.completed === 'true'));
             const grouped = active.reduce((acc, t) => {
                 const c = t.category || 'Uncategorized';
@@ -282,16 +365,17 @@ async function addFocusArea() {
                 acc[c].push(t);
                 return acc;
             }, {});
-            
+
             const order = state.categories.map(c => c.name);
             const activeCats = Object.keys(grouped).sort((a, b) => {
                 const ia = order.indexOf(a), ib = order.indexOf(b);
                 return (ia !== -1 && ib !== -1) ? ia - ib : (ia !== -1 ? -1 : (ib !== -1 ? 1 : a.localeCompare(b)));
             });
-            
+
             state.activeCategoryIndex = activeCats.indexOf(task.category || 'Uncategorized');
-            
-            await saveData(); 
+
+            if (dbManager.initialized) await dbManager.insertFocusArea(task);
+            await saveData();
             
             const wrapper = document.getElementById('focusAreaCreateWrapper');
             wrapper?.classList.remove('open');
@@ -300,7 +384,8 @@ async function addFocusArea() {
             
             editingTaskId = null;
 
-            renderFocusAreas(); 
+            renderFocusAreas();
+            if (!isEdit && task.category) FocusView.drillInto(task.category);
             notify(isEdit ? `Updated: ${name} ✅` : `Added: ${name} ✨`);
         }
     } catch (e) {
@@ -321,6 +406,7 @@ function toggleFocusAreaComplete(id) {
         t.completed = !isComp;
         t.updated_at = now;
         if (t.completed && state.timerState.activeTaskId === id) state.timerState.activeTaskId = null;
+        if (dbManager.initialized) dbManager.insertFocusArea(t);
         saveData(); renderFocusAreas();
         notify(t.completed ? 'Focus area completed! ✅' : 'Focus area reactivated 🔄');
     }
@@ -331,8 +417,8 @@ function deleteFocusArea(id) {
         if (conf) { 
             const t = state.tasks.find(x => x.id === id);
             const name = t ? t.name : '';
-            FocusService.deleteFocusArea(id); 
-            if (dbManager.initialized) dbManager.deleteFocusArea(id);
+            FocusService.deleteFocusArea(id);
+            if (dbManager.initialized) { console.log('[deleteFocusArea]', id); dbManager.deleteFocusArea(id); }
             saveData(); renderFocusAreas(); 
             notify(`Deleted: ${name} 🗑️`);
         }
@@ -343,7 +429,7 @@ function deleteSession(id) {
     confirmAction('Delete session record?').then(conf => {
         if (conf) {
             state.sessions = state.sessions.filter(s => s.id !== id);
-            if (dbManager.initialized) dbManager.deleteSession(id);
+            if (dbManager.initialized) { console.log('[deleteSession]', id); dbManager.deleteSession(id); }
             saveData(); refreshUI();
             notify('Session deleted 🗑️');
         }
@@ -355,8 +441,8 @@ function renderPlan() {
         onEditAim: (id) => editAim(id),
         onGoAgain: (a) => goAgain(a),
         onDeleteAim: (id) => { 
-            state.aims = state.aims.filter(x => x.id !== id); 
-            if (dbManager.initialized) dbManager.deleteAim(id);
+            state.aims = state.aims.filter(x => x.id !== id);
+            if (dbManager.initialized) { console.log('[deleteAim]', id); dbManager.deleteAim(id); }
             saveData(); renderPlan(); notify('Aim removed 🗑️'); 
         },
         onShare: (name, mins) => SettingsService.handleShare('x', 'milestone', { focusArea: name, duration: mins }, notify)
@@ -385,7 +471,7 @@ function addAim() {
             ex.targetMinutes = mins; 
             ex.deadline = date; 
             ex.updated_at = now;
-            if (dbManager.initialized) dbManager.insertAim(ex).catch(e => console.error('Failed to save aim:', e));
+            if (dbManager.initialized) { console.log('[insertAim] updating:', ex); dbManager.insertAim(ex).catch(e => console.error('Failed to save aim:', e)); }
         } else {
             const newAim = { 
                 id: uuidv7(), 
@@ -397,7 +483,7 @@ function addAim() {
                 deadline: date 
             };
             state.aims.push(newAim);
-            if (dbManager.initialized) dbManager.insertAim(newAim).catch(e => console.error('Failed to save aim:', e));
+            if (dbManager.initialized) { console.log('[insertAim] new:', newAim); dbManager.insertAim(newAim).catch(e => console.error('Failed to save aim:', e)); }
         }
     });
 
@@ -573,10 +659,15 @@ function updateProfileUI() {
     
     if (circle) circle.textContent = avatar;
     if (headerAvatar) headerAvatar.textContent = avatar;
-    
+    const sidenavAvatar = document.getElementById('sidenavAvatar');
+    if (sidenavAvatar) sidenavAvatar.textContent = avatar;
+
     const option = document.querySelector(`.avatar-option[data-avatar="${avatar}"]`);
     if (option && moodLabel) {
-        moodLabel.textContent = option.querySelector('.avatar-mood')?.textContent || option.title;
+        const name = option.querySelector('.avatar-mood')?.textContent || option.title;
+        moodLabel.textContent = name;
+        const sidenavUserName = document.getElementById('sidenavUserName');
+        if (sidenavUserName) sidenavUserName.textContent = name;
     }
 }
 
@@ -794,6 +885,8 @@ function moveTaskToCategory(taskId, newCat) {
     const t = state.tasks.find(x => x.id === taskId);
     if (t) {
         t.category = newCat;
+        t.updated_at = new Date().toISOString();
+        if (dbManager.initialized) dbManager.insertFocusArea(t);
         saveData();
         refreshUI();
         notify(`Moved to ${newCat} 📦`);
@@ -802,8 +895,9 @@ function moveTaskToCategory(taskId, newCat) {
 
 // --- 5. PERSISTENCE & SYSTEM ---
 
-function saveData() { 
+function saveData() {
     if (dbManager.initialized) {
+        console.log('[saveData] persisting full state');
         dbManager.saveFullState(state).catch(e => console.error('Failed to save to DB:', e));
     }
 }
@@ -937,9 +1031,14 @@ function setupEventListeners() {
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
-        'settingsBtn': openSettings, 'closeSettings': closeSettings,
+        'sidenav-logout-btn': async (e) => {
+            e.stopPropagation();
+            await supabase.auth.signOut();
+            showAuthOverlay();
+        },
+        'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
-        'headerAvatar': openProfile, 'closeProfile': closeProfile,
+        'headerAvatar': openProfile, 'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
         'editPersonaBtn': () => togglePersonaEdit(true),
         'cancelPersonaEdit': () => togglePersonaEdit(false),
         'shareMoodBtn': () => {
@@ -948,11 +1047,34 @@ function setupEventListeners() {
             SettingsService.handleShare('x', 'mood', { avatar, mood }, notify);
         },
         'focusAreasNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openFocusAreas(); },
+        'sidenavFocusAreasBtn': () => openFocusAreas(),
         'closeFocusAreaPanel': closeFocusAreas,
         'focusPlannerNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); PlannerView.open(); },
+        'sidenavFocusPlannerBtn': () => PlannerView.open(),
         'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
+        'sidenavFocusPlanBtn': () => openPlan(),
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
+        'toggleTaskCreate': () => {
+            const category = FocusView.activeCategory;
+            FocusView.goBack();
+            editingTaskId = null;
+            const wrapper = document.getElementById('focusAreaCreateWrapper');
+            wrapper?.classList.add('open');
+            const btn = document.getElementById('toggleFocusAreaCreate');
+            if (btn) btn.classList.add('active');
+            const header = document.getElementById('faCreateHeader');
+            if (header) header.textContent = 'Create Focus Area';
+            const btnText = document.getElementById('addFocusAreaBtnText');
+            if (btnText) btnText.textContent = 'Create';
+            document.getElementById('focusAreaInput').value = '';
+            FocusView.populateCategorySelects();
+            if (category) {
+                const sel = document.getElementById('focusAreaCategorySelect');
+                if (sel) sel.value = category;
+            }
+            document.getElementById('focusAreaInput')?.focus();
+        },
         'toggleFocusAreaCreate': (e) => {
             const wrapper = document.getElementById('focusAreaCreateWrapper');
             const isOpen = wrapper?.classList.toggle('open');
@@ -1138,5 +1260,73 @@ function refreshUI() {
     FocusView.updateLevelUI();
     updateProfileUI();
 }
+
+// ── Auth UI ───────────────────────────────────────────────────────────────────
+
+function showAuthOverlay() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.style.display = 'flex';
+
+    // Wire up auth form (idempotent — safe to call multiple times)
+    const btn = document.getElementById('authSubmitBtn');
+    const input = document.getElementById('authEmail');
+    const errorEl = document.getElementById('authError');
+
+    async function sendMagicLink() {
+        const email = input?.value.trim();
+        if (!email) return;
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+        errorEl.style.display = 'none';
+
+        const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        });
+
+        if (error) {
+            errorEl.textContent = error.message;
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Send magic link';
+        } else {
+            document.getElementById('authForm').style.display = 'none';
+            document.getElementById('authConfirm').style.display = 'block';
+            document.getElementById('authConfirmEmail').textContent = email;
+        }
+    }
+
+    // Google OAuth
+    document.getElementById('authGoogleBtn')?.addEventListener('click', async () => {
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin + window.location.pathname }
+        });
+    });
+
+    btn?.addEventListener('click', sendMagicLink);
+    input?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMagicLink(); });
+    document.getElementById('authResendBtn')?.addEventListener('click', () => {
+        document.getElementById('authForm').style.display = 'block';
+        document.getElementById('authConfirm').style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'Send magic link';
+    });
+}
+
+function hideAuthOverlay() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Handle SIGNED_IN on first page load (e.g. user clicked magic link)
+supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+        hideAuthOverlay();
+        // If init() returned early due to no session, run it now
+        if (!dbManager.initialized) init();
+    }
+    if (event === 'SIGNED_OUT') showAuthOverlay();
+});
 
 (async () => { await init(); })();

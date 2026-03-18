@@ -13,6 +13,7 @@ export class SettingsService {
         document.documentElement.setAttribute('data-theme', nextTheme);
         
         if (typeof dbManager !== 'undefined' && dbManager.initialized) {
+            console.log('[setAppState] theme:', nextTheme);
             dbManager.setAppState('theme', nextTheme);
         } else {
             localStorage.setItem('flowtracker_theme', nextTheme);

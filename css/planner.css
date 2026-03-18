@@ -1,17 +1,5 @@
 /* ── TOKENS ── */
 :root {
-  --bg: #F0EFED;
-  --bg-card: #FAFAF8;
-  --white: #FFFFFF;
-  --ink: #1A1917;
-  --ink-mid: #6B6860;
-  --ink-soft: #A8A49E;
-  --rule: #E2DFD9;
-  --accent: #2D4A3E;
-  --accent-dim: #E6EDEA;
-  --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  --r: 6px;
-
   /* Focus Area colors */
   --green-bg: #DDE8DF;
   --green-txt: #2D4A3E;
@@ -53,7 +41,7 @@
 /* ── NAV ── */
 .nav {
   height: 52px;
-  background: rgba(240, 239, 237, 0.92);
+  background: rgba(24, 24, 26, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--rule);
@@ -1331,6 +1319,8 @@
 
 #focusPlannerOverlay .modal-overlay.visible {
   display: flex;
+  opacity: 1;
+  visibility: visible;
 }
 
 #focusPlannerOverlay .modal {
@@ -1621,7 +1611,7 @@
 .drag-ghost {
   position: fixed;
   pointer-events: none;
-  z-index: 500;
+  z-index: 9999;
   opacity: 0.75;
   display: none;
 }
@@ -1630,75 +1620,269 @@
   display: block;
 }
 
-#focusPlannerOverlay .drag-ghost-inner {
-  background: var(--green-bg);
-  border: 1.5px dashed var(--green-bar);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--green-txt);
+.drag-ghost-inner {
+  background: rgba(22, 22, 22, 0.85);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
   white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   transform: rotate(1.5deg);
+  letter-spacing: 0.01em;
 }
 
-/* ── DEADLINE SIDEBAR SECTION ── */
-.sidebar-deadlines {
+#focusPlannerOverlay .drag-ghost-inner.path-ghost {
+  background: var(--path-ghost-color, #3D8F5A);
+  color: #ffffff;
+  transform: rotate(-1deg);
+}
+
+/* ── DEADLINE CURSOR GHOST ── */
+#focusPlannerOverlay .drag-ghost-inner.deadline-ghost {
+  background: rgba(60, 60, 60, 0.9);
+  color: #ffffff;
+  transform: rotate(-0.5deg);
+}
+
+/* ── DEADLINE DRAG CARD (paths sidebar) ── */
+#focusPlannerOverlay .path-deadline-drag-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1.5px dashed var(--rule);
+  border-radius: 8px;
+  cursor: grab;
+  color: var(--ink-soft);
+  font-size: 12px;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 6px;
+}
+#focusPlannerOverlay .path-deadline-drag-card:hover {
+  border-color: #3D8F5A;
+  background: color-mix(in srgb, #3D8F5A 8%, var(--bg));
+  color: var(--ink);
+}
+#focusPlannerOverlay .path-deadline-drag-card:active {
+  cursor: grabbing;
+}
+#focusPlannerOverlay .path-deadline-drag-icon {
+  font-size: 16px;
+  color: #3D8F5A;
+  flex-shrink: 0;
+}
+#focusPlannerOverlay .path-deadline-drag-label {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink);
+}
+#focusPlannerOverlay .path-deadline-drag-hint {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+/* ── DAY HEADER DEADLINE DROP TARGET ── */
+#focusPlannerOverlay .day-head.deadline-drop-target {
+  background: color-mix(in srgb, #3D8F5A 12%, var(--bg));
+  outline: 2px solid #3D8F5A;
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+#focusPlannerOverlay .day-head.deadline-drop-target .day-num {
+  color: #3D8F5A;
+  font-weight: 800;
+}
+
+/* ── DEADLINE SNAP GHOST (in column body) ── */
+#focusPlannerOverlay .deadline-snap-ghost {
+  position: absolute;
+  left: 0; right: 0;
+  pointer-events: none;
+  display: none;
+  z-index: 5;
+}
+#focusPlannerOverlay .deadline-snap-ghost.visible {
+  display: block;
+}
+#focusPlannerOverlay .deadline-snap-line {
+  height: 2px;
+  background: #3D8F5A;
+  opacity: 0.7;
+}
+#focusPlannerOverlay .deadline-snap-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #3D8F5A;
+  padding: 2px 6px;
+  background: color-mix(in srgb, #3D8F5A 12%, var(--bg));
+  border-radius: 0 0 4px 4px;
+  white-space: nowrap;
+}
+
+/* ── PATH DROP TARGET ── */
+#focusPlannerOverlay .block.path-drop-target {
+  outline: 2.5px solid var(--drop-path-color, #3D8F5A);
+  outline-offset: -2px;
+  filter: brightness(1.12);
+}
+
+/* Path cards draggable cursor */
+#focusPlannerOverlay .path-card[draggable="true"] {
+  cursor: grab;
+}
+#focusPlannerOverlay .path-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* ── PATHS SIDEBAR SECTION ── */
+.sidebar-paths {
   border-top: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-#focusPlannerOverlay .sidebar-deadlines-head {
+#focusPlannerOverlay .sidebar-paths-head {
   padding: 10px 14px 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-#focusPlannerOverlay .sidebar-deadlines-list {
+#focusPlannerOverlay .sidebar-paths-hint {
+  font-size: 10px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+  opacity: 0.7;
+}
+
+#focusPlannerOverlay .new-path-btn {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: none;
+  border-radius: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#focusPlannerOverlay .new-path-btn:hover {
+  background: rgba(61,143,90,0.25);
+}
+
+#focusPlannerOverlay .sidebar-paths-list {
   padding: 0 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
-#focusPlannerOverlay .deadline-chip {
-  background: var(--white);
-  border: 1px solid var(--rule);
-  border-radius: 7px;
-  padding: 8px 10px;
-  cursor: grab;
+/* Show all row */
+#focusPlannerOverlay .path-show-all {
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: box-shadow 0.15s, transform 0.15s;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  transition: background 0.12s, color 0.12s;
   user-select: none;
 }
 
-#focusPlannerOverlay .deadline-chip:hover {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+#focusPlannerOverlay .path-show-all:hover,
+#focusPlannerOverlay .path-show-all.active {
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
-#focusPlannerOverlay .deadline-chip:active {
-  cursor: grabbing;
-}
-
-#focusPlannerOverlay .deadline-chip-icon {
-  font-size: 11px;
-  color: var(--ink-soft);
+#focusPlannerOverlay .path-show-all-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-soft);
   flex-shrink: 0;
 }
 
-#focusPlannerOverlay .deadline-chip-body {
-  flex: 1;
-  min-width: 0;
+/* Path card */
+#focusPlannerOverlay .path-card {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  user-select: none;
 }
 
-#focusPlannerOverlay .deadline-chip-name {
+#focusPlannerOverlay .path-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#focusPlannerOverlay .path-card.active {
+  border-color: var(--path-color, var(--accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--path-color, var(--accent)) 20%, transparent);
+}
+
+#focusPlannerOverlay .path-card-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#focusPlannerOverlay .path-card-actions {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+#focusPlannerOverlay .path-card-archive-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 11px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+#focusPlannerOverlay .path-card:hover .path-card-archive-btn {
+  opacity: 1;
+}
+
+#focusPlannerOverlay .path-card-archive-btn:hover {
+  background: var(--rule);
+  color: var(--ink);
+}
+
+#focusPlannerOverlay .path-card-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#focusPlannerOverlay .path-card-name {
+  flex: 1;
   font-size: 11px;
   font-weight: 700;
   color: var(--ink);
@@ -1707,34 +1891,64 @@
   text-overflow: ellipsis;
 }
 
-#focusPlannerOverlay .deadline-chip-meta {
+#focusPlannerOverlay .path-card-meta {
   font-size: 10px;
   color: var(--ink-soft);
-  font-weight: 500;
+  margin-top: 4px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 2px;
+  justify-content: space-between;
 }
 
-#focusPlannerOverlay .deadline-chip-drag {
+#focusPlannerOverlay .path-card-deadline {
   font-size: 10px;
   color: var(--ink-soft);
-  opacity: 0;
-  transition: opacity 0.15s;
-  flex-shrink: 0;
 }
 
-#focusPlannerOverlay .deadline-chip:hover .deadline-chip-drag {
-  opacity: 1;
+#focusPlannerOverlay .path-card-deadline.urgent {
+  color: #f97316;
+  font-weight: 600;
 }
 
-/* day header drop target for deadlines */
-.day-head.deadline-drop-target {
-  background: var(--accent-dim);
-  outline: 2px dashed var(--accent);
-  outline-offset: -2px;
-  border-radius: 4px;
+#focusPlannerOverlay .path-card-progress {
+  margin-top: 6px;
+}
+
+#focusPlannerOverlay .path-card-bar {
+  height: 3px;
+  background: var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+#focusPlannerOverlay .path-card-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--path-color, var(--accent));
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+
+/* Archive section */
+#focusPlannerOverlay .path-archive-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  padding: 8px 8px 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#focusPlannerOverlay .path-card.archived {
+  opacity: 0.5;
+}
+
+#focusPlannerOverlay .path-empty {
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 6px 8px;
+  font-style: italic;
 }
 
 /* ── DEADLINE TIME MARKER ── */
@@ -1976,4 +2190,148 @@
 
 #focusPlannerClose:hover {
   background: #f5f5f5;
+}
+
+/* ── BLOCK PATH STRIPE ── */
+#focusPlannerOverlay .block.has-path {
+  overflow: hidden;
+}
+
+#focusPlannerOverlay .block-path-stripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--block-path-color, var(--accent));
+  border-radius: 4px 0 0 4px;
+}
+
+/* Walked block */
+#focusPlannerOverlay .block.walked {
+  opacity: 0.65;
+}
+
+#focusPlannerOverlay .block.walked::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  color: var(--block-path-color, var(--accent));
+  font-weight: 700;
+}
+
+/* Path filter dimmed */
+#focusPlannerOverlay .block.path-dimmed {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* Path deadline flag in calendar header */
+#focusPlannerOverlay .path-deadline-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* ── POPOVER PATH PICKER ── */
+#focusPlannerOverlay .popover-path-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#focusPlannerOverlay .popover-path-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--white);
+  transition: border-color 0.15s;
+  font-size: 11px;
+  color: var(--ink-mid);
+  user-select: none;
+}
+
+#focusPlannerOverlay .popover-path-pill:hover {
+  border-color: var(--ink-soft);
+}
+
+#focusPlannerOverlay .popover-path-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#focusPlannerOverlay .popover-path-picker {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+#focusPlannerOverlay .popover-path-picker.hidden {
+  display: none;
+}
+
+#focusPlannerOverlay .path-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--ink);
+  transition: background 0.1s;
+}
+
+#focusPlannerOverlay .path-picker-option:hover {
+  background: var(--accent-dim);
+}
+
+#focusPlannerOverlay .path-picker-option.selected {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ── PATH COLOUR PICKER (in modal) ── */
+#focusPlannerOverlay .path-color-picker {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+#focusPlannerOverlay .path-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s, border-color 0.1s;
+}
+
+#focusPlannerOverlay .path-color-swatch:hover {
+  transform: scale(1.15);
+}
+
+#focusPlannerOverlay .path-color-swatch.selected,
+#focusPlannerOverlay .path-color-swatch.active {
+  border-color: var(--ink);
+  transform: scale(1.15);
 }

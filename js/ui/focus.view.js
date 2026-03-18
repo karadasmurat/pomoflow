@@ -36,6 +36,8 @@ export class FocusView {
         if (!xpEl || !rankEl) return;
         
         xpEl.textContent = state.totalXp.toLocaleString();
+        const sidenavUserXP = document.getElementById('sidenavUserXP');
+        if (sidenavUserXP) sidenavUserXP.textContent = `${state.totalXp.toLocaleString()} XP`;
         if (levelContainer) levelContainer.title = `Level ${state.level}`;
         if (headerAvatar) headerAvatar.textContent = state.avatar || '🦉';
         
