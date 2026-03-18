@@ -109,6 +109,19 @@ async function init() {
             const el = document.getElementById('sidenavUserEmail');
             if (el) el.textContent = email;
         }
+        const avatarEl = document.getElementById('sidenavAvatar');
+        if (avatarEl) {
+            const avatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
+            if (avatarUrl) {
+                fetch(avatarUrl, { mode: 'cors' })
+                    .then(r => r.blob())
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        avatarEl.innerHTML = `<img src="${blobUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                    })
+                    .catch(() => {}); // keep emoji fallback on error
+            }
+        }
     });
 
     setupEventListeners();
@@ -1282,6 +1295,14 @@ function showAuthOverlay() {
             document.getElementById('authConfirmEmail').textContent = email;
         }
     }
+
+    // Google OAuth
+    document.getElementById('authGoogleBtn')?.addEventListener('click', async () => {
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin + window.location.pathname }
+        });
+    });
 
     btn?.addEventListener('click', sendMagicLink);
     input?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMagicLink(); });
