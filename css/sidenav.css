@@ -1,13 +1,14 @@
-/* ── SIDENAV INTEGRATION ─────────────────────────────────────── */
-/* All variables scoped to avoid conflicts with app styles        */
+/* ── SIDENAV ─────────────────────────────────────────────────── */
+/* Color tokens delegate to the main design system.              */
+/* Only structural (non-color) tokens defined here.              */
 
 :root {
-  --sidenav-bg: #111827;
-  --sidenav-text-primary: #ffffff;
-  --sidenav-text-secondary: #9ca3af;
-  --sidenav-hover-bg: #1f2937;
-  --sidenav-active-bg: #1f2937;
-  --sidenav-border: #374151;
+  --sidenav-bg:        var(--bg);
+  --sidenav-text-primary:   var(--text-primary);
+  --sidenav-text-secondary: var(--text-secondary);
+  --sidenav-hover-bg:  var(--surface-elevated);
+  --sidenav-active-bg: var(--accent-dim);
+  --sidenav-border:    var(--border);
   --sidenav-width: 280px;
   --sidenav-width-collapsed: 56px;
   --sidenav-transition: 0.3s;
@@ -350,8 +351,8 @@
 }
 
 .sidenav-logout-btn:hover {
-  background: rgba(248, 81, 73, 0.12);
-  color: #f85149;
+  background: var(--danger-muted);
+  color: var(--danger);
   opacity: 1;
 }
 
@@ -418,10 +419,10 @@
   top: 12px;
   left: 12px;
   z-index: 200;
-  background: var(--surface-elevated, #1e1e1e);
-  border: 1px solid var(--border-color, #333);
-  color: var(--text-primary, #fff);
-  border-radius: 8px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--r-md);
   width: 36px;
   height: 36px;
   align-items: center;

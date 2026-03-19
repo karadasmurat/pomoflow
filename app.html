@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Roboto:wght@300;400;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/styles.css">
@@ -53,71 +53,71 @@
   <style>
     .auth-overlay {
       position: fixed; inset: 0; z-index: 99999;
-      background: var(--bg-base, #0d1117);
+      background: var(--bg);
       display: flex; align-items: center; justify-content: center;
     }
     .auth-card {
       width: 100%; max-width: 360px; padding: 40px 32px;
-      background: var(--bg-card, #161b22);
-      border: 1px solid var(--border, rgba(255,255,255,0.08));
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 16px;
       display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
     .auth-logo {
-      font-size: 36px; color: var(--accent, #3fb950); margin-bottom: 4px;
+      font-size: 36px; color: var(--accent); margin-bottom: 4px;
     }
     .auth-title {
-      font-size: 20px; font-weight: 600; color: var(--text-primary, #e6edf3);
+      font-size: 20px; font-weight: 600; color: var(--text-primary);
     }
     .auth-subtitle {
-      font-size: 13px; color: var(--text-muted, #8b949e);
+      font-size: 13px; color: var(--text-secondary);
       text-align: center; margin-bottom: 16px;
     }
     .auth-input {
       width: 100%; box-sizing: border-box;
       padding: 10px 14px; border-radius: 8px;
-      border: 1px solid var(--border, rgba(255,255,255,0.12));
-      background: var(--bg-input, rgba(255,255,255,0.05));
-      color: var(--text-primary, #e6edf3); font-size: 14px;
+      border: 1px solid var(--border);
+      background: var(--hover-glow);
+      color: var(--text-primary); font-size: 14px;
       outline: none; margin-bottom: 10px;
     }
-    .auth-input:focus { border-color: var(--accent, #3fb950); }
+    .auth-input:focus { border-color: var(--accent); }
     .auth-btn {
       width: 100%; padding: 11px; border-radius: 8px; border: none; cursor: pointer;
-      background: var(--accent, #3fb950); color: #fff;
+      background: var(--accent); color: var(--text-on-accent);
       font-size: 14px; font-weight: 600;
     }
     .auth-btn:hover { opacity: 0.9; }
     .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .auth-btn-secondary {
-      margin-top: 16px; background: none; border: 1px solid var(--border, rgba(255,255,255,0.12));
-      color: var(--text-muted, #8b949e); padding: 8px 20px; border-radius: 8px;
+      margin-top: 16px; background: none; border: 1px solid var(--border);
+      color: var(--text-secondary); padding: 8px 20px; border-radius: 8px;
       cursor: pointer; font-size: 13px;
     }
     .auth-btn-google {
       width: 100%; padding: 11px; border-radius: 8px; cursor: pointer;
-      background: var(--bg-input, rgba(255,255,255,0.05));
-      border: 1px solid var(--border, rgba(255,255,255,0.12));
-      color: var(--text-primary, #e6edf3);
+      background: var(--hover-glow);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       font-size: 14px; font-weight: 500;
       display: flex; align-items: center; justify-content: center; gap: 10px;
       margin-bottom: 4px;
     }
-    .auth-btn-google:hover { background: var(--bg-card-hover, rgba(255,255,255,0.08)); }
+    .auth-btn-google:hover { background: var(--surface-elevated); }
     .auth-divider {
       width: 100%; display: flex; align-items: center; gap: 12px;
-      margin: 8px 0; color: var(--text-muted, #8b949e); font-size: 12px;
+      margin: 8px 0; color: var(--text-secondary); font-size: 12px;
     }
     .auth-divider::before, .auth-divider::after {
       content: ''; flex: 1; height: 1px;
-      background: var(--border, rgba(255,255,255,0.08));
+      background: var(--border);
     }
     .auth-error {
-      margin-top: 8px; font-size: 13px; color: #f85149; text-align: center;
+      margin-top: 8px; font-size: 13px; color: var(--danger); text-align: center;
     }
     .auth-confirm-icon { font-size: 40px; margin: 8px 0; }
     .auth-confirm-text {
-      font-size: 14px; color: var(--text-muted, #8b949e);
+      font-size: 14px; color: var(--text-secondary);
       text-align: center; line-height: 1.5;
     }
   </style>
@@ -283,7 +283,7 @@
             <div class="fa-create-grid-wrapper" id="focusAreaCreateWrapper">
               <div class="fa-create-grid-inner">
                 <div class="fa-create-section-header" id="faCreateHeader">Create Focus Area</div>
-                <div class="panel-section-create-container" style="padding: 0 18px 20px;">
+                <div class="panel-section-create-container">
                   <div class="focus-area-input-container">
                     <div class="focus-area-input-wrapper">
                       <input type="text" class="focus-area-input" id="focusAreaInput"
@@ -694,7 +694,7 @@
       <div class="fa-create-grid-wrapper" id="planCreateWrapper">
         <div class="fa-create-grid-inner">
           <div class="fa-create-section-header">Create Focus Aim</div>
-          <div class="panel-section-create-container" style="padding: 0 18px 20px;">
+          <div class="panel-section-create-container">
             <div class="aim-input-container">
               <div class="aim-input-row">
                 <div class="custom-select" id="customFocusAreaSelect">
@@ -731,7 +731,7 @@
                   <input type="text" id="aimDurationInput" class="aim-duration-input" placeholder="min or h:mm"
                     maxlength="8">
                   <span class="aim-divider"></span>
-                  <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" style="opacity: 0.6;">
+                  <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" class="icon-dim">
                     <path
                       d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z">
                     </path>
@@ -1010,8 +1010,8 @@
 
         <div class="setting-group">
           <label class="setting-label">Notifications</label>
-          <div class="setting-row" style="gap: 12px; margin-top: 8px;">
-            <button class="filter-btn" id="requestNotifyManual" style="flex: 1; justify-content: center;">
+          <div class="setting-row setting-row--gap">
+            <button class="filter-btn" id="requestNotifyManual">
               <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
                 <path
                   d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,1,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z">
@@ -1019,7 +1019,7 @@
               </svg>
               Enable Push
             </button>
-            <button class="filter-btn" id="testNotify" style="flex: 1; justify-content: center;">
+            <button class="filter-btn" id="testNotify">
               <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
                 <path
                   d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,1,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z">
@@ -1032,7 +1032,7 @@
 
         <div class="setting-group">
           <label class="setting-label">Card Style</label>
-          <div class="filter-group" id="cardVariantSelect" style="margin-top: 8px;">
+          <div class="filter-group" id="cardVariantSelect">
             <button class="filter-btn active" data-variant="glass">Glass</button>
             <button class="filter-btn" data-variant="bento">Bento</button>
             <button class="filter-btn" data-variant="skeuo">Skeuo</button>
@@ -1093,9 +1093,8 @@
               <button class="btn btn-secondary" id="importData">Import Data</button>
             </div>
           </div>
-          <button class="btn btn-secondary" id="restoreDefaults"
-            style="width: 100%; margin-top: 12px; justify-content: center;">
-            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" style="margin-right: 8px;">
+          <button class="btn btn-secondary" id="restoreDefaults">
+            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
               <path
                 d="M240,128a112,112,0,1,1-212.52-56,12,12,0,0,1,21,11.48A88,88,0,1,0,128,40V64a12,12,0,0,1-24,0V16a12,12,0,0,1,12-12h48a12,12,0,0,1,0,24H148.29A111.6,111.16,0,0,1,240,128Z">
               </path>
@@ -1107,7 +1106,7 @@
     </div>
 
     <div class="panel-footer">
-      <button class="btn-save" id="saveSettings" style="width: 100%;">Save & Close</button>
+      <button class="btn-save" id="saveSettings">Save & Close</button>
     </div>
   </aside>
 
@@ -1193,7 +1192,7 @@
         </button>
       </div>
       <div class="session-edit-content">
-        <div class="focus-area-input-container" style="margin-bottom: 0;">
+        <div class="focus-area-input-container focus-area-input-container--flush">
           <div class="focus-area-input-wrapper">
             <input type="text" id="categoryEditName" class="focus-area-input" placeholder="Category Name...">
             <div class="category-icon-divider"></div>
@@ -1241,7 +1240,7 @@
         --rule: #E2DFD9;
         --accent: #2D4A3E;
         --accent-dim: #E6EDEA;
-        --f: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+        --f: 'Manrope', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
         --r: 6px;
 
         /* Focus Area colors */
@@ -3477,16 +3476,15 @@
         <button class="popover-close" onclick="closePopover()">×</button>
       </div>
 
-      <div class="popover-area-pill" id="popover-area-pill" onclick="toggleAreaPicker()" style="cursor:pointer;">
+      <div class="popover-area-pill" id="popover-area-pill" onclick="toggleAreaPicker()">
         <div class="popover-area-dot green" id="popover-area-dot"></div>
         <span id="popover-area-name">Deep Work</span>
-        <span style="margin-left:auto;font-size:10px;color:var(--ink-soft);">▾</span>
+        <span class="popover-chevron">▾</span>
       </div>
       <div class="popover-area-picker" id="popover-area-picker"></div>
 
       <div class="popover-field">
-        <label>Label <span
-            style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink-soft);">(optional)</span></label>
+        <label>Label <span class="label-optional">(optional)</span></label>
         <input type="text" id="popover-label" placeholder="e.g. manuscript draft">
       </div>
 
@@ -3504,23 +3502,23 @@
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:4px;">
+      <div class="planner-detail-stack">
         <div class="derived-time">
           <span>total focus</span>
           <span id="derived-duration">1h 25m</span>
         </div>
-        <div class="derived-time" style="opacity:0.7;">
+        <div class="derived-time derived-time--dim">
           <span>ends at</span>
           <span id="derived-end">10:25 am</span>
         </div>
       </div>
 
       <div class="popover-field" id="popover-path-field">
-        <label>Path <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
+        <label>Path <span class="label-optional">(optional)</span></label>
         <div class="popover-path-pill" id="popover-path-pill" onclick="togglePathPicker()">
           <div class="popover-path-dot" id="popover-path-dot" style="display:none;"></div>
           <span id="popover-path-name">No path</span>
-          <span style="margin-left:auto;font-size:10px;color:var(--ink-soft);">▾</span>
+          <span class="popover-chevron">▾</span>
         </div>
         <div class="popover-path-picker" id="popover-path-picker"></div>
       </div>
@@ -3532,7 +3530,7 @@
     <div class="detail-panel" id="detail-panel">
       <div class="detail-header">
         <div class="detail-area-pill" id="detail-area-pill">
-          <div class="area-chip green" style="width:8px;height:8px;" id="detail-dot"></div>
+          <div class="area-chip green detail-dot" id="detail-dot"></div>
           <span id="detail-area-name">Deep Work</span>
         </div>
         <button class="popover-close" onclick="closeDetail()">×</button>
@@ -3571,15 +3569,15 @@
         </div>
         <div class="modal-body">
           <div class="modal-field">
-            <label>Name <span style="color:#e55;font-size:9px;">required</span></label>
+            <label>Name <span class="label-required">required</span></label>
             <input type="text" id="path-modal-name" placeholder="e.g. Thesis · Q2 Sprint">
           </div>
           <div class="modal-field">
-            <label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
+            <label>Description <span class="label-optional">(optional)</span></label>
             <input type="text" id="path-modal-desc" placeholder="What is this path for?">
           </div>
           <div class="modal-field">
-            <label>Deadline <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-soft);">(optional)</span></label>
+            <label>Deadline <span class="label-optional">(optional)</span></label>
             <input type="date" id="path-modal-deadline">
           </div>
           <div class="modal-field">
