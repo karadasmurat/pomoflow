@@ -11,7 +11,10 @@ export class SettingsService {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
         const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', nextTheme);
-        
+
+        const themeIcon = document.getElementById('themeIcon');
+        if (themeIcon) themeIcon.className = nextTheme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
+
         if (typeof dbManager !== 'undefined' && dbManager.initialized) {
             console.log('[setAppState] theme:', nextTheme);
             dbManager.setAppState('theme', nextTheme);

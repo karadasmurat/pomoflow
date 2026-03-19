@@ -73,7 +73,11 @@ async function init() {
             if (fullState.appState) {
                 if (fullState.appState.timer_state) state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
                 if (fullState.appState.categories) state.categories = fullState.appState.categories;
-                if (fullState.appState.theme) document.documentElement.setAttribute('data-theme', fullState.appState.theme);
+                if (fullState.appState.theme) {
+                    document.documentElement.setAttribute('data-theme', fullState.appState.theme);
+                    const themeIcon = document.getElementById('themeIcon');
+                    if (themeIcon) themeIcon.className = fullState.appState.theme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
+                }
                 if (fullState.appState.notification_prompt) state.notificationPermission = fullState.appState.notification_prompt;
                 if (fullState.appState.ui_state) {
                     const ui = fullState.appState.ui_state;
@@ -656,11 +660,9 @@ function updatePersona(avatar, mood) {
 function updateProfileUI() {
     const avatar = state.avatar || '🦉';
     const circle = document.getElementById('personaCircle');
-    const headerAvatar = document.getElementById('headerAvatar');
     const moodLabel = document.getElementById('currentMoodLabel');
-    
+
     if (circle) circle.textContent = avatar;
-    if (headerAvatar) headerAvatar.textContent = avatar;
     const sidenavAvatar = document.getElementById('sidenavAvatar');
     if (sidenavAvatar) sidenavAvatar.textContent = avatar;
 
@@ -1032,7 +1034,6 @@ function setupEventListeners() {
         'inlineIconBtn': () => document.getElementById('inlineIconDropdown')?.classList.toggle('open'),
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
         'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
-        'menuBtn': () => document.getElementById('menuDropdown')?.classList.toggle('open'),
         'sidenav-logout-btn': async (e) => {
             e.stopPropagation();
             await supabase.auth.signOut();
@@ -1040,7 +1041,7 @@ function setupEventListeners() {
         },
         'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
-        'headerAvatar': openProfile, 'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
+        'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
         'editPersonaBtn': () => togglePersonaEdit(true),
         'cancelPersonaEdit': () => togglePersonaEdit(false),
         'shareMoodBtn': () => {
@@ -1048,12 +1049,12 @@ function setupEventListeners() {
             const mood = document.getElementById('currentMoodLabel')?.textContent || 'Sage';
             SettingsService.handleShare('x', 'mood', { avatar, mood }, notify);
         },
-        'focusAreasNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openFocusAreas(); },
+        'focusAreasNavBtn': () => openFocusAreas(),
         'sidenavFocusAreasBtn': () => openFocusAreas(),
         'closeFocusAreaPanel': closeFocusAreas,
-        'focusPlannerNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); PlannerView.open(); },
+        'focusPlannerNavBtn': () => PlannerView.open(),
         'sidenavFocusPlannerBtn': () => PlannerView.open(),
-        'planNavBtn': () => { document.getElementById('menuDropdown')?.classList.remove('open'); openPlan(); },
+        'planNavBtn': () => openPlan(),
         'sidenavFocusPlanBtn': () => openPlan(),
         'closePlanPanel': closePlan,
         'addAimBtn': addAim,
@@ -1178,13 +1179,6 @@ function setupEventListeners() {
         const orbit = document.getElementById('durationOrbit');
         if (orbit?.classList.contains('open') && !orbit.contains(e.target)) {
             closeOrbit();
-        }
-
-        // Close navigation menu
-        const menuDropdown = document.getElementById('menuDropdown');
-        const menuBtn = document.getElementById('menuBtn');
-        if (menuDropdown?.classList.contains('open') && !menuDropdown.contains(e.target) && !menuBtn?.contains(e.target)) {
-            menuDropdown.classList.remove('open');
         }
 
         // Close focus area select dropdown

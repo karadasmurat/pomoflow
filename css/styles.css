@@ -515,6 +515,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 }
 
 
+
 .main-content {
     display: flex;
     flex-direction: column;
@@ -707,6 +708,11 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     font-size: 13px;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+.persona-info .level-container {
+    margin-top: 8px;
+    align-items: center;
 }
 
 /* Selection Grid View */
@@ -1431,7 +1437,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 .timer-share-wrapper {
     position: absolute;
     top: 16px;
-    left: 16px;
+    right: 16px;
     z-index: 100;
 }
 
