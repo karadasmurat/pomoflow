@@ -15,11 +15,10 @@ export class SettingsService {
         const themeIcon = document.getElementById('themeIcon');
         if (themeIcon) themeIcon.className = nextTheme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
 
+        // Always persist to localStorage for instant theme restoration on next load
+        localStorage.setItem('pf_theme', nextTheme);
         if (typeof dbManager !== 'undefined' && dbManager.initialized) {
-            console.log('[setAppState] theme:', nextTheme);
             dbManager.setAppState('theme', nextTheme);
-        } else {
-            localStorage.setItem('flowtracker_theme', nextTheme);
         }
         
         return nextTheme;

@@ -74,9 +74,11 @@ async function init() {
                 if (fullState.appState.timer_state) state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
                 if (fullState.appState.categories) state.categories = fullState.appState.categories;
                 if (fullState.appState.theme) {
-                    document.documentElement.setAttribute('data-theme', fullState.appState.theme);
+                    const t = fullState.appState.theme;
+                    document.documentElement.setAttribute('data-theme', t);
+                    localStorage.setItem('pf_theme', t);
                     const themeIcon = document.getElementById('themeIcon');
-                    if (themeIcon) themeIcon.className = fullState.appState.theme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
+                    if (themeIcon) themeIcon.className = t === 'light' ? 'ph ph-moon' : 'ph ph-sun';
                 }
                 if (fullState.appState.notification_prompt) state.notificationPermission = fullState.appState.notification_prompt;
                 if (fullState.appState.ui_state) {

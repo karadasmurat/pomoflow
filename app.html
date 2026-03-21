@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PomoFlow</title>
+  <!-- Inline: apply saved theme before first paint to prevent flash -->
+  <script>(function(){var t=localStorage.getItem('pf_theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="icon" type="image/x-icon" href="assets/images/logo/favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/images/logo/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo/apple-touch-icon-180x180.png">
