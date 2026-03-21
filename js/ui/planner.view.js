@@ -316,6 +316,53 @@ export const PlannerView = {
         this.populatePathPicker();
     },
 
+    // ── Block drag helpers (pointer-based, works on touch + mouse) ──
+
+    _updateBlockDragPreview(clientX, clientY, b, excludeEl) {
+        this._clearBlockDragPreview();
+        excludeEl.style.pointerEvents = 'none';
+        const target = document.elementFromPoint(clientX, clientY);
+        excludeEl.style.pointerEvents = '';
+        const col = target?.closest?.('.day-col');
+        if (!col) return;
+        const rect = col.getBoundingClientRect();
+        const y = Math.max(0, clientY - rect.top);
+        const hours = this.getHours();
+        const snapped = Math.round((y / this.ROW_HEIGHT) * 60 / 30) * 30;
+        const absH = hours[0] + Math.floor(snapped / 60);
+        const h = Math.max(hours[0], Math.min(hours[hours.length - 1], absH));
+        const m = snapped % 60;
+        const dur = this.calcDuration(b.sessions);
+        const top = (h - hours[0]) * this.ROW_HEIGHT + (m / 60) * this.ROW_HEIGHT;
+        const height = Math.max((dur / 60) * this.ROW_HEIGHT, 32);
+        const preview = document.createElement('div');
+        preview.id = 'block-drag-preview';
+        preview.className = `block-drag-preview ${b.color}`;
+        preview.style.cssText = `top:${top}px;height:${height}px;`;
+        col.appendChild(preview);
+    },
+
+    _clearBlockDragPreview() {
+        document.getElementById('block-drag-preview')?.remove();
+    },
+
+    _dropBlock(b, el, clientX, clientY) {
+        el.style.pointerEvents = 'none';
+        const target = document.elementFromPoint(clientX, clientY);
+        el.style.pointerEvents = '';
+        const col = target?.closest?.('.day-col');
+        if (!col) return;
+        const day = parseInt(col.dataset.day, 10);
+        const rect = col.getBoundingClientRect();
+        const y = Math.max(0, clientY - rect.top);
+        const hours = this.getHours();
+        const snapped = Math.round((y / this.ROW_HEIGHT) * 60 / 30) * 30;
+        const absH = hours[0] + Math.floor(snapped / 60);
+        const h = Math.max(hours[0], Math.min(hours[hours.length - 1], absH));
+        const m = snapped % 60;
+        this.moveBlock(b.id, day, h, m);
+    },
+
     async moveBlock(blockId, newDay, newH, newM) {
         const block = this.blocks.find(b => b.id === blockId);
         if (!block) return;
@@ -1232,52 +1279,94 @@ export const PlannerView = {
             ${b.type === 'planned' ? `<div class="resize-handle"><div class="resize-handle-bar"></div></div>` : ''}
         `;
 
-        el.addEventListener('click', e => {
-            e.stopPropagation();
-            if (b.type === 'planned') {
-                this.openDetail(b);
-            }
-        });
+        // ── Unified tap / long-press / pointer-drag handler ──
+        // Touch:  short tap (<450ms, no move) → openDetail
+        //         long press (≥450ms)         → drag-ready state → drag to reposition
+        // Mouse:  click (no move)             → openDetail
+        //         mousedown + move            → drag to reposition immediately
+        {
+            const LONG_PRESS_MS = 450;
+            const DRAG_THRESHOLD = 8;
+            let pressStart = null; // { x, y, pointerId, type, timer }
+            let blockDragActive = false;
 
-        // Make planned blocks draggable for rescheduling
-        if (b.type === 'planned') {
-            el.setAttribute('draggable', 'true');
-            el.addEventListener('dragstart', e => {
-                e.stopPropagation();
-                this.draggingBlock = b;
-                this.dragging = { areaId: null, color: null };
-                this.draggingPath = null;
-                this.draggingDeadline = false;
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', `block:${b.id}`);
-
+            const startDrag = (pointerId, clientX, clientY) => {
+                blockDragActive = true;
+                el.classList.add('block-drag-ready');
+                navigator.vibrate?.(30);
+                el.setPointerCapture(pointerId);
                 const ghost = document.getElementById('drag-ghost');
                 const ghostInner = document.getElementById('drag-ghost-inner');
                 if (ghost && ghostInner) {
                     ghost.classList.add('active');
+                    ghost.style.left = `${clientX + 12}px`;
+                    ghost.style.top  = `${clientY - 16}px`;
                     ghostInner.className = `drag-ghost-inner ${b.color}`;
                     ghostInner.textContent = `${b.areaName} · ${b.sessions}×`;
                 }
+            };
 
-                const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
-                canvas.style.cssText = 'position:fixed;top:-2px;left:-2px;opacity:0;pointer-events:none;';
-                document.body.appendChild(canvas);
-                e.dataTransfer.setDragImage(canvas, 0, 0);
+            const endDrag = (didDrop, clientX, clientY) => {
+                clearTimeout(pressStart?.timer);
+                el.classList.remove('block-drag-ready');
+                document.getElementById('drag-ghost')?.classList.remove('active');
+                this._clearBlockDragPreview();
+                if (didDrop) this._dropBlock(b, el, clientX, clientY);
+                blockDragActive = false;
+                pressStart = null;
+            };
 
-                const moveHandler = (ev) => {
-                    ev.preventDefault();
-                    if (ghost) { ghost.style.left = `${ev.clientX + 12}px`; ghost.style.top = `${ev.clientY - 16}px`; }
-                };
-                const endHandler = () => {
-                    canvas.remove();
-                    if (ghost) ghost.classList.remove('active');
-                    this.draggingBlock = null;
-                    document.documentElement.removeEventListener('dragover', moveHandler);
-                    document.documentElement.removeEventListener('dragend', endHandler);
-                };
-                document.documentElement.addEventListener('dragover', moveHandler);
-                document.documentElement.addEventListener('dragend', endHandler);
+            el.addEventListener('pointerdown', e => {
+                if (e.button !== 0 && e.pointerType !== 'touch') return;
+                e.stopPropagation();
+                pressStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, type: e.pointerType, timer: null };
+                blockDragActive = false;
+                // Touch-only: gate drag behind a long press
+                if (b.type === 'planned' && e.pointerType === 'touch') {
+                    pressStart.timer = setTimeout(() => {
+                        if (pressStart) startDrag(pressStart.pointerId, pressStart.x, pressStart.y);
+                    }, LONG_PRESS_MS);
+                }
             });
+
+            el.addEventListener('pointermove', e => {
+                if (!pressStart) return;
+                const moved = Math.abs(e.clientX - pressStart.x) > DRAG_THRESHOLD ||
+                              Math.abs(e.clientY - pressStart.y) > DRAG_THRESHOLD;
+                if (moved && !blockDragActive) {
+                    clearTimeout(pressStart.timer);
+                    if (pressStart.type === 'touch') {
+                        // Scroll gesture — cancel long press, let scroll happen
+                        pressStart = null;
+                        return;
+                    }
+                    // Mouse drag starts immediately on movement
+                    if (b.type === 'planned') startDrag(pressStart.pointerId, e.clientX, e.clientY);
+                }
+                if (blockDragActive) {
+                    const ghost = document.getElementById('drag-ghost');
+                    if (ghost) { ghost.style.left = `${e.clientX + 12}px`; ghost.style.top = `${e.clientY - 16}px`; }
+                    this._updateBlockDragPreview(e.clientX, e.clientY, b, el);
+                }
+            });
+
+            el.addEventListener('pointerup', e => {
+                if (!pressStart) return;
+                const moved = Math.abs(e.clientX - pressStart.x) > DRAG_THRESHOLD ||
+                              Math.abs(e.clientY - pressStart.y) > DRAG_THRESHOLD;
+                const wasDragging = blockDragActive;
+                endDrag(wasDragging && moved, e.clientX, e.clientY);
+                if (!wasDragging && !moved) {
+                    if (b.type === 'planned') this.openDetail(b);
+                }
+            });
+
+            el.addEventListener('pointercancel', () => {
+                if (pressStart) endDrag(false, 0, 0);
+            });
+
+            // Always stop propagation to prevent column's click/context menu
+            el.addEventListener('click', e => e.stopPropagation());
         }
 
         // Path drag-and-drop target

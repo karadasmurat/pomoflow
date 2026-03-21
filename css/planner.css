@@ -1251,6 +1251,31 @@
   opacity: 0.5;
 }
 
+/* ── Block drag-ready (long-press activated) ── */
+#focusPlannerOverlay .block.block-drag-ready {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 2px var(--accent), 0 6px 20px rgba(0, 0, 0, 0.45);
+  opacity: 0.85;
+  z-index: 20;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+/* ── Block drop-preview ghost (shown in destination column during drag) ── */
+#focusPlannerOverlay .block-drag-preview {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 6px;
+  border: 2px dashed currentColor;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.55;
+}
+#focusPlannerOverlay .block-drag-preview.green  { background: var(--green-bg);  color: var(--green-bar); }
+#focusPlannerOverlay .block-drag-preview.blue   { background: var(--blue-bg);   color: var(--blue-bar); }
+#focusPlannerOverlay .block-drag-preview.violet { background: var(--violet-bg); color: var(--violet-bar); }
+#focusPlannerOverlay .block-drag-preview.amber  { background: var(--amber-bg);  color: var(--amber-bar); }
+
 /* ── POPOVER ── */
 .popover-overlay {
   position: fixed;
