@@ -291,14 +291,20 @@ export const PlannerView = {
         // Use visualViewport when available — it excludes the browser's bottom bar,
         // on-screen keyboard, and iOS home indicator from the usable area.
         const vv = window.visualViewport;
-        const visibleTop    = vv ? vv.offsetTop                    : 0;
-        const visibleBottom = vv ? vv.offsetTop + vv.height        : window.innerHeight;
-        const visibleLeft   = vv ? vv.offsetLeft                   : 0;
-        const visibleRight  = vv ? vv.offsetLeft + vv.width        : window.innerWidth;
+        const visibleTop    = vv ? vv.offsetTop             : 0;
+        const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+        const visibleLeft   = vv ? vv.offsetLeft            : 0;
+        const visibleRight  = vv ? vv.offsetLeft + vv.width : window.innerWidth;
 
-        // Effective safe bounds = intersection of overlay rect and visual viewport
+        // Account for the app's own mobile bottom bar (56px, visible on small screens)
+        const mobileBar = document.querySelector('#focusPlannerOverlay .mobile-bottom-bar');
+        const mobileBarH = (mobileBar && getComputedStyle(mobileBar).display !== 'none')
+            ? mobileBar.offsetHeight : 0;
+
+        // Effective safe bounds = intersection of overlay rect and visual viewport,
+        // minus the in-app bottom bar
         const boundsTop    = Math.max(overlay.top,    visibleTop)    + MARGIN;
-        const boundsBottom = Math.min(overlay.bottom, visibleBottom) - MARGIN;
+        const boundsBottom = Math.min(overlay.bottom, visibleBottom) - mobileBarH - MARGIN;
         const boundsLeft   = Math.max(overlay.left,   visibleLeft)   + MARGIN;
         const boundsRight  = Math.min(overlay.right,  visibleRight)  - MARGIN;
 
