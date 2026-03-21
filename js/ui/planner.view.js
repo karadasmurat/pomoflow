@@ -265,9 +265,8 @@ export const PlannerView = {
         document.getElementById('detail-duration').textContent = this.formatDuration(dur);
 
         const actions = panel.querySelectorAll('.detail-action');
-        if (actions[0]) actions[0].onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
+        if (actions[0]) actions[0].onclick = () => this.deleteBlock(b.id);
         if (actions[1]) actions[1].onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
-        if (actions[2]) actions[2].onclick = () => this.deleteBlock(b.id);
 
         this._detailAnchorEl = anchorEl || null;
 

@@ -3066,9 +3066,18 @@
       #focusPlannerOverlay .detail-action.destructive {
         color: #9B4444;
       }
-
       #focusPlannerOverlay .detail-action.destructive:hover {
         border-color: #9B4444;
+        background: rgba(155, 68, 68, 0.06);
+      }
+
+      #focusPlannerOverlay .detail-action.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      #focusPlannerOverlay .detail-action.primary:hover {
+        opacity: 0.88;
       }
 
       #focusPlannerOverlay
@@ -4096,9 +4105,8 @@
         </div>
         <div class="detail-divider"></div>
         <div class="detail-actions">
-          <button class="detail-action">Edit time</button>
-          <button class="detail-action">Change sessions</button>
-          <button class="detail-action destructive">Remove block</button>
+          <button class="detail-action destructive"><i class="ph ph-trash"></i> Delete</button>
+          <button class="detail-action primary"><i class="ph ph-pencil"></i> Edit</button>
         </div>
       </div>
     </div>
