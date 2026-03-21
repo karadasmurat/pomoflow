@@ -282,23 +282,36 @@ export const PlannerView = {
         const PANEL_W = panel.offsetWidth  || 240;
         const PANEL_H = panel.offsetHeight || 220;
         const GAP    = 8;   // gap between block edge and panel
-        const MARGIN = 8;   // min distance from overlay edge
+        const MARGIN = 8;   // min distance from any visible edge
 
         const anchor  = anchorEl.getBoundingClientRect();
         const overlay = document.getElementById('focusPlannerOverlay')?.getBoundingClientRect();
         if (!overlay) return;
 
+        // Use visualViewport when available — it excludes the browser's bottom bar,
+        // on-screen keyboard, and iOS home indicator from the usable area.
+        const vv = window.visualViewport;
+        const visibleTop    = vv ? vv.offsetTop                    : 0;
+        const visibleBottom = vv ? vv.offsetTop + vv.height        : window.innerHeight;
+        const visibleLeft   = vv ? vv.offsetLeft                   : 0;
+        const visibleRight  = vv ? vv.offsetLeft + vv.width        : window.innerWidth;
+
+        // Effective safe bounds = intersection of overlay rect and visual viewport
+        const boundsTop    = Math.max(overlay.top,    visibleTop)    + MARGIN;
+        const boundsBottom = Math.min(overlay.bottom, visibleBottom) - MARGIN;
+        const boundsLeft   = Math.max(overlay.left,   visibleLeft)   + MARGIN;
+        const boundsRight  = Math.min(overlay.right,  visibleRight)  - MARGIN;
+
         // Horizontal: prefer right side of block, flip to left if it would clip
         let left = anchor.right + GAP;
-        if (left + PANEL_W > overlay.right - MARGIN) {
+        if (left + PANEL_W > boundsRight) {
             left = anchor.left - PANEL_W - GAP;
         }
-        // Clamp within overlay horizontally
-        left = Math.max(overlay.left + MARGIN, Math.min(left, overlay.right - PANEL_W - MARGIN));
+        left = Math.max(boundsLeft, Math.min(left, boundsRight - PANEL_W));
 
-        // Vertical: align panel top to block top, clamp within overlay
+        // Vertical: align panel top to block top, clamp within safe bounds
         let top = anchor.top;
-        top = Math.max(overlay.top + MARGIN, Math.min(top, overlay.bottom - PANEL_H - MARGIN));
+        top = Math.max(boundsTop, Math.min(top, boundsBottom - PANEL_H));
 
         panel.style.left  = `${left}px`;
         panel.style.top   = `${top}px`;
