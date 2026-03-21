@@ -73,7 +73,7 @@ class DatabaseManager {
     }
 
     // High-level API
-    async insertFocusArea(area) { 
+    async insertFocusArea(area) {
         // Force is_active to 1 (Active) unless explicitly completed
         const isCompleted = (area.completed === true || area.completed === 1 || area.completed === 'true');
         return this._send('insert_focus_area', {
@@ -83,28 +83,31 @@ class DatabaseManager {
             category: area.category,
             is_active: isCompleted ? 0 : 1,
             created_at: area.created_at || area.createdAt,
-            updated_at: area.updated_at
-        }); 
+            updated_at: area.updated_at,
+            skipSync: area.skipSync ?? false,
+        });
     }
     async deleteFocusArea(id) { return this._send('delete_focus_area', { id }); }
     
-    async insertSession(session) { 
+    async insertSession(session) {
         return this._send('insert_session', {
             ...session,
             id: session.id || uuidv7(),
             created_at: session.created_at || session.timestamp,
-            updated_at: session.updated_at
-        }); 
+            updated_at: session.updated_at,
+            skipSync: session.skipSync ?? false,
+        });
     }
     async deleteSession(id) { return this._send('delete_session', { id }); }
 
-    async insertAim(aim) { 
+    async insertAim(aim) {
         return this._send('insert_aim', {
             ...aim,
             id: aim.id || uuidv7(),
             created_at: aim.created_at || aim.createdAt,
-            updated_at: aim.updated_at
-        }); 
+            updated_at: aim.updated_at,
+            skipSync: aim.skipSync ?? false,
+        });
     }
     async deleteAim(id) { return this._send('delete_aim', { id }); }
 
@@ -116,7 +119,8 @@ class DatabaseManager {
             startMinutes: block.startMinutes,
             durationMinutes: block.durationMinutes,
             notes: block.notes || null,
-            pathId: block.pathId || null
+            pathId: block.pathId || null,
+            skipSync: block.skipSync ?? false,
         });
     }
     async deletePlannedBlock(id) { return this._send('delete_planned_block', { id }); }
@@ -139,7 +143,8 @@ class DatabaseManager {
             description: path.description || null,
             color: path.color || '#3D8F5A',
             deadline: path.deadline || null,
-            status: path.status || 'active'
+            status: path.status || 'active',
+            skipSync: path.skipSync ?? false,
         });
     }
     async archivePath(id) { return this._send('archive_path', { id }); }

@@ -835,7 +835,12 @@
   border-bottom: 1px solid var(--rule);
   flex-shrink: 0;
   background: var(--white);
+  overflow-y: scroll; /* matches cal-body scrollbar gutter so grids stay aligned */
 }
+
+/* hide the phantom scrollbar on the header */
+#focusPlannerOverlay .cal-head::-webkit-scrollbar { background: transparent; }
+#focusPlannerOverlay .cal-head::-webkit-scrollbar-thumb { background: transparent; }
 
 #focusPlannerOverlay .cal-time-gutter-head {
   border-right: 1px solid var(--rule);
@@ -2909,6 +2914,12 @@
   #focusPlannerOverlay .cal-main {
     padding-bottom: 56px;
     width: 100%;
+  }
+
+  /* Left padding on time gutter elements (overlay starts at x=0, no sidebar) */
+  #focusPlannerOverlay .cal-time-gutter-head,
+  #focusPlannerOverlay .time-gutter {
+    padding-left: 4px;
   }
 
   /* Show mobile bottom bar */

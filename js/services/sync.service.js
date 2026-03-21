@@ -58,10 +58,11 @@ class SyncService {
                     category: fa.category,
                     completed: fa.is_active === false,
                     created_at: fa.created_at, updated_at: fa.updated_at,
+                    skipSync: true,
                 });
             }
             for (const p of paths || []) {
-                await dbManager.insertPath(p);
+                await dbManager.insertPath({ ...p, skipSync: true });
             }
             for (const b of plannedBlocks || []) {
                 await dbManager.insertPlannedBlock({
@@ -72,6 +73,7 @@ class SyncService {
                     durationMinutes: b.duration_minutes,
                     notes: b.notes,
                     pathId: b.path_id,
+                    skipSync: true,
                 });
             }
             for (const s of sessions || []) {
@@ -85,6 +87,7 @@ class SyncService {
                     timestamp: s.timestamp,
                     created_at: s.created_at,
                     updated_at: s.updated_at,
+                    skipSync: true,
                 });
             }
             for (const a of aims || []) {
@@ -96,6 +99,7 @@ class SyncService {
                     completed: a.is_completed,
                     created_at: a.created_at,
                     updated_at: a.updated_at,
+                    skipSync: true,
                 });
             }
 

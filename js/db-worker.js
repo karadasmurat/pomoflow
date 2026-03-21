@@ -320,7 +320,7 @@ self.onmessage = async (e) => {
                     `, {
                         bind: [payload.id, payload.name, payload.color, payload.category, payload.is_active ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
                     });
-                    logSync('UPSERT_FOCUS_AREA', {
+                    if (!payload.skipSync) logSync('UPSERT_FOCUS_AREA', {
                         id: payload.id, name: payload.name, color: payload.color,
                         category: payload.category, is_active: payload.is_active ? 1 : 0, is_deleted: 0
                     });
@@ -347,7 +347,7 @@ self.onmessage = async (e) => {
                     `, {
                         bind: [payload.id, payload.taskId, payload.taskName, payload.taskColor, payload.duration, payload.xp || 0, payload.timestamp, payload.created_at || payload.timestamp, payload.updated_at || new Date().toISOString()]
                     });
-                    logSync('UPSERT_SESSION', {
+                    if (!payload.skipSync) logSync('UPSERT_SESSION', {
                         id: payload.id, focus_area_id: payload.taskId, task_name: payload.taskName,
                         task_color: payload.taskColor, duration_seconds: payload.duration,
                         xp_earned: payload.xp || 0, timestamp: payload.timestamp
@@ -376,7 +376,7 @@ self.onmessage = async (e) => {
                     `, {
                         bind: [payload.id, payload.focusAreaId, payload.targetMinutes, payload.deadline, payload.completed ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString()]
                     });
-                    logSync('UPSERT_AIM', {
+                    if (!payload.skipSync) logSync('UPSERT_AIM', {
                         id: payload.id, focus_area_id: payload.focusAreaId,
                         target_minutes: payload.targetMinutes, target_date: payload.deadline,
                         is_completed: payload.completed ? 1 : 0
@@ -468,7 +468,7 @@ self.onmessage = async (e) => {
                     `, {
                         bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null, payload.pathId || null]
                     });
-                    logSync('UPSERT_PLANNED_BLOCK', {
+                    if (!payload.skipSync) logSync('UPSERT_PLANNED_BLOCK', {
                         id: payload.id, focus_area_id: payload.focusAreaId, planned_date: payload.plannedDate,
                         start_minutes: payload.startMinutes, duration_minutes: payload.durationMinutes,
                         notes: payload.notes || null, path_id: payload.pathId || null
@@ -515,7 +515,7 @@ self.onmessage = async (e) => {
                     `, {
                         bind: [payload.id, payload.name, payload.description || null, payload.color || '#3D8F5A', payload.deadline || null, payload.status || 'active']
                     });
-                    logSync('UPSERT_PATH', {
+                    if (!payload.skipSync) logSync('UPSERT_PATH', {
                         id: payload.id, name: payload.name, description: payload.description || null,
                         color: payload.color || '#3D8F5A', deadline: payload.deadline || null,
                         status: payload.status || 'active'
