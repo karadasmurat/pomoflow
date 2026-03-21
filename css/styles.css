@@ -3782,6 +3782,29 @@ sliding-card[active] .focus-area-play-btn {
     text-align: center;
 }
 
+.setting-select {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 5px 8px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.setting-sep {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.setting-hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
 .setting-toggle {
     position: relative;
     width: 44px;

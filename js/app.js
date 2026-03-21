@@ -675,6 +675,19 @@ function updateProfileUI() {
     }
 }
 
+function _buildHourOptions(selectEl, currentVal) {
+    if (selectEl.options.length === 0) {
+        for (let h = 0; h < 24; h++) {
+            const opt = document.createElement('option');
+            opt.value = h;
+            const ampm = h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+            opt.textContent = ampm;
+            selectEl.appendChild(opt);
+        }
+    }
+    selectEl.value = currentVal;
+}
+
 function openSettings() {
     closeFocusAreas(); closePlan();
     const p = document.getElementById('settingsPanel'); const o = document.getElementById('settingsOverlay');
@@ -683,7 +696,10 @@ function openSettings() {
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
-    
+
+    _buildHourOptions(document.getElementById('activeHoursStart'), state.settings.activeHoursStart ?? 8);
+    _buildHourOptions(document.getElementById('activeHoursEnd'), state.settings.activeHoursEnd ?? 22);
+
     const variant = state.settings.cardVariant || 'glass';
     document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.variant === variant);
@@ -770,6 +786,8 @@ function closeSettings() {
         shortBreakDuration: parseInt(document.getElementById('shortBreakDuration').value),
         longBreakDuration: parseInt(document.getElementById('longBreakDuration').value),
         use12Hour: document.getElementById('timeFormat')?.classList.contains('active'),
+        activeHoursStart: parseInt(document.getElementById('activeHoursStart').value),
+        activeHoursEnd: parseInt(document.getElementById('activeHoursEnd').value),
         cardVariant: activeVariantBtn ? activeVariantBtn.dataset.variant : 'glass'
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');

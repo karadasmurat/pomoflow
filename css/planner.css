@@ -19,6 +19,32 @@
   --blue-bar: #6B8B9E;
 }
 
+[data-theme="dark"] {
+  /* Area background + border: translucent tints on dark surface */
+  --green-bg:   rgba(107, 158, 120, 0.14);
+  --green-brd:  rgba(107, 158, 120, 0.30);
+  --amber-bg:   rgba(158, 139, 107, 0.14);
+  --amber-brd:  rgba(158, 139, 107, 0.30);
+  --violet-bg:  rgba(139, 107, 158, 0.14);
+  --violet-brd: rgba(139, 107, 158, 0.30);
+  --blue-bg:    rgba(107, 139, 158, 0.14);
+  --blue-brd:   rgba(107, 139, 158, 0.30);
+
+  /* Area text: readable on dark translucent backgrounds */
+  --green-txt:  #a8d4b2;
+  --amber-txt:  #d4c2a0;
+  --violet-txt: #c4a8d8;
+  --blue-txt:   #a0bdd4;
+}
+
+/* Today column: subtle accent tint instead of stark white */
+[data-theme="dark"] #focusPlannerOverlay .day-col.today {
+  background: rgba(61, 143, 90, 0.06);
+}
+[data-theme="dark"] #focusPlannerOverlay .day-head.today {
+  background: transparent;
+}
+
 #focusPlannerOverlay,
 #focusPlannerOverlay *::before,
 #focusPlannerOverlay *::after {
@@ -36,6 +62,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 /* ── NAV ── */
@@ -151,10 +178,12 @@
   width: 200px;
   flex-shrink: 0;
   border-right: 1px solid var(--rule);
-  background: var(--bg-card);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 8px;
+  gap: 8px;
 }
 
 #focusPlannerOverlay .sidebar-head {
@@ -180,12 +209,253 @@
   margin-top: 1px;
 }
 
-#focusPlannerOverlay .sidebar-areas {
-  flex: 1;
+/* ── SIDEBAR SECTIONS (new layout) ── */
+#focusPlannerOverlay .sidebar-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
-  max-height: 55%;
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#focusPlannerOverlay .sidebar-section--paths {
+  flex: 1.4 1 0;  /* give paths slightly more room */
+}
+
+#focusPlannerOverlay .sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 9px;
+  flex-shrink: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--rule);
+}
+
+#focusPlannerOverlay .sidebar-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+}
+
+#focusPlannerOverlay .sidebar-section-new-btn {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--f);
+  transition: opacity 0.15s;
+  min-height: 0;
+  min-width: 0;
+  letter-spacing: -0.01em;
+}
+
+#focusPlannerOverlay .sidebar-section-new-btn:hover {
+  opacity: 0.8;
+}
+
+#focusPlannerOverlay .sidebar-section-search {
+  padding: 0 10px 8px;
+  flex-shrink: 0;
+}
+
+#focusPlannerOverlay .search-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-input);
+  padding: 0 8px 0 10px;
+  transition: border-color 0.15s;
+}
+
+#focusPlannerOverlay .search-pill:focus-within {
+  border-color: var(--ink-mid);
+}
+
+#focusPlannerOverlay .search-pill-icon {
+  color: var(--ink-soft);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+#focusPlannerOverlay .search-pill-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 11px;
+  font-family: var(--f);
+  padding: 6px 0;
+  outline: none;
+  min-width: 0;
+}
+
+#focusPlannerOverlay .search-pill-input::placeholder {
+  color: var(--ink-soft);
+}
+
+#focusPlannerOverlay .search-pill-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+#focusPlannerOverlay .search-pill-clear:hover {
+  color: var(--ink);
+}
+
+/* Hide × when input is empty (placeholder visible), show when typing */
+#focusPlannerOverlay .search-pill-input:placeholder-shown + .search-pill-clear {
+  display: none;
+}
+
+/* ── MASTER CHECKBOX ROW ── */
+#focusPlannerOverlay .paths-master-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px 8px;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#focusPlannerOverlay .paths-master-row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--ink-soft);
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+#focusPlannerOverlay .paths-master-row input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#focusPlannerOverlay .paths-master-row input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 5px;
+  height: 7px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+#focusPlannerOverlay .paths-master-row input[type="checkbox"]:indeterminate {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#focusPlannerOverlay .paths-master-row input[type="checkbox"]:indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 5px;
+  width: 8px;
+  height: 1.5px;
+  background: #fff;
+}
+
+#focusPlannerOverlay .paths-master-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  letter-spacing: 0.01em;
+  flex: 1;
+}
+
+#focusPlannerOverlay .paths-master-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+  min-width: 0;
+}
+
+#focusPlannerOverlay .sidebar-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 8px 10px 4px;
+}
+
+#focusPlannerOverlay .sidebar-paths-counter {
+  font-size: 10px;
+  color: var(--ink-soft);
+  padding: 6px 14px 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--rule);
+  font-weight: 500;
+}
+
+/* ── DRAG HANDLE on area cards ── */
+#focusPlannerOverlay .area-card-drag-handle {
+  cursor: grab;
+  -webkit-user-drag: element;
+  color: var(--ink-mid);
+  opacity: 0.55;
+  transition: opacity 0.15s, color 0.15s;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-left: 0;
+  margin-right: 2px;
+  padding: 0;
+  line-height: 1;
+  align-self: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#focusPlannerOverlay .area-card-drag-handle:hover {
+  color: var(--ink);
+  opacity: 1;
+}
+
+#focusPlannerOverlay .area-card-drag-handle:active {
+  cursor: grabbing;
+}
+
+#focusPlannerOverlay .sidebar-areas {
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
-  padding: 10px 10px;
+  padding: 0 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -195,51 +465,59 @@
 .area-card {
   background: var(--white);
   border: 1px solid var(--rule);
-  border-radius: 8px;
-  padding: 10px 11px;
-  cursor: grab;
-  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+  border-radius: 7px;
+  padding: 6px 8px 6px 6px;
+  cursor: default;
+  transition: box-shadow 0.15s, transform 0.12s;
   position: relative;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 #focusPlannerOverlay .area-card:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-#focusPlannerOverlay .area-card:active {
-  cursor: grabbing;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 #focusPlannerOverlay .area-card.green {
+  background: var(--green-bg);
+  border: 1px solid var(--green-brd);
   border-left: 3px solid var(--green-bar);
 }
 
 #focusPlannerOverlay .area-card.amber {
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-brd);
   border-left: 3px solid var(--amber-bar);
 }
 
 #focusPlannerOverlay .area-card.violet {
+  background: var(--violet-bg);
+  border: 1px solid var(--violet-brd);
   border-left: 3px solid var(--violet-bar);
 }
 
 #focusPlannerOverlay .area-card.blue {
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-brd);
   border-left: 3px solid var(--blue-bar);
 }
 
 #focusPlannerOverlay .area-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 7px;
+  gap: 5px;
 }
 
 #focusPlannerOverlay .area-card-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 #focusPlannerOverlay .sidebar-areas-empty {
@@ -562,6 +840,39 @@
 #focusPlannerOverlay .cal-time-gutter-head {
   border-right: 1px solid var(--rule);
   background: var(--bg-card);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+
+#focusPlannerOverlay .hours-mode-btn {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 2px 5px;
+  cursor: pointer;
+  font-family: var(--f);
+  line-height: 1.2;
+  min-height: 0;
+  min-width: 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+#focusPlannerOverlay .hours-mode-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+#focusPlannerOverlay .hours-mode-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 #focusPlannerOverlay .day-head {
@@ -739,8 +1050,10 @@
 #focusPlannerOverlay .day-col {
   border-right: 1px solid var(--rule);
   position: relative;
-  min-height: 576px;
-  /* 8 × 72px */
+  min-height: 0; /* set dynamically by JS */
+  user-select: none;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 #focusPlannerOverlay .day-col:last-child {
@@ -817,6 +1130,7 @@
 .block.planned {
   border-width: 1.5px;
   border-style: dashed;
+  -webkit-user-drag: element;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1385,6 +1699,7 @@
   margin-bottom: 6px;
 }
 
+#focusPlannerOverlay .modal-field select,
 #focusPlannerOverlay .modal-field input[type="text"],
 #focusPlannerOverlay .modal-field input[type="date"] {
   width: 100%;
@@ -1568,6 +1883,48 @@
   font-weight: 500;
   opacity: 0.8;
   white-space: nowrap;
+}
+
+/* ── DRAG-SELECT GHOST (click-drag to reserve a block) ── */
+.drag-select-ghost {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 6px;
+  background: var(--primary-dim, rgba(59, 130, 246, 0.12));
+  border: 1.5px solid var(--primary, #3b82f6);
+  pointer-events: none;
+  z-index: 12;
+  overflow: hidden;
+  display: none;
+}
+
+#focusPlannerOverlay .drag-select-ghost.visible {
+  display: flex;
+  align-items: flex-end;
+  padding: 4px 7px;
+}
+
+#focusPlannerOverlay .dsg-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+#focusPlannerOverlay .dsg-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary, #3b82f6);
+  white-space: nowrap;
+}
+
+#focusPlannerOverlay .dsg-sessions {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--primary, #3b82f6);
+  opacity: 0.75;
+  margin-left: auto;
 }
 
 /* time pip that follows cursor on column hover (no drag) */
@@ -1771,6 +2128,8 @@
   padding: 3px 8px;
   cursor: pointer;
   transition: background 0.15s;
+  min-height: 0;
+  min-width: 0;
 }
 
 #focusPlannerOverlay .new-path-btn:hover {
@@ -1820,11 +2179,14 @@
 #focusPlannerOverlay .path-card {
   background: var(--white);
   border: 1px solid var(--rule);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-left: 3px solid var(--path-color, var(--accent));
+  border-radius: 7px;
+  padding: 6px 8px 6px 6px;
   cursor: pointer;
   transition: box-shadow 0.15s, border-color 0.15s;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: element;
 }
 
 #focusPlannerOverlay .path-card:hover {
@@ -1833,33 +2195,68 @@
 
 #focusPlannerOverlay .path-card.active {
   border-color: var(--path-color, var(--accent));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--path-color, var(--accent)) 20%, transparent);
+  border-left-color: var(--path-color, var(--accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--path-color, var(--accent)) 25%, transparent);
+  background: color-mix(in srgb, var(--path-color, var(--accent)) 6%, var(--white));
 }
 
 #focusPlannerOverlay .path-card-top {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
 }
 
-#focusPlannerOverlay .path-card-actions {
-  margin-left: auto;
+/* Checkbox */
+#focusPlannerOverlay .path-card-check {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1.5px solid var(--ink-soft);
   flex-shrink: 0;
+  position: relative;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+#focusPlannerOverlay .path-card-check::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 4px;
+  height: 6px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+#focusPlannerOverlay .path-card.active .path-card-check {
+  background: var(--path-color, var(--accent));
+  border-color: var(--path-color, var(--accent));
+}
+
+#focusPlannerOverlay .path-card.active .path-card-check::after {
+  opacity: 1;
 }
 
 #focusPlannerOverlay .path-card-archive-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  min-width: 0;
   border: none;
   background: none;
   cursor: pointer;
   color: var(--ink-soft);
-  font-size: 11px;
-  border-radius: 4px;
+  font-size: 10px;
+  border-radius: 3px;
   opacity: 0;
+  flex-shrink: 0;
   transition: opacity 0.15s, background 0.15s;
   padding: 0;
   line-height: 1;
@@ -1875,8 +2272,8 @@
 }
 
 #focusPlannerOverlay .path-card-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -1889,20 +2286,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-#focusPlannerOverlay .path-card-meta {
-  font-size: 10px;
-  color: var(--ink-soft);
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  min-width: 0;
 }
 
 #focusPlannerOverlay .path-card-deadline {
   font-size: 10px;
   color: var(--ink-soft);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 #focusPlannerOverlay .path-card-deadline.urgent {
@@ -1910,16 +2301,12 @@
   font-weight: 600;
 }
 
-#focusPlannerOverlay .path-card-progress {
-  margin-top: 6px;
-}
-
 #focusPlannerOverlay .path-card-bar {
-  height: 3px;
+  height: 2px;
   background: var(--rule);
   border-radius: 2px;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 #focusPlannerOverlay .path-card-bar-fill {
@@ -2169,12 +2556,9 @@
   border-radius: 3px;
 }
 
-/* Close button */
+/* Close button — lives inside .planner-header flex row */
 #focusPlannerClose {
-  position: fixed;
-  top: 14px;
-  right: 16px;
-  z-index: 9100;
+  flex-shrink: 0;
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -2334,4 +2718,278 @@
 #focusPlannerOverlay .path-color-swatch.active {
   border-color: var(--ink);
   transform: scale(1.15);
+}
+
+/* ── LIGHT MODE OVERRIDES ── */
+[data-theme="light"] #focusPlannerOverlay .view-toggle,
+[data-theme="light"] #focusPlannerOverlay .chevron-pill,
+[data-theme="light"] #focusPlannerOverlay .filter-group {
+  background: #DDD9D3;
+  border-color: #C8C4BE;
+}
+
+[data-theme="light"] #focusPlannerOverlay .view-toggle-btn.active,
+[data-theme="light"] #focusPlannerOverlay .filter-btn.active {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+[data-theme="light"] #focusPlannerOverlay .chevron-pill-btn:hover {
+  background: #FFFFFF;
+}
+
+[data-theme="light"] #focusPlannerOverlay .sidebar-section-header {
+  border-bottom-color: #E8E4DE;
+}
+
+[data-theme="light"] #focusPlannerOverlay .sidebar-section {
+  border-color: #E0DDD8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* ── CALENDAR CONTEXT MENU ── */
+#focusPlannerOverlay .cal-ctx-menu {
+  position: absolute;
+  z-index: 9999;
+  background: var(--surface-elevated, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 180px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#focusPlannerOverlay .cal-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+#focusPlannerOverlay .cal-ctx-item:hover {
+  background: var(--surface);
+}
+
+#focusPlannerOverlay .cal-ctx-icon {
+  font-size: 11px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+[data-theme="light"] #focusPlannerOverlay .cal-ctx-menu {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] #focusPlannerOverlay .cal-ctx-item:hover {
+  background: #F0EFED;
+}
+
+/* ══════════════════════════════════════════
+   MOBILE RESPONSIVE  (≤ 480px)
+   ══════════════════════════════════════════ */
+
+/* ── MOBILE BOTTOM BAR ── */
+#focusPlannerOverlay .mobile-bottom-bar {
+  display: none;
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--white);
+  border-top: 1px solid var(--rule);
+  z-index: 500;
+  align-items: stretch;
+}
+
+#focusPlannerOverlay .mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--f);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  min-height: 0;
+  min-width: 0;
+  transition: color 0.15s;
+}
+
+#focusPlannerOverlay .mobile-tab i {
+  font-size: 22px;
+}
+
+#focusPlannerOverlay .mobile-tab.active {
+  color: var(--accent);
+}
+
+/* ── MOBILE SHEET BACKDROP ── */
+#focusPlannerOverlay .mobile-sheet-backdrop {
+  display: none;
+  position: absolute;
+  inset: 0;
+  bottom: 56px;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 600;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+#focusPlannerOverlay .mobile-sheet-backdrop.open {
+  opacity: 1;
+}
+
+/* ── MOBILE SHEET ── */
+#focusPlannerOverlay .mobile-sheet {
+  display: none;
+  position: absolute;
+  bottom: 56px; left: 0; right: 0;
+  max-height: 72vh;
+  background: var(--bg-card, var(--bg));
+  border-radius: 16px 16px 0 0;
+  z-index: 700;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+
+#focusPlannerOverlay .mobile-sheet.open {
+  transform: translateY(0);
+}
+
+#focusPlannerOverlay .mobile-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rule);
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+}
+
+/* ── NAV COMPRESSION: 481–900px (no sidebar breakpoint, squeeze nav) ── */
+@media (max-width: 900px) {
+  #focusPlannerOverlay .planner-header {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  #focusPlannerOverlay .filter-btn {
+    padding: 4px 8px;
+  }
+}
+
+/* ── MEDIA QUERY ── */
+@media (max-width: 480px) {
+  /* Hide desktop sidebar */
+  #focusPlannerOverlay .sidebar {
+    display: none !important;
+  }
+
+  /* Calendar gets full width + bottom padding for bar */
+  #focusPlannerOverlay .cal-main {
+    padding-bottom: 56px;
+    width: 100%;
+  }
+
+  /* Show mobile bottom bar */
+  #focusPlannerOverlay .mobile-bottom-bar {
+    display: flex;
+  }
+
+  /* Sheets: flex layout but hidden off-screen via transform */
+  #focusPlannerOverlay .mobile-sheet {
+    display: flex;
+    height: 72vh;
+    visibility: hidden;
+  }
+
+  #focusPlannerOverlay .mobile-sheet.open {
+    visibility: visible;
+  }
+
+  /* Backdrop: block but invisible until .open */
+  #focusPlannerOverlay .mobile-sheet-backdrop {
+    display: block;
+    pointer-events: none;
+  }
+
+  #focusPlannerOverlay .mobile-sheet-backdrop.open {
+    pointer-events: auto;
+  }
+
+  /* Strip desktop card styling from sidebar sections inside sheets */
+  #focusPlannerOverlay .mobile-sheet .sidebar-section {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Larger touch targets inside sheets */
+  #focusPlannerOverlay .mobile-sheet .path-card {
+    padding: 10px 10px 10px 8px;
+  }
+
+  #focusPlannerOverlay .mobile-sheet .area-card {
+    padding: 10px 10px 10px 6px;
+  }
+
+  #focusPlannerOverlay .mobile-sheet .area-card-name {
+    font-size: 13px;
+  }
+
+  #focusPlannerOverlay .mobile-sheet .path-card-name {
+    font-size: 13px;
+  }
+
+  /* ── 2-row mobile header ── */
+  #focusPlannerOverlay .planner-header {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 8px 12px 6px;
+    gap: 6px;
+    row-gap: 6px;
+    align-items: center;
+  }
+
+  /* Row 1: [Today|Week] (left) · [< date >] (flex center) · [×] (right) */
+  #focusPlannerOverlay .view-toggle { order: 1; flex-shrink: 0; }
+  #focusPlannerOverlay .date-nav    { order: 2; flex: 1; justify-content: center; }
+  #focusPlannerClose                { order: 3; flex-shrink: 0; }
+
+  /* Row 2: Calendar|List — flex-basis 100% forces its own line */
+  #focusPlannerOverlay #sub-view-toggle {
+    order: 10;
+    flex-basis: 100%;
+  }
+
+  /* Hide on mobile: filter group, new btn, spacer, path chip */
+  #focusPlannerOverlay .filter-group { display: none; }
+  #focusPlannerOverlay .new-btn-wrap { display: none; }
+  #focusPlannerOverlay .header-spacer { display: none; }
+  #focusPlannerOverlay #path-filter-chip { display: none !important; }
 }

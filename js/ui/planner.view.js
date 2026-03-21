@@ -15,7 +15,10 @@ export const PlannerView = {
     SHORT_BREAK: 5,
     LONG_BREAK: 20,
 
-    weekOffset: 0,  // 0 = current week
+    weekOffset: 0,  // 0 = current week (week view)
+    dayOffset: 0,   // 0 = today (today view)
+    viewMode: 'week',       // 'week' | 'today'
+    todaySubView: 'calendar', // 'calendar' | 'list'
     sessionCount: 2,
     pendingAreaId: null, // Stores ID now, not just name
     pendingColor: 'green',
@@ -25,19 +28,46 @@ export const PlannerView = {
     activeFilter: 'all',
 
     DAYS: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    HOURS: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], // 8am – 7pm
     ROW_HEIGHT: 72, // px per hour
+    calHoursMode: 'active', // 'active' | 'full'
+
+    getHours() {
+        if (this.calHoursMode === 'full') {
+            return Array.from({ length: 24 }, (_, i) => i); // 0–23
+        }
+        const start = state.settings.activeHoursStart ?? 8;
+        const end   = state.settings.activeHoursEnd   ?? 22;
+        const hours = [];
+        for (let h = start; h < end; h++) hours.push(h);
+        return hours.length ? hours : [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+    },
+
+    toggleCalHoursMode() {
+        this.calHoursMode = this.calHoursMode === 'active' ? 'full' : 'active';
+        this.renderHead();
+        this.renderBody();
+    },
 
     blocks: [],
-    paths: [],        // loaded from DB
-    activePath: null, // currently selected path filter (id string or null)
-    pendingPathId: null, // path selected in block popover
-    selectedPathColor: '#3D8F5A', // for path creation modal
+    paths: [],
+    activePathSet: null,   // null=show all ☑ | Set (non-empty)=filter ⊟ | Set (empty)=dim all ☐
+    _pathsFromAll: true,   // origin when entering filter: true=came from ☑, false=came from ☐
+    pendingPathId: null,
+    selectedPathColor: '#3D8F5A',
+    selectedAreaColor: '#58a6ff',
+
+    // Sidebar search state
+    areaSearchQuery: '',
+    pathSearchQuery: '',
 
     // Drag state
     dragging: { areaId: null, color: null },
     draggingPath: null,     // { id, name, color } when dragging a path card
     draggingDeadline: false, // true when dragging the "set deadline" card
+    draggingBlock: null,    // { id, ... } when dragging an existing planned block
+
+    // Edit state
+    editingBlockId: null,   // block id being edited in the popover
 
     // ── INIT ──
     init() {
@@ -46,9 +76,19 @@ export const PlannerView = {
     },
 
     open() {
-        console.log('PlannerView open called'); // Debugging log
-        document.getElementById('focusPlannerOverlay').style.display = 'block';
+        document.getElementById('focusPlannerOverlay').style.display = 'flex';
         this.weekOffset = 0;
+        this.dayOffset = 0;
+        const isMobile = window.matchMedia('(max-width: 480px)').matches;
+        this.viewMode = 'week';
+        this.todaySubView = 'calendar';
+        this.weekSubView = isMobile ? 'list' : 'calendar';
+        this.areaSearchQuery = '';
+        this.pathSearchQuery = '';
+        const areaSearch = document.getElementById('area-search');
+        const pathSearch = document.getElementById('path-search');
+        if (areaSearch) areaSearch.value = '';
+        if (pathSearch) pathSearch.value = '';
         this.loadData().then(() => this.render());
     },
 
@@ -59,25 +99,32 @@ export const PlannerView = {
 
     // ── DATA LOADING ──
     async loadData() {
+        if (this.viewMode === 'today') {
+            await this.loadDayData();
+        } else {
+            await this.loadWeekData();
+        }
+    },
+
+    async _loadPaths() {
+        if (!dbManager.initialized) return;
+        this.paths = await dbManager.getAllPaths();
+        const today = new Date().toISOString().split('T')[0];
+        for (const p of this.paths) {
+            if (p.status === 'active' && p.deadline && p.deadline < today) {
+                await dbManager.archivePath(p.id);
+                p.status = 'archived';
+            }
+        }
+    },
+
+    async loadWeekData() {
         const dates = this.getWeekDates(this.weekOffset);
         const startStr = dates[0].toISOString().split('T')[0];
         const endStr = dates[6].toISOString().split('T')[0];
 
-        // Load paths
-        if (dbManager.initialized) {
-            this.paths = await dbManager.getAllPaths();
-            // Auto-archive paths whose deadline has passed
-            const today = new Date().toISOString().split('T')[0];
-            for (const p of this.paths) {
-                if (p.status === 'active' && p.deadline && p.deadline < today) {
-                    console.log('[archivePath] auto-archiving expired path:', p.id, p.name);
-                    await dbManager.archivePath(p.id);
-                    p.status = 'archived';
-                }
-            }
-        }
+        await this._loadPaths();
 
-        // Load planned blocks
         let dbBlocks = [];
         if (dbManager.initialized) {
             dbBlocks = await dbManager.getPlannedBlocksForWeek(startStr, endStr);
@@ -101,10 +148,70 @@ export const PlannerView = {
         }));
     },
 
+    async loadDayData() {
+        const date = this.getDayDate(this.dayOffset);
+        const dateStr = date.toISOString().split('T')[0];
+
+        await this._loadPaths();
+
+        let dbBlocks = [];
+        if (dbManager.initialized) {
+            dbBlocks = await dbManager.getPlannedBlocksForWeek(dateStr, dateStr);
+        }
+
+        const planned = dbBlocks.map(b => ({
+            id: b.id,
+            day: 0,
+            startHour: Math.floor(b.start_minutes / 60),
+            startMin: b.start_minutes % 60,
+            sessions: this.calcSessionsFromDuration(b.duration_minutes),
+            areaId: b.focus_area_id,
+            areaName: b.area_name || 'Unknown',
+            color: this.mapColor(b.area_color),
+            type: 'planned',
+            label: b.notes,
+            pathId: b.path_id || null,
+            pathName: b.path_name || null,
+            pathColor: b.path_color || null,
+            walked: !!b.walked_session_id
+        }));
+
+        let actual = [];
+        if (dbManager.initialized) {
+            const dbSessions = await dbManager.getSessionsForWeek(dateStr, dateStr);
+            actual = dbSessions.map(s => {
+                const durationSecs = s.duration_seconds || 0;
+                const endTs = new Date(s.created_at);
+                const startTs = new Date(endTs.getTime() - durationSecs * 1000);
+                return {
+                    id: s.id,
+                    day: 0,
+                    startHour: startTs.getHours(),
+                    startMin: startTs.getMinutes(),
+                    durationMins: Math.round(durationSecs / 60),
+                    sessions: this.calcSessionsFromDuration(Math.round(durationSecs / 60)),
+                    areaId: s.focus_area_id,
+                    areaName: s.display_name || s.area_name || 'Session',
+                    color: this.mapColor(s.display_color || '#58a6ff'),
+                    type: 'actual',
+                    label: null,
+                    pathId: null,
+                    pathName: null,
+                    pathColor: null,
+                    walked: false
+                };
+            });
+        }
+
+        this.blocks = [...planned, ...actual];
+    },
+
     async saveBlock(block) {
         if (!dbManager.initialized) return;
 
-        const date = this.getWeekDates(this.weekOffset)[block.day];
+        const date = this.viewMode === 'today'
+            ? this.getDayDate(this.dayOffset)
+            : this.getWeekDates(this.weekOffset)[block.day];
         const dateStr = date.toISOString().split('T')[0];
         const startMins = block.startHour * 60 + block.startMin;
         const durationMins = this.calcDuration(block.sessions);
@@ -131,7 +238,92 @@ export const PlannerView = {
             await dbManager.deletePlannedBlock(blockId);
         }
         this.blocks = this.blocks.filter(b => b.id !== blockId);
+        this.closeDetail();
         this.render();
+    },
+
+    openDetail(b) {
+        this.closePopover();
+        const panel = document.getElementById('detail-panel');
+        if (!panel) return;
+
+        document.getElementById('detail-area-name').textContent = b.areaName;
+        document.getElementById('detail-dot').className = `area-chip ${b.color} detail-dot`;
+
+        const dur = this.calcDuration(b.sessions);
+        const endStr = this.addMinutes(b.startHour, b.startMin, dur);
+        const startStr = this.formatTime(b.startHour, b.startMin);
+        document.getElementById('detail-time').textContent = `${startStr} – ${endStr}`;
+
+        const date = this.viewMode === 'today'
+            ? this.getDayDate(this.dayOffset)
+            : this.getWeekDates(this.weekOffset)[b.day];
+        const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        document.getElementById('detail-date').textContent = `${dateStr} · planned`;
+
+        document.getElementById('detail-sessions').textContent = b.sessions;
+        document.getElementById('detail-duration').textContent = this.formatDuration(dur);
+
+        const actions = panel.querySelectorAll('.detail-action');
+        if (actions[0]) actions[0].onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
+        if (actions[1]) actions[1].onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
+        if (actions[2]) actions[2].onclick = () => this.deleteBlock(b.id);
+
+        panel.classList.add('visible');
+    },
+
+    closeDetail() {
+        document.getElementById('detail-panel')?.classList.remove('visible');
+    },
+
+    openPopoverForEdit(b) {
+        this.editingBlockId = b.id;
+        this.pendingDay = b.day;
+        this.pendingHour = b.startHour;
+        this.pendingMinutes = b.startMin;
+        this.pendingAreaId = b.areaId;
+        this.pendingColor = b.color;
+        this.pendingPathId = b.pathId || null;
+        this.sessionCount = b.sessions;
+
+        const overlay = document.getElementById('popover-overlay');
+        const pop = document.getElementById('popover');
+
+        const areas = this.getAreas();
+        const currentArea = areas.find(a => a.id === b.areaId) || areas[0];
+        if (currentArea) {
+            document.getElementById('popover-area-name').textContent = currentArea.name;
+            document.getElementById('popover-area-dot').className = `popover-area-dot ${currentArea.color}`;
+        }
+
+        document.getElementById('popover-time').value =
+            `${String(b.startHour).padStart(2, '0')}:${String(b.startMin).padStart(2, '0')}`;
+        if (document.getElementById('popover-label')) {
+            document.getElementById('popover-label').value = b.label || '';
+        }
+
+        const titleSpan = document.getElementById('popover-title-text');
+        if (titleSpan) titleSpan.textContent = 'Edit block';
+
+        this.updateSessionDisplay();
+        this.updatePathDisplay();
+
+        pop.style.top = '130px';
+        pop.style.left = '220px';
+        overlay.classList.add('visible');
+        pop.classList.add('visible');
+        this.populateAreaPicker();
+        this.populatePathPicker();
+    },
+
+    async moveBlock(blockId, newDay, newH, newM) {
+        const block = this.blocks.find(b => b.id === blockId);
+        if (!block) return;
+        block.day = newDay;
+        block.startHour = newH;
+        block.startMin = newM;
+        await this.saveBlock(block);
+        this.renderBody();
     },
 
     // ── HELPERS ──
@@ -202,37 +394,167 @@ export const PlannerView = {
         });
     },
 
+    getDayDate(offset) {
+        const d = new Date();
+        d.setDate(d.getDate() + offset);
+        return d;
+    },
+
     shiftWeek(dir) {
         this.weekOffset += dir;
         this.loadData().then(() => this.render());
     },
 
+    shiftPeriod(dir) {
+        if (this.viewMode === 'today') {
+            this.dayOffset += dir;
+        } else {
+            this.weekOffset += dir;
+        }
+        this.loadData().then(() => this.render());
+    },
+
     goToday() {
         this.weekOffset = 0;
+        this.dayOffset = 0;
         this.loadData().then(() => this.render());
+    },
+
+    setViewMode(mode) {
+        this.viewMode = mode;
+        if (mode === 'today') this.dayOffset = 0;
+        document.getElementById('btn-view-today')?.classList.toggle('active', mode === 'today');
+        document.getElementById('btn-view-week')?.classList.toggle('active', mode === 'week');
+        this.loadData().then(() => this.render());
+    },
+
+    setTodaySubView(mode) {
+        this.todaySubView = mode;
+        this._syncSubViewButtons(mode);
+        this.renderBody();
+    },
+
+    setWeekSubView(mode) {
+        this.weekSubView = mode;
+        this._syncSubViewButtons(mode);
+        this.renderBody();
+    },
+
+    _syncSubViewButtons(mode) {
+        document.getElementById('btn-sub-calendar')?.classList.toggle('active', mode === 'calendar');
+        document.getElementById('btn-sub-list')?.classList.toggle('active', mode === 'list');
+    },
+
+    updateNavDisplay() {
+        const isToday = this.viewMode === 'today';
+        const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Sub-view toggle (shown for both modes)
+        const subToggle = document.getElementById('sub-view-toggle');
+        if (subToggle) subToggle.style.display = 'flex';
+        const activeSubView = isToday ? this.todaySubView : this.weekSubView;
+        this._syncSubViewButtons(activeSubView);
+
+        const single = document.getElementById('cal-icon-widget');
+        const start  = document.getElementById('cal-icon-widget-start');
+        const dash   = document.getElementById('cal-icon-dash');
+        const end    = document.getElementById('cal-icon-widget-end');
+
+        if (isToday) {
+            const date = this.getDayDate(this.dayOffset);
+            document.getElementById('cal-icon-month').textContent = MONTHS[date.getMonth()].toUpperCase();
+            document.getElementById('cal-icon-day').textContent = date.getDate();
+            if (single) single.style.display = 'flex';
+            if (start)  start.style.display  = 'none';
+            if (dash)   dash.style.display   = 'none';
+            if (end)    end.style.display    = 'none';
+        } else {
+            const dates = this.getWeekDates(this.weekOffset);
+            const d0 = dates[0], d6 = dates[6];
+            document.getElementById('cal-icon-month-start').textContent = MONTHS[d0.getMonth()].toUpperCase();
+            document.getElementById('cal-icon-day-start').textContent   = d0.getDate();
+            document.getElementById('cal-icon-month-end').textContent   = MONTHS[d6.getMonth()].toUpperCase();
+            document.getElementById('cal-icon-day-end').textContent     = d6.getDate();
+            if (single) single.style.display = 'none';
+            if (start)  start.style.display  = 'flex';
+            if (dash)   dash.style.display   = 'inline';
+            if (end)    end.style.display    = 'flex';
+        }
     },
 
     // ── RENDER ──
     render() {
+        this.updateNavDisplay();
         this.renderHead();
         this.renderBody();
-        this.renderSidebarAreas();
-        this.renderPathsSidebar();
+        this.renderSidebarAreas(this.areaSearchQuery);
+        this.renderPathsSidebar(this.pathSearchQuery);
     },
 
     renderHead() {
+        if (this.viewMode === 'today') {
+            this.renderTodayHead();
+        } else {
+            this.renderWeekHead();
+        }
+        this._updateGutterHead();
+    },
+
+    renderTodayHead() {
+        const head = document.getElementById('cal-head');
+        head.className = 'cal-head today-mode';
+        while (head.children.length > 1) head.removeChild(head.lastChild);
+
+        const date = this.getDayDate(this.dayOffset);
+        const isActuallyToday = this.dayOffset === 0;
+        const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        const dh = document.createElement('div');
+        dh.className = 'day-head' + (isActuallyToday ? ' today' : '');
+
+        const row = document.createElement('div');
+        row.className = 'day-head-row';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'day-name';
+        nameEl.textContent = isActuallyToday ? 'Today' : DAYS_SHORT[date.getDay()];
+
+        const numEl = document.createElement('div');
+        numEl.className = 'day-num';
+        numEl.textContent = `${MONTHS[date.getMonth()]} ${date.getDate()}`;
+        if (isActuallyToday) {
+            const dot = document.createElement('span');
+            dot.className = 'today-indicator';
+            numEl.appendChild(dot);
+        }
+
+        row.appendChild(nameEl);
+        row.appendChild(numEl);
+        dh.appendChild(row);
+
+        const dateStr = date.toISOString().split('T')[0];
+        const pathsEndingToday = this.paths.filter(p => p.status === 'active' && p.deadline === dateStr);
+        if (pathsEndingToday.length > 0) {
+            const flagsEl = document.createElement('div');
+            flagsEl.className = 'deadline-flags';
+            pathsEndingToday.forEach(p => {
+                const flag = document.createElement('div');
+                flag.className = 'deadline-flag path-deadline-flag';
+                flag.style.setProperty('--path-color', p.color);
+                flag.innerHTML = `<span class="deadline-flag-icon" style="color:${p.color}">◎</span>${p.name}`;
+                flagsEl.appendChild(flag);
+            });
+            dh.appendChild(flagsEl);
+        }
+
+        head.appendChild(dh);
+    },
+
+    renderWeekHead() {
         const dates = this.getWeekDates(this.weekOffset);
         const head = document.getElementById('cal-head');
-        const wl = document.getElementById('week-label');
-        
-        const d0 = dates[0], d6 = dates[6];
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
-        if (d0.getMonth() === d6.getMonth()) {
-            wl.textContent = `${months[d0.getMonth()]} ${d0.getDate()} – ${d6.getDate()}, ${d0.getFullYear()}`;
-        } else {
-            wl.textContent = `${months[d0.getMonth()]} ${d0.getDate()} – ${months[d6.getMonth()]} ${d6.getDate()}`;
-        }
+        head.className = 'cal-head';
 
         // Keep gutter (first child)
         while (head.children.length > 1) head.removeChild(head.lastChild);
@@ -298,106 +620,299 @@ export const PlannerView = {
     },
 
     renderBody() {
-        const body = document.getElementById('cal-body');
-        body.innerHTML = '';
+        const calEl = document.getElementById('calendar');
+        const listEl = document.getElementById('today-list-view');
 
-        // Time gutter
+        const showList = (this.viewMode === 'today' && this.todaySubView === 'list')
+                      || (this.viewMode === 'week'  && this.weekSubView  === 'list');
+
+        if (showList) {
+            if (calEl) calEl.style.display = 'none';
+            if (listEl) listEl.style.display = 'flex';
+            if (this.viewMode === 'today') {
+                this.renderTodayList();
+            } else {
+                this.renderWeekList();
+            }
+        } else {
+            if (calEl) calEl.style.display = '';
+            if (listEl) listEl.style.display = 'none';
+            if (this.viewMode === 'today') {
+                this.renderTodayCalendarBody();
+            } else {
+                this.renderWeekBody();
+            }
+        }
+    },
+
+    _buildTimeGutter() {
         const gutter = document.createElement('div');
         gutter.className = 'time-gutter';
-        this.HOURS.forEach(h => {
+        this.getHours().forEach(h => {
             const lbl = document.createElement('div');
             lbl.className = 'time-label';
             lbl.textContent = `${h}:00`;
             gutter.appendChild(lbl);
         });
-        body.appendChild(gutter);
+        return gutter;
+    },
+
+    _updateGutterHead() {
+        const gutterHead = document.querySelector('#focusPlannerOverlay .cal-time-gutter-head');
+        if (!gutterHead) return;
+        gutterHead.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.className = 'hours-mode-btn' + (this.calHoursMode === 'full' ? ' active' : '');
+        btn.title = this.calHoursMode === 'active' ? 'Show full 24h' : 'Show active hours';
+        btn.textContent = this.calHoursMode === 'active' ? '24h' : 'act';
+        btn.setAttribute('onclick', 'toggleCalHoursMode()');
+        gutterHead.appendChild(btn);
+    },
+
+    _addHourLines(col) {
+        this.getHours().forEach((_, idx) => {
+            const line = document.createElement('div');
+            line.className = 'hour-line';
+            line.style.top = `${idx * this.ROW_HEIGHT}px`;
+            col.appendChild(line);
+            const half = document.createElement('div');
+            half.className = 'hour-line half';
+            half.style.top = `${idx * this.ROW_HEIGHT + this.ROW_HEIGHT / 2}px`;
+            col.appendChild(half);
+        });
+    },
+
+    _addNowLine(col) {
+        const now = new Date();
+        const hours = this.getHours();
+        const nowTop = (now.getHours() - hours[0]) * this.ROW_HEIGHT + (now.getMinutes() / 60) * this.ROW_HEIGHT;
+        if (nowTop >= 0 && nowTop <= hours.length * this.ROW_HEIGHT) {
+            const nl = document.createElement('div');
+            nl.className = 'now-line';
+            nl.style.top = `${nowTop}px`;
+            col.appendChild(nl);
+        }
+    },
+
+    _addDeadlineMarkers(col, dateStr) {
+        this.paths.filter(p => p.status === 'active' && p.deadline === dateStr).forEach(p => {
+            const top = (17 - this.getHours()[0]) * this.ROW_HEIGHT;
+            const marker = document.createElement('div');
+            marker.className = 'deadline-marker path-deadline-marker';
+            marker.style.top = `${top}px`;
+            marker.style.setProperty('--path-color', p.color);
+            marker.innerHTML = `
+                <div class="deadline-marker-line" style="background:${p.color};"></div>
+                <div class="deadline-marker-label">
+                    <span style="color:${p.color}">◎</span> ${p.name}
+                    <span class="dm-time">end of day</span>
+                </div>
+            `;
+            col.appendChild(marker);
+        });
+    },
+
+    renderTodayCalendarBody() {
+        const body = document.getElementById('cal-body');
+        body.innerHTML = '';
+        body.className = 'cal-body today-mode';
+        body.appendChild(this._buildTimeGutter());
+
+        const date = this.getDayDate(this.dayOffset);
+        const isActuallyToday = this.dayOffset === 0;
+
+        const col = document.createElement('div');
+        col.className = 'day-col' + (isActuallyToday ? ' today' : '');
+        col.dataset.day = 0;
+        this.setupColumnEvents(col, 0, isActuallyToday);
+        this._addHourLines(col);
+        if (isActuallyToday) this._addNowLine(col);
+
+        this.blocks.filter(b => this.shouldShow(b.type)).forEach(b => {
+            const el = this.createBlockEl(b);
+            if (this.activePathSet !== null && (!b.pathId || !this.activePathSet.has(b.pathId))) {
+                el.classList.add('path-dimmed');
+            }
+            col.appendChild(el);
+        });
+
+        this._addDeadlineMarkers(col, date.toISOString().split('T')[0]);
+        body.appendChild(col);
+        const h = this.getHours();
+        const totalH = h.length * this.ROW_HEIGHT;
+        body.style.minHeight = `${totalH}px`;
+        col.style.minHeight = `${totalH}px`;
+    },
+
+    renderWeekBody() {
+        const body = document.getElementById('cal-body');
+        body.innerHTML = '';
+        body.className = 'cal-body';
+        body.appendChild(this._buildTimeGutter());
 
         const today = new Date();
         const isCurrentWeek = this.weekOffset === 0;
 
-        // Day columns
         for (let d = 0; d < 7; d++) {
             const isToday = isCurrentWeek && (d === (today.getDay() === 0 ? 6 : today.getDay() - 1));
             const col = document.createElement('div');
             col.className = 'day-col' + (isToday ? ' today' : '');
             col.dataset.day = d;
-
             this.setupColumnEvents(col, d, isToday);
+            this._addHourLines(col);
+            if (isToday) this._addNowLine(col);
 
-            // Hour lines
-            this.HOURS.forEach((_, idx) => {
-                const line = document.createElement('div');
-                line.className = 'hour-line';
-                line.style.top = `${idx * this.ROW_HEIGHT}px`;
-                col.appendChild(line);
-
-                const half = document.createElement('div');
-                half.className = 'hour-line half';
-                half.style.top = `${idx * this.ROW_HEIGHT + this.ROW_HEIGHT / 2}px`;
-                col.appendChild(half);
-            });
-
-            // Now line
-            if (isToday) {
-                const nowH = today.getHours();
-                const nowM = today.getMinutes();
-                const nowTop = (nowH - this.HOURS[0]) * this.ROW_HEIGHT + (nowM / 60) * this.ROW_HEIGHT;
-                if (nowTop >= 0 && nowTop <= this.HOURS.length * this.ROW_HEIGHT) {
-                    const nl = document.createElement('div');
-                    nl.className = 'now-line';
-                    nl.style.top = `${nowTop}px`;
-                    col.appendChild(nl);
-                }
-            }
-
-            // Blocks (with filter awareness)
-            const dayBlocks = this.blocks.filter(b => b.day === d && this.shouldShow(b.type));
-            dayBlocks.forEach(b => {
+            this.blocks.filter(b => b.day === d && this.shouldShow(b.type)).forEach(b => {
                 const el = this.createBlockEl(b);
-                // Apply filter dim: if a path is active, dim blocks not in that path
-                if (this.activePath && b.pathId !== this.activePath) {
+                if (this.activePathSet !== null && (!b.pathId || !this.activePathSet.has(b.pathId))) {
                     el.classList.add('path-dimmed');
                 }
                 col.appendChild(el);
             });
 
-            // Path deadline markers (paths ending on this day at 17:00 default)
             const dateStr = this.getWeekDates(this.weekOffset)[d].toISOString().split('T')[0];
-            this.paths.filter(p => p.status === 'active' && p.deadline === dateStr).forEach(p => {
-                const markerHour = 17;
-                const top = (markerHour - this.HOURS[0]) * this.ROW_HEIGHT;
-                const marker = document.createElement('div');
-                marker.className = 'deadline-marker path-deadline-marker';
-                marker.style.top = `${top}px`;
-                marker.style.setProperty('--path-color', p.color);
-                marker.innerHTML = `
-                    <div class="deadline-marker-line" style="background:${p.color};"></div>
-                    <div class="deadline-marker-label">
-                        <span style="color:${p.color}">◎</span> ${p.name}
-                        <span class="dm-time">end of day</span>
-                    </div>
-                `;
-                col.appendChild(marker);
-            });
-
+            this._addDeadlineMarkers(col, dateStr);
+            const totalH = this.getHours().length * this.ROW_HEIGHT;
+            col.style.minHeight = `${totalH}px`;
             body.appendChild(col);
         }
-        
-        body.style.minHeight = `${this.HOURS.length * this.ROW_HEIGHT}px`;
+
+        body.style.minHeight = `${this.getHours().length * this.ROW_HEIGHT}px`;
     },
 
-    renderSidebarAreas() {
-        const container = document.getElementById('sidebar-areas');
-        // Keep the first static element (New Block chip)
-        const staticEl = container.firstElementChild;
-        container.innerHTML = '';
-        if (staticEl) container.appendChild(staticEl);
+    renderTodayList() {
+        const listEl = document.getElementById('today-list-view');
+        if (!listEl) return;
+        listEl.innerHTML = '';
 
-        const areas = this.getAreas();
+        const blocks = this.blocks
+            .filter(b => this.shouldShow(b.type))
+            .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin));
+
+        if (blocks.length === 0) {
+            listEl.innerHTML = `
+                <div class="today-list-empty">
+                    <div class="today-list-empty-icon">▭</div>
+                    <div>No sessions for this day.</div>
+                    <div style="font-size:12px;margin-top:2px">Switch to Calendar view and drag a focus area to plan one.</div>
+                </div>
+            `;
+            return;
+        }
+
+        blocks.forEach(b => {
+            listEl.appendChild(this._buildListItem(b));
+        });
+    },
+
+    _buildListItem(b) {
+        const dur = b.type === 'planned' ? this.calcDuration(b.sessions) : (b.durationMins || 0);
+        const endStr = this.addMinutes(b.startHour, b.startMin, dur);
+        const startStr = this.formatTime(b.startHour, b.startMin);
+        const barColor = `var(--${b.color}-bar)`;
+
+        const pathHtml = b.pathName
+            ? `<span class="tli-path" style="color:${b.pathColor};border-color:${b.pathColor}40">◎ ${b.pathName}</span>`
+            : '';
+        const sessionsHtml = b.sessions > 1
+            ? `<span class="block-session-chip">${b.sessions}×</span>`
+            : '';
+
+        const item = document.createElement('div');
+        item.className = `today-list-item ${b.type}`;
+        item.innerHTML = `
+            <div class="tli-bar" style="background:${barColor}"></div>
+            <div class="tli-content">
+                <div class="tli-row1">
+                    <div class="tli-dot" style="background:${barColor}"></div>
+                    <div class="tli-name">${b.areaName}${b.label ? ` · ${b.label}` : ''}</div>
+                </div>
+                <div class="tli-row2">
+                    <div class="tli-time">${startStr} – ${endStr}</div>
+                    <div class="tli-meta">${this.formatDuration(dur)}${sessionsHtml ? ' · ' + sessionsHtml : ''}</div>
+                    ${pathHtml}
+                    <div class="tli-badge ${b.type}">${b.type === 'planned' ? 'Planned' : 'Done'}</div>
+                </div>
+            </div>
+        `;
+
+        if (b.type === 'planned') {
+            item.addEventListener('click', () => this.openDetail(b));
+        }
+
+        if (this.activePathSet !== null && (!b.pathId || !this.activePathSet.has(b.pathId))) {
+            item.classList.add('path-dimmed');
+        }
+
+        return item;
+    },
+
+    renderWeekList() {
+        const listEl = document.getElementById('today-list-view');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const weekDates = this.getWeekDates(this.weekOffset);
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        const blocks = this.blocks.filter(b => this.shouldShow(b.type));
+
+        // Check if there's anything at all this week
+        if (blocks.length === 0) {
+            listEl.innerHTML = `
+                <div class="today-list-empty">
+                    <div class="today-list-empty-icon">▭</div>
+                    <div>No sessions this week.</div>
+                    <div style="font-size:12px;margin-top:2px">Switch to Calendar view and drag a focus area to plan one.</div>
+                </div>
+            `;
+            return;
+        }
+
+        // Group by day index (0=Mon … 6=Sun)
+        const byDay = Array.from({ length: 7 }, () => []);
+        blocks.forEach(b => byDay[b.day].push(b));
+        byDay.forEach(dayBlocks => dayBlocks.sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin)));
+
+        for (let d = 0; d < 7; d++) {
+            const dayBlocks = byDay[d];
+            if (dayBlocks.length === 0) continue;
+
+            const dateStr = weekDates[d].toISOString().split('T')[0];
+            const isToday = dateStr === todayStr;
+            const dateNum = weekDates[d].getDate();
+            const monthShort = weekDates[d].toLocaleString('default', { month: 'short' });
+
+            const header = document.createElement('div');
+            header.className = 'week-list-day-header' + (isToday ? ' today' : '');
+            header.innerHTML = `<span class="wldh-name">${DAY_NAMES[d]}</span><span class="wldh-date">${monthShort} ${dateNum}</span>${isToday ? '<span class="wldh-today-pill">Today</span>' : ''}`;
+            listEl.appendChild(header);
+
+            dayBlocks.forEach(b => {
+                listEl.appendChild(this._buildListItem(b));
+            });
+        }
+    },
+
+    renderSidebarAreas(query = '') {
+        const container = document.getElementById('sidebar-areas');
+        if (!container) return;
+        container.innerHTML = '';
+
+        let areas = this.getAreas();
+        areas.sort((a, b) => a.name.localeCompare(b.name));
+
+        const q = query.toLowerCase().trim();
+        if (q) areas = areas.filter(a => a.name.toLowerCase().includes(q));
+
         if (areas.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'sidebar-areas-empty';
-            empty.textContent = 'No active focus areas found. Create some in the main app!';
+            empty.textContent = q
+                ? 'No areas match your search.'
+                : 'No active focus areas. Create one with + New.';
             container.appendChild(empty);
             return;
         }
@@ -405,59 +920,95 @@ export const PlannerView = {
         areas.forEach(area => {
             const card = document.createElement('div');
             card.className = `area-card ${area.color}`;
-            card.draggable = true;
-            card.ondragstart = (e) => this.startDrag(e, area.id, area.name, area.color);
-            card.innerHTML = `
-                <div class="area-card-header">
-                    <div class="area-card-name">${area.name}</div>
-                </div>
-                <div class="area-card-stats">
-                    <div class="area-drag-hint">Drag to plan</div>
-                </div>
-                <div class="area-bar-track"><div class="area-bar-fill" style="width: 0%"></div></div>
-            `;
+
+            const handle = document.createElement('i');
+            handle.className = 'ph ph-dots-six-vertical area-card-drag-handle';
+            handle.setAttribute('draggable', 'true');
+            handle.addEventListener('dragstart', e => {
+                e.stopPropagation();
+                this.startDrag(e, area.id, area.name, area.color);
+            });
+
+            card.innerHTML = `<div class="area-card-header"><div class="area-card-name">${area.name}</div></div>`;
+            card.querySelector('.area-card-header').prepend(handle);
+
+            // On mobile: tap area → pre-select it and open session creation
+            if (window.innerWidth <= 480) {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', () => {
+                    this.pendingAreaId = area.id;
+                    this.pendingColor = area.color;
+                    this.closeMobileSheet();
+                    const now = new Date();
+                    this.openPopover(0, now.getHours(), 0);
+                });
+            }
+
             container.appendChild(card);
         });
     },
 
-    renderPathsSidebar() {
+    renderPathsSidebar(query = '') {
         const list = document.getElementById('sidebar-paths-list');
         if (!list) return;
         list.innerHTML = '';
 
-        const activePaths = this.paths.filter(p => p.status === 'active');
-        const archivedPaths = this.paths.filter(p => p.status === 'archived');
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-        // Drag-to-deadline card
-        const deadlineDragCard = document.createElement('div');
-        deadlineDragCard.className = 'path-deadline-drag-card';
-        deadlineDragCard.draggable = true;
-        deadlineDragCard.innerHTML = `
-            <div class="path-deadline-drag-icon">◎</div>
-            <div class="path-deadline-drag-text">
-                <div class="path-deadline-drag-label">New Path</div>
-                <div class="path-deadline-drag-hint">Drag to set deadline</div>
-            </div>
-        `;
-        deadlineDragCard.addEventListener('dragstart', e => this.startDeadlineDrag(e));
-        list.appendChild(deadlineDragCard);
+        let activePaths = this.paths.filter(p => p.status === 'active');
+        const totalActive = activePaths.length;
 
+        const q = query.toLowerCase().trim();
+        if (q) activePaths = activePaths.filter(p => p.name.toLowerCase().includes(q));
 
-        // Active paths
+        const thisWeek = [], thisMonth = [], other = [];
+        activePaths.forEach(p => {
+            if (!p.deadline) { other.push(p); return; }
+            const dl = new Date(p.deadline + 'T00:00:00');
+            if (dl <= weekEnd) thisWeek.push(p);
+            else if (dl <= monthEnd) thisMonth.push(p);
+            else other.push(p);
+        });
+
+        const byDeadlineAsc = (a, b) => {
+            if (!a.deadline && !b.deadline) return a.name.localeCompare(b.name);
+            if (!a.deadline) return 1;
+            if (!b.deadline) return -1;
+            return a.deadline.localeCompare(b.deadline);
+        };
+        thisWeek.sort(byDeadlineAsc);
+        thisMonth.sort(byDeadlineAsc);
+        other.sort((a, b) => a.name.localeCompare(b.name));
+
+        const appendGroup = (label, paths) => {
+            if (paths.length === 0) return;
+            const header = document.createElement('div');
+            header.className = 'sidebar-group-label';
+            header.textContent = label;
+            list.appendChild(header);
+            paths.forEach(p => list.appendChild(this.createPathCard(p)));
+        };
+
         if (activePaths.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'path-empty';
-            empty.textContent = 'No active paths. Create one to get started.';
+            empty.textContent = q ? 'No paths match your search.' : 'No active paths. Create one with + New.';
             list.appendChild(empty);
         } else {
-            activePaths.forEach(p => list.appendChild(this.createPathCard(p)));
+            appendGroup('Deadlines: This Week', thisWeek);
+            appendGroup('Deadlines: This Month', thisMonth);
+            appendGroup('Other Paths', other);
         }
 
         // Archived section
+        let archivedPaths = this.paths.filter(p => p.status === 'archived');
+        if (q) archivedPaths = archivedPaths.filter(p => p.name.toLowerCase().includes(q));
         if (archivedPaths.length > 0) {
             const archiveHeader = document.createElement('div');
-            archiveHeader.className = 'path-archive-header';
-            archiveHeader.textContent = '── Archived ──';
+            archiveHeader.className = 'sidebar-group-label';
+            archiveHeader.textContent = 'Archived';
             list.appendChild(archiveHeader);
             archivedPaths.forEach(p => {
                 const card = this.createPathCard(p);
@@ -465,12 +1016,26 @@ export const PlannerView = {
                 list.appendChild(card);
             });
         }
+
+        // Counter
+        const counter = document.getElementById('sidebar-paths-counter');
+        if (counter) {
+            const shown = activePaths.length + archivedPaths.length;
+            const total = this.paths.length;
+            counter.textContent = q
+                ? `Showing ${shown} of ${total} paths`
+                : `${totalActive} active path${totalActive !== 1 ? 's' : ''}${archivedPaths.length ? ` · ${archivedPaths.length} archived` : ''}`;
+        }
     },
 
     createPathCard(p) {
         const card = document.createElement('div');
-        card.className = 'path-card' + (this.activePath === p.id ? ' active' : '');
-        card.onclick = () => this.setActivePath(p.id);
+        const isChecked = this.activePathSet === null
+            ? true
+            : this.activePathSet.has(p.id);
+        card.className = 'path-card' + (isChecked ? ' active' : '');
+        card.style.setProperty('--path-color', p.color);
+        card.onclick = () => this.togglePath(p.id);
 
         if (p.status === 'active') {
             card.draggable = true;
@@ -479,56 +1044,144 @@ export const PlannerView = {
 
         const daysLeft = p.deadline ? this.daysUntil(p.deadline) : null;
         const deadlineStr = daysLeft === null ? '' :
-            daysLeft < 0 ? 'past deadline' :
-            daysLeft === 0 ? 'due today' :
-            daysLeft === 1 ? '1 day left' :
-            `${daysLeft} days left`;
+            daysLeft < 0 ? 'overdue' :
+            daysLeft === 0 ? 'today' :
+            `${daysLeft}d`;
 
-        const progress = p.totalPlanned > 0 ? `${p.totalWalked}/${p.totalPlanned}` : '0 sessions';
         const pct = p.totalPlanned > 0 ? Math.round((p.totalWalked / p.totalPlanned) * 100) : 0;
 
         card.innerHTML = `
             <div class="path-card-top">
+                <div class="path-card-check"></div>
                 <div class="path-card-dot" style="background:${p.color};"></div>
                 <div class="path-card-name">${p.name}</div>
-                <div class="path-card-actions">
-                    <button class="path-card-archive-btn" title="Archive path" onclick="archivePath('${p.id}', event)">↓</button>
-                </div>
-            </div>
-            <div class="path-card-meta">
                 ${deadlineStr ? `<span class="path-card-deadline${daysLeft !== null && daysLeft <= 2 ? ' urgent' : ''}">${deadlineStr}</span>` : ''}
-                <span class="path-card-progress">${progress}</span>
+                <button class="path-card-archive-btn" title="Archive path" onclick="archivePath('${p.id}', event)">↓</button>
             </div>
             ${p.totalPlanned > 0 ? `<div class="path-card-bar"><div class="path-card-bar-fill" style="width:${pct}%;background:${p.color};"></div></div>` : ''}
         `;
         return card;
     },
 
-    setActivePath(pathId) {
-        this.activePath = pathId;
-        this.pendingPathId = pathId;
+    togglePath(pathId) {
+        const activePaths = this.paths.filter(p => p.status === 'active');
+        if (this.activePathSet === null) {
+            // ☑ all → enter filter, remember origin
+            this._pathsFromAll = true;
+            this.activePathSet = new Set([pathId]);
+        } else if (this.activePathSet.size === 0) {
+            // ☐ none → enter filter, remember origin
+            this._pathsFromAll = false;
+            this.activePathSet = new Set([pathId]);
+        } else if (this.activePathSet.has(pathId)) {
+            this.activePathSet.delete(pathId);
+            if (this.activePathSet.size === 0) {
+                // Snap back to whichever state we came from
+                this.activePathSet = this._pathsFromAll ? null : new Set();
+            }
+        } else {
+            this.activePathSet.add(pathId);
+            // If every active path is now selected, snap to ☑ all
+            if (this.activePathSet.size === activePaths.length) {
+                this.activePathSet = null;
+            }
+        }
+        this.updateMasterCheckbox();
         this.updatePathFilterChip();
-        this.renderPathsSidebar();
+        this.renderPathsSidebar(this.pathSearchQuery);
+        this.renderBody();
+        // On mobile: selecting a path returns to Calendar
+        if (window.innerWidth <= 480 && this.activePathSet !== null) {
+            setTimeout(() => this.closeMobileSheet(), 200);
+        }
+    },
+
+    toggleMasterPaths() {
+        if (this.activePathSet === null) {
+            // ☑ → ☐ (dim all)
+            this.activePathSet = new Set();
+        } else if (this.activePathSet.size === 0) {
+            // ☐ → ☑ (show all)
+            this.activePathSet = null;
+        } else {
+            // ⊟ → ☑ (clear filter)
+            this.activePathSet = null;
+        }
+        this.updateMasterCheckbox();
+        this.updatePathFilterChip();
+        this.renderPathsSidebar(this.pathSearchQuery);
+        this.renderBody();
+    },
+
+    updateMasterCheckbox() {
+        const cb = document.getElementById('paths-master-check');
+        const countEl = document.getElementById('paths-master-count');
+        const total = this.paths.filter(p => p.status === 'active').length;
+        if (this.activePathSet === null) {
+            // ☑ all
+            cb.indeterminate = false;
+            cb.checked = true;
+            if (countEl) countEl.textContent = '';
+        } else if (this.activePathSet.size === 0) {
+            // ☐ none
+            cb.indeterminate = false;
+            cb.checked = false;
+            if (countEl) countEl.textContent = '';
+        } else {
+            // ⊟ some
+            cb.indeterminate = true;
+            cb.checked = false;
+            if (countEl) countEl.textContent = `${this.activePathSet.size} of ${total}`;
+        }
+    },
+
+    filterAreas(query) {
+        this.areaSearchQuery = query;
+        this.renderSidebarAreas(query);
+    },
+
+    filterPaths(query) {
+        this.pathSearchQuery = query;
+        const masterRow = document.querySelector('#focusPlannerOverlay .paths-master-row');
+        if (masterRow) masterRow.style.display = query ? 'none' : '';
+        this.renderPathsSidebar(query);
+    },
+
+    clearPathFilter() {
+        this.activePathSet = null;
+        this.updateMasterCheckbox();
+        this.updatePathFilterChip();
+        this.renderPathsSidebar(this.pathSearchQuery);
         this.renderBody();
     },
 
     updatePathFilterChip() {
         const chip = document.getElementById('path-filter-chip');
         if (!chip) return;
-        if (this.activePath) {
-            const path = this.paths.find(p => p.id === this.activePath);
-            if (path) {
-                chip.style.display = 'flex';
-                chip.style.setProperty('--chip-color', path.color);
-                chip.innerHTML = `
-                    <span class="path-filter-chip-label">Filtering:</span>
-                    <span class="path-filter-chip-dot" style="background:${path.color}"></span>
-                    <span class="path-filter-chip-name">${path.name}</span>
-                    <span class="path-filter-chip-clear" title="Clear filter">×</span>
-                `;
-            }
-        } else {
+        if (this.activePathSet === null) {
             chip.style.display = 'none';
+            return;
+        }
+        chip.style.display = 'flex';
+        const count = this.activePathSet.size;
+        if (count === 0) {
+            chip.innerHTML = `
+                <span class="path-filter-chip-label">All dimmed</span>
+                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()">×</span>
+            `;
+        } else if (count === 1) {
+            const path = this.paths.find(p => this.activePathSet.has(p.id));
+            chip.innerHTML = path ? `
+                <span class="path-filter-chip-dot" style="background:${path.color}"></span>
+                <span class="path-filter-chip-name">${path.name}</span>
+                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()">×</span>
+            ` : '';
+        } else {
+            chip.innerHTML = `
+                <span class="path-filter-chip-label">Filtering:</span>
+                <span class="path-filter-chip-name">${count} paths</span>
+                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()">×</span>
+            `;
         }
     },
 
@@ -546,8 +1199,10 @@ export const PlannerView = {
     },
 
     createBlockEl(b) {
-        const dur = this.calcDuration(b.sessions);
-        const top = (b.startHour - this.HOURS[0]) * this.ROW_HEIGHT + (b.startMin / 60) * this.ROW_HEIGHT;
+        const dur = b.type === 'actual' && b.durationMins != null
+            ? b.durationMins
+            : this.calcDuration(b.sessions);
+        const top = (b.startHour - this.getHours()[0]) * this.ROW_HEIGHT + (b.startMin / 60) * this.ROW_HEIGHT;
         const height = Math.max((dur / 60) * this.ROW_HEIGHT, 28);
 
         const el = document.createElement('div');
@@ -573,16 +1228,57 @@ export const PlannerView = {
         el.innerHTML = `
             ${b.pathColor ? `<div class="block-path-stripe" style="background:${b.pathColor};"></div>` : ''}
             <div class="block-name">${b.areaName}${b.label ? ` · ${b.label}` : ''}${walkedMark}</div>
-            <div class="block-meta">${startStr} – ${endStr} · ${b.sessions} sess</div>
+            <div class="block-meta">${startStr} – ${endStr} · <span class="block-session-chip">${b.sessions}×</span></div>
             ${b.type === 'planned' ? `<div class="resize-handle"><div class="resize-handle-bar"></div></div>` : ''}
         `;
 
         el.addEventListener('click', e => {
             e.stopPropagation();
             if (b.type === 'planned') {
-                this.deleteBlock(b.id);
+                this.openDetail(b);
             }
         });
+
+        // Make planned blocks draggable for rescheduling
+        if (b.type === 'planned') {
+            el.setAttribute('draggable', 'true');
+            el.addEventListener('dragstart', e => {
+                e.stopPropagation();
+                this.draggingBlock = b;
+                this.dragging = { areaId: null, color: null };
+                this.draggingPath = null;
+                this.draggingDeadline = false;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', `block:${b.id}`);
+
+                const ghost = document.getElementById('drag-ghost');
+                const ghostInner = document.getElementById('drag-ghost-inner');
+                if (ghost && ghostInner) {
+                    ghost.classList.add('active');
+                    ghostInner.className = `drag-ghost-inner ${b.color}`;
+                    ghostInner.textContent = `${b.areaName} · ${b.sessions}×`;
+                }
+
+                const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+                canvas.style.cssText = 'position:fixed;top:-2px;left:-2px;opacity:0;pointer-events:none;';
+                document.body.appendChild(canvas);
+                e.dataTransfer.setDragImage(canvas, 0, 0);
+
+                const moveHandler = (ev) => {
+                    ev.preventDefault();
+                    if (ghost) { ghost.style.left = `${ev.clientX + 12}px`; ghost.style.top = `${ev.clientY - 16}px`; }
+                };
+                const endHandler = () => {
+                    canvas.remove();
+                    if (ghost) ghost.classList.remove('active');
+                    this.draggingBlock = null;
+                    document.documentElement.removeEventListener('dragover', moveHandler);
+                    document.documentElement.removeEventListener('dragend', endHandler);
+                };
+                document.documentElement.addEventListener('dragover', moveHandler);
+                document.documentElement.addEventListener('dragend', endHandler);
+            });
+        }
 
         // Path drag-and-drop target
         if (b.type === 'planned') {
@@ -633,10 +1329,11 @@ export const PlannerView = {
             const y = e.clientY - rect.top;
             const totalMins = (y / this.ROW_HEIGHT) * 60;
             const snappedMins = Math.round(totalMins / 30) * 30;
-            const snappedH = this.HOURS[0] + Math.floor(snappedMins / 60);
+            const hours = this.getHours();
+            const snappedH = hours[0] + Math.floor(snappedMins / 60);
             const snappedM = snappedMins % 60;
-            const clampedH = Math.max(this.HOURS[0], Math.min(this.HOURS[this.HOURS.length - 1], snappedH));
-            const top = (clampedH - this.HOURS[0]) * this.ROW_HEIGHT + (snappedM / 60) * this.ROW_HEIGHT;
+            const clampedH = Math.max(hours[0], Math.min(hours[hours.length - 1], snappedH));
+            const top = (clampedH - hours[0]) * this.ROW_HEIGHT + (snappedM / 60) * this.ROW_HEIGHT;
             return { h: clampedH, m: snappedM, top };
         };
 
@@ -689,9 +1386,15 @@ export const PlannerView = {
         };
 
         col.addEventListener('dragover', e => {
+            if (this.draggingBlock) {
+                e.preventDefault();
+                const { h, m, top } = getSnapPos(e);
+                updateSnapGhost(h, m, top, this.draggingBlock.areaName, this.draggingBlock.color);
+                return;
+            }
             if (this.draggingDeadline) { e.preventDefault(); showDeadlineGhost(e); return; }
             if (this.draggingPath) { e.preventDefault(); return; }
-            if (!this.dragging.areaId) return;
+            if (!this.dragging.color) return;
             e.preventDefault();
             const { h, m, top } = getSnapPos(e);
             updateSnapGhost(h, m, top, this.dragging.areaName || 'Block', this.dragging.color || 'green');
@@ -705,29 +1408,175 @@ export const PlannerView = {
         col.addEventListener('drop', e => {
             e.preventDefault();
             dlSnapGhost.classList.remove('visible');
+            snapGhost.classList.remove('visible');
+            if (this.draggingBlock) {
+                const { h, m } = getSnapPos(e);
+                const blockId = this.draggingBlock.id;
+                this.draggingBlock = null;
+                this.moveBlock(blockId, d, h, m);
+                return;
+            }
             if (this.draggingDeadline) {
                 this.handleDeadlineDrop(d);
-            } else if (this.dragging.areaId) {
+            } else if (this.dragging.color) {
                 const { h, m } = getSnapPos(e);
                 this.handleDrop(d, h, m);
             }
             this.dragging = { areaId: null, color: null };
         });
         
+        // ── Drag-to-create selection (Google Calendar style) ──
+        // Uses pointer capture so events stay on col even when cursor leaves.
+        // No e.preventDefault() → click event still fires for simple clicks.
+        const selGhost = document.createElement('div');
+        selGhost.className = 'drag-select-ghost';
+        col.appendChild(selGhost);
+
+        const getAbsMins = (clientY) => {
+            const rect = col.getBoundingClientRect();
+            const y = Math.max(0, clientY - rect.top);
+            const hours = this.getHours();
+            const snapped = Math.round((y / this.ROW_HEIGHT) * 60 / 30) * 30;
+            const absH = hours[0] + Math.floor(snapped / 60);
+            const clampedH = Math.max(hours[0], Math.min(hours[hours.length - 1], absH));
+            return clampedH * 60 + (snapped % 60);
+        };
+
+        let selActive = false;
+        let selMoved = false;
+        let selStartAbsMins = 0;
+        let selStartH = 0, selStartM = 0, selStartTop = 0, selStartClientY = 0;
+
+        col.addEventListener('pointerdown', e => {
+            if (e.button !== 0) return;
+            if (e.target !== col && !e.target.classList.contains('hour-line')) return;
+            if (this.dragging.areaId || this.draggingBlock) return;
+
+            col.setPointerCapture(e.pointerId);
+            selActive = true;
+            selMoved = false;
+            selStartClientY = e.clientY;
+            selStartAbsMins = getAbsMins(e.clientY);
+            selStartH = Math.floor(selStartAbsMins / 60);
+            selStartM = selStartAbsMins % 60;
+            const hours = this.getHours();
+            selStartTop = (selStartH - hours[0]) * this.ROW_HEIGHT + (selStartM / 60) * this.ROW_HEIGHT;
+        });
+
+        col.addEventListener('pointermove', e => {
+            if (!selActive) return;
+            if (!selMoved && Math.abs(e.clientY - selStartClientY) < 8) return;
+            selMoved = true;
+            timePip.classList.remove('visible');
+
+            const endAbsMins = getAbsMins(e.clientY);
+            const durationMins = Math.max(30, endAbsMins - selStartAbsMins);
+            const height = Math.max((30 / 60) * this.ROW_HEIGHT, (durationMins / 60) * this.ROW_HEIGHT);
+            const sessions = Math.max(1, this.calcSessionsFromDuration(durationMins));
+            const endStr = this.addMinutes(selStartH, selStartM, durationMins);
+
+            selGhost.className = 'drag-select-ghost visible';
+            selGhost.style.top = `${selStartTop}px`;
+            selGhost.style.height = `${height}px`;
+            selGhost.innerHTML = `
+                <div class="dsg-label">
+                    <span class="dsg-time">${this.formatTime(selStartH, selStartM)} – ${endStr}</span>
+                    <span class="dsg-sessions">${sessions}×</span>
+                </div>
+            `;
+        });
+
+        col.addEventListener('pointerup', e => {
+            if (!selActive) return;
+            selActive = false;
+            selGhost.className = 'drag-select-ghost';
+
+            if (selMoved) {
+                const endAbsMins = getAbsMins(e.clientY);
+                const durationMins = Math.max(30, endAbsMins - selStartAbsMins);
+                const sessions = Math.max(1, this.calcSessionsFromDuration(durationMins));
+                this.openPopover(d, selStartH, selStartM, sessions);
+            }
+        });
+
+        col.addEventListener('pointercancel', () => {
+            selActive = false;
+            selGhost.className = 'drag-select-ghost';
+        });
+
         col.addEventListener('click', e => {
+            // Suppress click if a drag-select just completed (pointerup already opened popover)
+            if (selMoved) { selMoved = false; return; }
             if (e.target === col || e.target.classList.contains('hour-line')) {
                 const { h, m } = getSnapPos(e);
-                this.openPopover(d, h, m);
+                this.showCalContextMenu(e, d, h, m);
             }
         });
     },
 
+    // ── CALENDAR CONTEXT MENU ──
+    showCalContextMenu(e, d, h, m) {
+        // Remove any existing context menu
+        const existing = document.getElementById('cal-ctx-menu');
+        if (existing) existing.remove();
+
+        // Compute date string for deadline pre-fill
+        let dateStr;
+        if (this.viewMode === 'today') {
+            dateStr = this.getDayDate(this.dayOffset).toISOString().split('T')[0];
+        } else {
+            dateStr = this.getWeekDates(this.weekOffset)[d].toISOString().split('T')[0];
+        }
+
+        const menu = document.createElement('div');
+        menu.id = 'cal-ctx-menu';
+        menu.className = 'cal-ctx-menu';
+
+        const items = [
+            { label: 'New Focus Session', icon: '▶', action: () => this.openPopover(d, h, m) },
+            { label: 'New Path Deadline', icon: '◎', action: () => this.openPathModal(dateStr) },
+        ];
+
+        items.forEach(({ label, icon, action }) => {
+            const btn = document.createElement('button');
+            btn.className = 'cal-ctx-item';
+            btn.innerHTML = `<span class="cal-ctx-icon">${icon}</span>${label}`;
+            btn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                menu.remove();
+                action();
+            });
+            menu.appendChild(btn);
+        });
+
+        // Position near click
+        const overlay = document.getElementById('focusPlannerOverlay');
+        const overlayRect = overlay.getBoundingClientRect();
+        let x = e.clientX - overlayRect.left + 8;
+        let y = e.clientY - overlayRect.top + 4;
+
+        menu.style.left = x + 'px';
+        menu.style.top  = y + 'px';
+        overlay.appendChild(menu);
+
+        // Dismiss on outside click
+        const dismiss = (ev) => {
+            if (!menu.contains(ev.target)) {
+                menu.remove();
+                document.removeEventListener('click', dismiss, true);
+            }
+        };
+        // Use capture so it fires before other handlers
+        setTimeout(() => document.addEventListener('click', dismiss, true), 0);
+    },
+
     // ── DRAG & DROP ──
     startDrag(e, areaId, areaName, color) {
+        console.log('[DnD] dragstart fired', { areaId, areaName, color });
         this.dragging = { areaId, areaName, color };
         this.pendingAreaId = areaId;
         this.pendingColor = color;
-        
+
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', areaId); // fallback
         
@@ -740,13 +1589,16 @@ export const PlannerView = {
             ghostInner.textContent = `${areaName} · 2 sessions`;
         }
 
-        const img = new Image(); img.src = '';
-        e.dataTransfer.setDragImage(img, 0, 0);
+        const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+        canvas.style.cssText = 'position:fixed;top:-2px;left:-2px;opacity:0;pointer-events:none;';
+        document.body.appendChild(canvas);
+        e.dataTransfer.setDragImage(canvas, 0, 0);
 
         let moveHandler;
         let endHandler;
 
         moveHandler = (ev) => {
+            ev.preventDefault();
             if (ghost) {
                 ghost.style.left = `${ev.clientX + 12}px`;
                 ghost.style.top = `${ev.clientY - 16}px`;
@@ -754,14 +1606,14 @@ export const PlannerView = {
         };
 
         endHandler = () => {
-            // Removed premature flag reset: this.dragging = { areaId: null, color: null };
+            canvas.remove();
             if (ghost) ghost.classList.remove('active');
-            document.removeEventListener('dragover', moveHandler);
-            document.removeEventListener('dragend', endHandler);
+            document.documentElement.removeEventListener('dragover', moveHandler);
+            document.documentElement.removeEventListener('dragend', endHandler);
         };
 
-        document.addEventListener('dragover', moveHandler);
-        document.addEventListener('dragend', endHandler);
+        document.documentElement.addEventListener('dragover', moveHandler);
+        document.documentElement.addEventListener('dragend', endHandler);
     },
 
     startNewBlockDrag(e) {
@@ -783,23 +1635,27 @@ export const PlannerView = {
             ghostInner.textContent = path.name;
         }
 
-        const img = new Image(); img.src = '';
-        e.dataTransfer.setDragImage(img, 0, 0);
+        const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+        canvas.style.cssText = 'position:fixed;top:-2px;left:-2px;opacity:0;pointer-events:none;';
+        document.body.appendChild(canvas);
+        e.dataTransfer.setDragImage(canvas, 0, 0);
 
         const moveHandler = (ev) => {
+            ev.preventDefault();
             if (ghost) {
                 ghost.style.left = `${ev.clientX + 12}px`;
                 ghost.style.top = `${ev.clientY - 16}px`;
             }
         };
         const endHandler = () => {
+            canvas.remove();
             if (ghost) ghost.classList.remove('active');
             this.draggingPath = null;
-            document.removeEventListener('dragover', moveHandler);
-            document.removeEventListener('dragend', endHandler);
+            document.documentElement.removeEventListener('dragover', moveHandler);
+            document.documentElement.removeEventListener('dragend', endHandler);
         };
-        document.addEventListener('dragover', moveHandler);
-        document.addEventListener('dragend', endHandler);
+        document.documentElement.addEventListener('dragover', moveHandler);
+        document.documentElement.addEventListener('dragend', endHandler);
     },
 
     startDeadlineDrag(e) {
@@ -815,23 +1671,27 @@ export const PlannerView = {
             ghostInner.textContent = 'Set deadline →';
         }
 
-        const img = new Image(); img.src = '';
-        e.dataTransfer.setDragImage(img, 0, 0);
+        const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+        canvas.style.cssText = 'position:fixed;top:-2px;left:-2px;opacity:0;pointer-events:none;';
+        document.body.appendChild(canvas);
+        e.dataTransfer.setDragImage(canvas, 0, 0);
 
         const moveHandler = (ev) => {
+            ev.preventDefault();
             if (ghost) {
                 ghost.style.left = `${ev.clientX + 12}px`;
                 ghost.style.top = `${ev.clientY - 16}px`;
             }
         };
         const endHandler = () => {
+            canvas.remove();
             if (ghost) ghost.classList.remove('active');
             this.draggingDeadline = false;
-            document.removeEventListener('dragover', moveHandler);
-            document.removeEventListener('dragend', endHandler);
+            document.documentElement.removeEventListener('dragover', moveHandler);
+            document.documentElement.removeEventListener('dragend', endHandler);
         };
-        document.addEventListener('dragover', moveHandler);
-        document.addEventListener('dragend', endHandler);
+        document.documentElement.addEventListener('dragover', moveHandler);
+        document.documentElement.addEventListener('dragend', endHandler);
     },
 
     handleDeadlineDrop(dayIndex) {
@@ -876,9 +1736,14 @@ export const PlannerView = {
     },
 
     // ── POPOVER ──
-    openPopover(day, hour, mins) {
+    openPopover(day, hour, mins, sessions) {
+        this.editingBlockId = null;
+        this.closeDetail();
         const overlay = document.getElementById('popover-overlay');
         const pop = document.getElementById('popover');
+
+        const titleSpan = document.getElementById('popover-title-text');
+        if (titleSpan) titleSpan.textContent = 'New block';
 
         this.pendingDay = day;
         this.pendingHour = hour;
@@ -900,12 +1765,12 @@ export const PlannerView = {
         document.getElementById('popover-time').value =
             `${String(hour).padStart(2, '0')}:${String(this.pendingMinutes).padStart(2, '0')}`;
         
-        this.sessionCount = 2;
+        this.sessionCount = sessions ?? 2;
         this.updateSessionDisplay();
 
-        // Pre-select active path
-        if (this.activePath) {
-            this.pendingPathId = this.activePath;
+        // Pre-select active path if exactly one is filtered
+        if (this.activePathSet !== null && this.activePathSet.size === 1) {
+            this.pendingPathId = [...this.activePathSet][0];
         }
         this.updatePathDisplay();
 
@@ -977,8 +1842,8 @@ export const PlannerView = {
         this.paths.push({ ...path, totalPlanned: 0, totalWalked: 0 });
         this.closePathModal();
 
-        // Auto-select the new path (like git checkout -b)
-        this.setActivePath(path.id);
+        // Auto-select the new path
+        this.togglePath(path.id);
         this.render();
     },
 
@@ -987,8 +1852,100 @@ export const PlannerView = {
         if (dbManager.initialized) { console.log('[archivePath] manual:', pathId); await dbManager.archivePath(pathId); }
         const p = this.paths.find(p => p.id === pathId);
         if (p) p.status = 'archived';
-        if (this.activePath === pathId) this.setActivePath(null);
-        else this.renderPathsSidebar();
+        if (this.activePathSet?.size > 0) this.activePathSet.delete(pathId);
+        if (this.activePathSet?.size === 0) this.activePathSet = null;
+        this.updateMasterCheckbox();
+        this.updatePathFilterChip();
+        this.renderPathsSidebar(this.pathSearchQuery);
+        this.renderBody();
+    },
+
+    // ── AREA MODAL ──
+    openAreaModal() {
+        const overlay = document.getElementById('area-modal-overlay');
+        if (!overlay) return;
+        document.getElementById('area-modal-name').value = '';
+        this.selectedAreaColor = '#58a6ff';
+        document.querySelectorAll('#area-color-picker .path-color-swatch').forEach(s => {
+            s.classList.toggle('active', s.dataset.color === '#58a6ff');
+        });
+        this._populateAreaCategorySelect();
+        document.getElementById('area-new-category-row').style.display = 'none';
+        document.getElementById('area-modal-new-cat-name').value = '';
+        document.getElementById('area-modal-new-cat-icon').value = '📁';
+        document.getElementById('area-modal-selected-icon').textContent = '📁';
+        overlay.classList.add('visible');
+        setTimeout(() => document.getElementById('area-modal-name')?.focus(), 50);
+    },
+
+    _populateAreaCategorySelect() {
+        const select = document.getElementById('area-modal-category');
+        if (!select) return;
+        const uncategorized = state.categories.find(c => c.isDefault) || { name: 'Uncategorized', icon: '📁' };
+        const options = state.categories
+            .filter(c => !c.isDefault)
+            .map(c => `<option value="${c.name}">${c.icon} ${c.name}</option>`)
+            .join('');
+        select.innerHTML = `
+            <option value="${uncategorized.name}">${uncategorized.icon} ${uncategorized.name}</option>
+            ${options}
+            <option value="__new__">+ Add New Category…</option>
+        `;
+    },
+
+    onAreaCategoryChange(value) {
+        const row = document.getElementById('area-new-category-row');
+        if (!row) return;
+        row.style.display = value === '__new__' ? 'flex' : 'none';
+        if (value === '__new__') {
+            row.style.flexDirection = 'column';
+            document.getElementById('area-modal-new-cat-name')?.focus();
+        }
+    },
+
+    toggleAreaIconPicker() {
+        const picker = document.getElementById('area-modal-icon-picker');
+        if (picker) picker.style.display = picker.style.display === 'none' ? 'flex' : 'none';
+    },
+
+    selectAreaIcon(icon) {
+        document.getElementById('area-modal-selected-icon').textContent = icon;
+        document.getElementById('area-modal-new-cat-icon').value = icon;
+        document.getElementById('area-modal-icon-picker').style.display = 'none';
+    },
+
+    closeAreaModal() {
+        document.getElementById('area-modal-overlay')?.classList.remove('visible');
+    },
+
+    selectAreaColor(color, el) {
+        this.selectedAreaColor = color;
+        document.querySelectorAll('#area-color-picker .path-color-swatch').forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+    },
+
+    async saveNewArea() {
+        const name = document.getElementById('area-modal-name')?.value.trim();
+        if (!name) { document.getElementById('area-modal-name')?.focus(); return; }
+
+        const catSelect = document.getElementById('area-modal-category');
+        let category = catSelect?.value || 'Uncategorized';
+
+        if (category === '__new__') {
+            const newName = document.getElementById('area-modal-new-cat-name')?.value.trim();
+            const newIcon = document.getElementById('area-modal-new-cat-icon')?.value || '📁';
+            if (!newName) { document.getElementById('area-modal-new-cat-name')?.focus(); return; }
+            state.categories.push({ id: uuidv7(), name: newName, icon: newIcon });
+            category = newName;
+        }
+
+        const task = FocusService.addFocusArea(name, category, this.selectedAreaColor);
+        if (task && dbManager.initialized) {
+            await dbManager.insertFocusArea(task);
+        }
+
+        this.closeAreaModal();
+        this.renderSidebarAreas(this.areaSearchQuery);
     },
 
     populateAreaPicker() {
@@ -1081,28 +2038,49 @@ export const PlannerView = {
 
         const path = this.paths.find(p => p.id === this.pendingPathId);
 
-        const block = {
-            id: uuidv7(),
-            day: this.pendingDay,
-            startHour: h,
-            startMin: m,
-            sessions: this.sessionCount,
-            areaId: area.id,
-            areaName: area.name,
-            color: area.color,
-            type: 'planned',
-            label: label || null,
-            pathId: this.pendingPathId || null,
-            pathName: path?.name || null,
-            pathColor: path?.color || null,
-            walked: false
-        };
-
-        this.blocks.push(block);
-        this.saveBlock(block);
-
-        // Update path progress count in memory
-        if (path) path.totalPlanned = (path.totalPlanned || 0) + this.sessionCount;
+        if (this.editingBlockId) {
+            // Update existing block
+            const block = this.blocks.find(b => b.id === this.editingBlockId);
+            if (block) {
+                const prevSessions = block.sessions;
+                block.day = this.pendingDay;
+                block.startHour = h;
+                block.startMin = m;
+                block.sessions = this.sessionCount;
+                block.areaId = area.id;
+                block.areaName = area.name;
+                block.color = area.color;
+                block.label = label || null;
+                block.pathId = this.pendingPathId || null;
+                block.pathName = path?.name || null;
+                block.pathColor = path?.color || null;
+                this.saveBlock(block);
+                // Update path progress count
+                if (path) path.totalPlanned = (path.totalPlanned || 0) + (this.sessionCount - prevSessions);
+            }
+            this.editingBlockId = null;
+        } else {
+            // Create new block
+            const block = {
+                id: uuidv7(),
+                day: this.pendingDay,
+                startHour: h,
+                startMin: m,
+                sessions: this.sessionCount,
+                areaId: area.id,
+                areaName: area.name,
+                color: area.color,
+                type: 'planned',
+                label: label || null,
+                pathId: this.pendingPathId || null,
+                pathName: path?.name || null,
+                pathColor: path?.color || null,
+                walked: false
+            };
+            this.blocks.push(block);
+            this.saveBlock(block);
+            if (path) path.totalPlanned = (path.totalPlanned || 0) + this.sessionCount;
+        }
 
         this.closePopover();
         if (document.getElementById('popover-label')) document.getElementById('popover-label').value = '';
@@ -1128,6 +2106,46 @@ export const PlannerView = {
         document.getElementById('derived-duration').textContent = this.formatDuration(dur);
     },
 
+    // ── MOBILE ──
+    initMobile() {
+        if (!window.matchMedia('(max-width: 480px)').matches) return;
+
+        // Move sidebar sections into their mobile sheets (IDs stay the same, render logic unchanged)
+        const pathsSection = document.querySelector('#focusPlannerOverlay .sidebar-section--paths');
+        const areasSection = document.querySelector('#focusPlannerOverlay .sidebar-section:not(.sidebar-section--paths)');
+        const pathsSheet  = document.getElementById('mobile-sheet-paths');
+        const areasSheet  = document.getElementById('mobile-sheet-areas');
+
+        if (pathsSection && pathsSheet) pathsSheet.appendChild(pathsSection);
+        if (areasSection && areasSheet) areasSheet.appendChild(areasSection);
+    },
+
+    mobileTab(tab) {
+        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(`mobile-tab-${tab}`)?.classList.add('active');
+        if (tab === 'calendar') {
+            this.closeMobileSheet();
+        } else {
+            this.openMobileSheet(`mobile-sheet-${tab}`);
+        }
+    },
+
+    openMobileSheet(id) {
+        const sheet = document.getElementById(id);
+        const backdrop = document.getElementById('mobile-sheet-backdrop');
+        document.querySelectorAll('.mobile-sheet').forEach(s => s.classList.remove('open'));
+        if (sheet) sheet.classList.add('open');
+        if (backdrop) backdrop.classList.add('open');
+    },
+
+    closeMobileSheet() {
+        document.querySelectorAll('.mobile-sheet').forEach(s => s.classList.remove('open'));
+        const backdrop = document.getElementById('mobile-sheet-backdrop');
+        if (backdrop) backdrop.classList.remove('open');
+        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('mobile-tab-calendar')?.classList.add('active');
+    },
+
     setupEventListeners() {
         // Bind HTML buttons to class methods
         // Note: HTML onclicks won't work with module methods directly unless exposed to window
@@ -1136,7 +2154,19 @@ export const PlannerView = {
         
         console.log('PlannerView setupEventListeners called'); // Added for debugging
         window.shiftWeek = (d) => this.shiftWeek(d);
+        window.shiftPeriod = (d) => this.shiftPeriod(d);
         window.goToday = () => this.goToday();
+        window.setViewMode = (mode) => this.setViewMode(mode);
+        window.setTodaySubView = (mode) => this.setTodaySubView(mode);
+        window.setWeekSubView = (mode) => this.setWeekSubView(mode);
+        window.setSubView = (mode) => {
+            if (this.viewMode === 'today') this.setTodaySubView(mode);
+            else this.setWeekSubView(mode);
+        };
+        window.openPopoverDefault = () => {
+            const day = this.viewMode === 'today' ? 0 : (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+            this.openPopover(day, 9, 0);
+        };
         window.setFilter = (f, el) => {
             this.activeFilter = f;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1161,19 +2191,39 @@ export const PlannerView = {
             if (e.target === document.getElementById('modal-overlay')) this.closePathModal();
         };
         window.openPopover = () => this.openPopover();
-        window.setActivePath = (id) => this.setActivePath(id);
+        window.setActivePath = (id) => id === null ? this.clearPathFilter() : this.togglePath(id);
+        window.togglePath = (id) => this.togglePath(id);
+        window.toggleMasterPaths = () => this.toggleMasterPaths();
+        window.clearPathFilter = () => this.clearPathFilter();
+        window.toggleCalHoursMode = () => this.toggleCalHoursMode();
+        window.filterAreas = (q) => this.filterAreas(q);
+        window.filterPaths = (q) => this.filterPaths(q);
+        window.openAreaModal = () => this.openAreaModal();
+        window.closeAreaModal = () => this.closeAreaModal();
+        window.closeAreaModalIfBg = (e) => { if (e.target === document.getElementById('area-modal-overlay')) this.closeAreaModal(); };
+        window.selectAreaColor = (color, el) => this.selectAreaColor(color, el);
+        window.saveNewArea = () => this.saveNewArea();
+        window.onAreaCategoryChange = (v) => this.onAreaCategoryChange(v);
+        window.toggleAreaIconPicker = () => this.toggleAreaIconPicker();
+        window.selectAreaIcon = (icon) => this.selectAreaIcon(icon);
+        window.closeDetail = () => this.closeDetail();
         
         // Navigation buttons
+        window.mobileTab = (tab) => this.mobileTab(tab);
+        window.closeMobileSheet = () => this.closeMobileSheet();
+
         document.getElementById('focusPlannerNavBtn')?.addEventListener('click', () => {
             document.getElementById('menuDropdown').classList.remove('open');
             this.open();
         });
         document.getElementById('focusPlannerClose')?.addEventListener('click', () => this.close());
-        
+
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('focusPlannerOverlay').style.display === 'block') {
+            if (e.key === 'Escape' && document.getElementById('focusPlannerOverlay').style.display !== 'none') {
                 this.close();
             }
         });
+
+        this.initMobile();
     }
 };

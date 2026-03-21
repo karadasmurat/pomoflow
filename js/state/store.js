@@ -92,6 +92,8 @@ export let state = {
         autoStartWork: false,
         soundVolume: 70,
         use12Hour: false,
+        activeHoursStart: 8,
+        activeHoursEnd: 22,
         cardVariant: 'glass',
         shareTemplates: {
             intent: "🧠 Focusing on {focusArea} for {duration} mins. Back at {time}! 🚀 #PomoFlow #DeepWork",

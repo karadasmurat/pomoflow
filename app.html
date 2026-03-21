@@ -1009,6 +1009,20 @@
         </div>
 
         <div class="setting-group">
+          <div class="setting-label">
+            <div class="setting-label-row">
+              <span>Active Hours</span>
+              <span class="setting-hint">Calendar default range</span>
+            </div>
+          </div>
+          <div class="setting-row setting-row--gap">
+            <select id="activeHoursStart" class="setting-select"></select>
+            <span class="setting-sep">to</span>
+            <select id="activeHoursEnd" class="setting-select"></select>
+          </div>
+        </div>
+
+        <div class="setting-group">
           <label class="setting-label">Notifications</label>
           <div class="setting-row setting-row--gap">
             <button class="filter-btn" id="requestNotifyManual">
@@ -1225,7 +1239,7 @@
   <script type="module" src="js/components/sliding-card.js"></script>
   <script type="module" src="js/app.js"></script>
   <!-- ══ FOCUS PLANNER MODAL ══ -->
-  <div id="focusPlannerOverlay" style="display:none; position:fixed; inset:0; z-index:9000; overflow:auto;">
+  <div id="focusPlannerOverlay" style="display:none; position:fixed; inset:0; z-index:9000;">
     <style>
       #focusPlannerOverlay
 
@@ -1260,6 +1274,50 @@
         --blue-txt: #2D3E5C;
         --blue-brd: #B4C4D9;
         --blue-bar: #6B8B9E;
+      }
+
+      /* ── DARK MODE OVERRIDES ── */
+      [data-theme="dark"] {
+        --bg: #18181a;
+        --bg-card: #1f1f22;
+        --white: #27272b;
+        --ink: rgba(255,255,255,0.92);
+        --ink-mid: rgba(255,255,255,0.52);
+        --ink-soft: rgba(255,255,255,0.32);
+        --rule: rgba(255,255,255,0.06);
+        --accent: #3d8f5a;
+        --accent-dim: rgba(61,143,90,0.15);
+        /* Focus Area colors — translucent tints on dark surface */
+        --green-bg:   rgba(107,158,120,0.14);
+        --green-brd:  rgba(107,158,120,0.30);
+        --green-txt:  #a8d4b2;
+        --amber-bg:   rgba(158,139,107,0.14);
+        --amber-brd:  rgba(158,139,107,0.30);
+        --amber-txt:  #d4c2a0;
+        --violet-bg:  rgba(139,107,158,0.14);
+        --violet-brd: rgba(139,107,158,0.30);
+        --violet-txt: #c4a8d8;
+        --blue-bg:    rgba(107,139,158,0.14);
+        --blue-brd:   rgba(107,139,158,0.30);
+        --blue-txt:   #a0bdd4;
+      }
+
+      /* Today column: subtle tint in dark mode instead of stark white */
+      [data-theme="dark"] #focusPlannerOverlay .day-col.today {
+        background: rgba(61,143,90,0.06);
+      }
+      [data-theme="dark"] #focusPlannerOverlay .day-head.today {
+        background: transparent;
+      }
+
+      /* Nav: dark mode uses dark surface */
+      [data-theme="dark"] #focusPlannerOverlay .nav {
+        background: rgba(24,24,26,0.92);
+      }
+
+      /* Session chip: light mode needs a darker tint to be visible */
+      [data-theme="light"] #focusPlannerOverlay .block-session-chip {
+        background: rgba(0,0,0,0.12);
       }
 
       #focusPlannerOverlay,
@@ -1433,10 +1491,10 @@
         flex: 1 1 0;
         min-height: 0;
         overflow-y: auto;
-        padding: 10px 10px;
+        padding: 0 10px 10px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 5px;
       }
 
       #focusPlannerOverlay
@@ -1445,17 +1503,16 @@
       .area-card {
         background: var(--white);
         border: 1px solid var(--rule);
-        border-radius: 8px;
-        padding: 10px 11px;
+        border-radius: 7px;
+        padding: 6px 8px 6px 6px;
         cursor: grab;
-        transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+        transition: box-shadow 0.15s, border-color 0.15s;
         position: relative;
         user-select: none;
       }
 
       #focusPlannerOverlay .area-card:hover {
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
       #focusPlannerOverlay .area-card:active {
@@ -1481,15 +1538,19 @@
       #focusPlannerOverlay .area-card-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 7px;
+        gap: 5px;
       }
 
       #focusPlannerOverlay .area-card-name {
-        font-size: 12px;
-        font-weight: 700;
+        font-size: 11px;
+        font-weight: 600;
         color: var(--ink);
         letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
       }
 
       #focusPlannerOverlay .sidebar-areas-empty {
@@ -1682,59 +1743,334 @@
         background: var(--white);
       }
 
-      #focusPlannerOverlay .week-nav {
+      /* ── VIEW TOGGLE (Today/Week + Calendar/List) ── */
+      #focusPlannerOverlay .view-toggle {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        background: var(--bg-card);
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
+        flex-shrink: 0;
       }
 
-      #focusPlannerOverlay .week-nav-btn {
-        width: 28px;
-        height: 28px;
-        border: 1px solid var(--rule);
-        border-radius: var(--r);
+      #focusPlannerOverlay .view-toggle-btn {
+        padding: 4px 12px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        cursor: pointer;
+        font-family: var(--f);
+        transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+        white-space: nowrap;
+        outline: none;
+        height: 30px;
+        min-height: 0;
+        min-width: 0;
+      }
+
+      #focusPlannerOverlay .view-toggle--sub .view-toggle-btn {
+        padding: 4px 10px;
+        font-size: 15px;
+        line-height: 1;
+      }
+
+      #focusPlannerOverlay .view-toggle-btn.active {
+        background: var(--white);
+        color: var(--ink);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      }
+
+      /* ── DATE NAVIGATION ── */
+      #focusPlannerOverlay .date-nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      #focusPlannerOverlay .chevron-pill {
+        display: flex;
         background: var(--bg-card);
-        color: var(--ink-mid);
-        font-size: 13px;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+
+      #focusPlannerOverlay .chevron-pill-btn {
+        width: 28px;
+        height: 30px;
+        min-height: 0;
+        min-width: 0;
+        border: none;
+        border-radius: 6px;
+        background: var(--white);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: border-color 0.15s, color 0.15s, background 0.15s;
+        font-size: 15px;
+        line-height: 1;
+        color: var(--ink);
+        font-family: var(--f);
+        transition: box-shadow 0.12s, color 0.12s;
+        outline: none;
+      }
+
+      #focusPlannerOverlay .chevron-pill-btn:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+        color: var(--ink);
+      }
+
+      #focusPlannerOverlay .cal-icon-dash {
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--ink-soft);
+        line-height: 1;
+      }
+
+      /* ── CALENDAR ICON WIDGET ── */
+      #focusPlannerOverlay .cal-icon-widget {
+        width: 38px;
+        border-radius: 7px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06);
+        flex-shrink: 0;
+        flex-direction: column;
+      }
+
+      #focusPlannerOverlay .cal-icon-month {
+        background: #C94C3A;
+        color: #fff;
+        font-size: 7px;
+        font-weight: 800;
+        text-align: center;
+        padding: 3px 4px 2px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
         font-family: var(--f);
       }
 
-      #focusPlannerOverlay .week-nav-btn:hover {
-        border-color: var(--ink-soft);
+      #focusPlannerOverlay .cal-icon-day {
+        background: var(--white);
         color: var(--ink);
+        font-size: 17px;
+        font-weight: 800;
+        text-align: center;
+        padding: 1px 4px 3px;
+        letter-spacing: -0.04em;
+        line-height: 1.15;
+        font-family: var(--f);
+      }
+
+      /* Today mode: single-column cal-head and cal-body */
+      #focusPlannerOverlay .cal-head.today-mode,
+      #focusPlannerOverlay .cal-body.today-mode {
+        grid-template-columns: 52px 1fr;
+      }
+
+      /* ── TODAY LIST VIEW ── */
+      #focusPlannerOverlay .today-list-view {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         background: var(--white);
       }
 
-      #focusPlannerOverlay .week-label {
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--ink);
-        letter-spacing: -0.01em;
-        min-width: 148px;
+      #focusPlannerOverlay .today-list-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--ink-soft);
+        font-size: 13px;
         text-align: center;
+        padding: 48px 24px;
       }
 
-      #focusPlannerOverlay .today-btn {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--ink-mid);
+      #focusPlannerOverlay .today-list-empty-icon {
+        font-size: 28px;
+        opacity: 0.35;
+        margin-bottom: 4px;
+      }
+
+      #focusPlannerOverlay .today-list-item {
+        display: flex;
+        align-items: stretch;
+        padding: 10px 14px 10px 18px;
+        border-radius: 10px;
         border: 1px solid var(--rule);
         background: var(--bg-card);
-        border-radius: var(--r);
-        padding: 5px 12px;
         cursor: pointer;
-        font-family: var(--f);
-        transition: border-color 0.15s, color 0.15s;
+        transition: box-shadow 0.15s, border-color 0.15s;
+        position: relative;
+        overflow: hidden;
       }
 
-      #focusPlannerOverlay .today-btn:hover {
+      #focusPlannerOverlay .today-list-item:hover {
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         border-color: var(--ink-soft);
+      }
+
+      #focusPlannerOverlay .today-list-item.path-dimmed {
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      #focusPlannerOverlay .today-list-item.planned {
+        border-style: dashed;
+      }
+
+      #focusPlannerOverlay .tli-bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 10px 0 0 10px;
+      }
+
+      #focusPlannerOverlay .tli-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      #focusPlannerOverlay .tli-row1 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      #focusPlannerOverlay .tli-row2 {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex-wrap: wrap;
+      }
+
+      #focusPlannerOverlay .tli-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      #focusPlannerOverlay .tli-name {
+        font-size: 13px;
+        font-weight: 700;
         color: var(--ink);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #focusPlannerOverlay .tli-time {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-mid);
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      #focusPlannerOverlay .tli-meta {
+        font-size: 11px;
+        color: var(--ink-soft);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      #focusPlannerOverlay .tli-path {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 20px;
+        border: 1px solid;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      #focusPlannerOverlay .tli-badge {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+
+      #focusPlannerOverlay .tli-badge.planned {
+        background: var(--bg);
+        color: var(--ink-soft);
+      }
+
+      #focusPlannerOverlay .tli-badge.actual {
+        background: var(--accent-dim);
+        color: var(--accent);
+      }
+
+      #focusPlannerOverlay .week-list-day-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 4px 6px;
+        border-bottom: 1px solid var(--rule);
+        margin-top: 8px;
+      }
+      #focusPlannerOverlay .week-list-day-header:first-child {
+        margin-top: 0;
+      }
+      #focusPlannerOverlay .week-list-day-header.today .wldh-name {
+        color: var(--primary);
+      }
+      #focusPlannerOverlay .wldh-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      #focusPlannerOverlay .wldh-date {
+        font-size: 11px;
+        color: var(--ink-soft);
+      }
+      #focusPlannerOverlay .wldh-today-pill {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: var(--primary-dim, var(--accent-dim));
+        color: var(--primary);
+        padding: 2px 7px;
+        border-radius: 20px;
+      }
+      #focusPlannerOverlay .week-list-day-empty {
+        font-size: 12px;
+        color: var(--ink-faint, var(--ink-soft));
+        padding: 8px 4px;
+        font-style: italic;
       }
 
       #focusPlannerOverlay .header-spacer {
@@ -2087,8 +2423,7 @@
       #focusPlannerOverlay .day-col {
         border-right: 1px solid var(--rule);
         position: relative;
-        min-height: 576px;
-        /* 8 × 72px */
+        min-height: 1008px; /* 14 × 72px */
       }
 
       #focusPlannerOverlay .day-col:last-child {
@@ -2248,6 +2583,22 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      #focusPlannerOverlay .block-session-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.22);
+        border-radius: 4px;
+        padding: 1px 4px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
       }
 
       #focusPlannerOverlay .block-type-badge {
@@ -2749,6 +3100,7 @@
         margin-bottom: 6px;
       }
 
+      #focusPlannerOverlay .modal-field select,
       #focusPlannerOverlay .modal-field input[type="text"],
       #focusPlannerOverlay .modal-field input[type="date"] {
         width: 100%;
@@ -2764,13 +3116,54 @@
         transition: border-color 0.15s;
       }
 
+      #focusPlannerOverlay .modal-field select:focus,
       #focusPlannerOverlay .modal-field input:focus {
         border-color: var(--accent);
+        outline: none;
+      }
+
+      #focusPlannerOverlay .modal-field select {
+        cursor: pointer;
+        appearance: auto;
       }
 
       #focusPlannerOverlay .modal-field input::placeholder {
         color: var(--ink-soft);
         font-weight: 400;
+      }
+
+      #focusPlannerOverlay .area-modal-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--rule);
+        border-radius: var(--r);
+        background: var(--bg-card);
+        color: var(--ink);
+        font-size: 13px;
+        padding: 5px 8px;
+        cursor: pointer;
+      }
+      #focusPlannerOverlay .area-modal-icon-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 6px;
+        background: var(--bg-card);
+        border: 1px solid var(--rule);
+        border-radius: var(--r);
+      }
+      #focusPlannerOverlay .area-modal-icon-picker button {
+        border: none;
+        background: none;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 3px;
+        border-radius: 4px;
+        line-height: 1;
+      }
+      #focusPlannerOverlay .area-modal-icon-picker button:hover {
+        background: var(--accent-dim);
       }
 
       #focusPlannerOverlay .modal-area-list {
@@ -3240,14 +3633,16 @@
         background: var(--ink);
         color: var(--white);
         border: none;
-        border-radius: var(--r);
-        padding: 6px 14px;
+        border-radius: 6px;
+        padding: 5px 13px;
         font-size: 12px;
         font-weight: 700;
         font-family: var(--f);
         cursor: pointer;
         letter-spacing: -0.01em;
         transition: opacity 0.15s;
+        min-height: 0;
+        min-width: 0;
       }
 
       #focusPlannerOverlay .new-btn:hover {
@@ -3328,75 +3723,82 @@
         border-radius: 3px;
       }
 
-
-
-
-      /* Close button */
-      #focusPlannerClose {
-        position: fixed;
-        top: 14px;
-        right: 16px;
-        z-index: 9100;
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        border: 1px solid #ddd;
-        background: #fff;
-        color: #555;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      /* ── NAV COMPRESSION ≤900px ── */
+      @media (max-width: 900px) {
+        #focusPlannerOverlay .planner-header {
+          gap: 8px;
+          padding: 0 12px;
+        }
+        #focusPlannerClose {
+          min-width: 34px;
+          width: 34px;
+        }
+        #focusPlannerOverlay .view-toggle-btn {
+          padding: 4px 8px;
+        }
+        #focusPlannerOverlay .date-nav {
+          gap: 4px;
+        }
+        #focusPlannerOverlay .filter-btn {
+          padding: 4px 6px;
+        }
+        #focusPlannerOverlay .new-btn {
+          padding: 6px 8px;
+        }
       }
 
-      #focusPlannerClose:hover {
-        background: #f5f5f5;
+      /* ── TABLET ≤768px: hide filter group to prevent overflow ── */
+      @media (max-width: 768px) {
+        #focusPlannerOverlay .filter-group { display: none; }
       }
+
     </style>
-
-    <button id="focusPlannerClose" title="Close planner (Esc)">
-      <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-        <path
-          d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z">
-        </path>
-      </svg>
-    </button>
 
     <!-- ── PLANNER ── -->
     <div class="planner">
 
       <!-- SIDEBAR -->
       <aside class="sidebar">
-        <div class="sidebar-head">
-          <div class="sidebar-eyebrow">This week</div>
-          <div class="sidebar-week-summary">Areas with planned or logged blocks</div>
-        </div>
-        <div class="sidebar-areas" id="sidebar-areas">
 
-          <div class="creation-chip" draggable="true" ondragstart="startNewBlockDrag(event)">
-            <span class="creation-chip-icon">▭</span>
-            <div class="creation-chip-text">
-              <span class="creation-chip-label">New block</span>
-              <span class="creation-chip-hint">Drag to plan</span>
-            </div>
-            <span class="creation-chip-handle">⠿ →</span>
+        <!-- ── MY PATHS ── -->
+        <div class="sidebar-section sidebar-section--paths">
+          <div class="sidebar-section-header">
+            <span class="sidebar-section-title">My Paths</span>
+            <button class="sidebar-section-new-btn" id="newPathBtn" onclick="openPathModal()">+ New</button>
           </div>
-
-          <!-- area cards injected by renderSidebarAreas() -->
-        </div>
-
-        <!-- PATHS SECTION -->
-        <div class="sidebar-paths">
-          <div class="sidebar-paths-head">
-            <div>
-              <div class="sidebar-eyebrow">Paths</div>
-              <div class="sidebar-paths-hint">Click a path to filter the calendar</div>
+          <div class="sidebar-section-search">
+            <div class="search-pill">
+              <i class="ph ph-magnifying-glass search-pill-icon"></i>
+              <input type="text" id="path-search" class="search-pill-input" placeholder="Search paths…" oninput="filterPaths(this.value)">
+              <button class="search-pill-clear" onclick="document.getElementById('path-search').value=''; filterPaths(''); this.blur()"><i class="ph-fill ph-x-circle"></i></button>
             </div>
-            <button class="new-path-btn" id="newPathBtn" onclick="openPathModal()">+ New</button>
           </div>
+          <label class="paths-master-row">
+            <input type="checkbox" id="paths-master-check" checked onchange="toggleMasterPaths()">
+            <span class="paths-master-label">All paths</span>
+            <span class="paths-master-count" id="paths-master-count"></span>
+          </label>
           <div class="sidebar-paths-list" id="sidebar-paths-list">
             <!-- filled by renderPathsSidebar() -->
+          </div>
+          <div class="sidebar-paths-counter" id="sidebar-paths-counter"></div>
+        </div>
+
+        <!-- ── MY FOCUS AREAS ── -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-header">
+            <span class="sidebar-section-title">My Focus Areas</span>
+            <button class="sidebar-section-new-btn" onclick="openAreaModal()">+ New</button>
+          </div>
+          <div class="sidebar-section-search">
+            <div class="search-pill">
+              <i class="ph ph-magnifying-glass search-pill-icon"></i>
+              <input type="text" id="area-search" class="search-pill-input" placeholder="Search areas…" oninput="filterAreas(this.value)">
+              <button class="search-pill-clear" onclick="document.getElementById('area-search').value=''; filterAreas('')"><i class="ph-fill ph-x-circle"></i></button>
+            </div>
+          </div>
+          <div class="sidebar-areas" id="sidebar-areas">
+            <!-- filled by renderSidebarAreas() -->
           </div>
         </div>
 
@@ -3407,12 +3809,40 @@
 
         <!-- PLANNER HEADER -->
         <div class="planner-header">
-          <div class="week-nav">
-            <button class="week-nav-btn" onclick="shiftWeek(-1)">←</button>
-            <div class="week-label" id="week-label">Mar 10 – 16, 2026</div>
-            <button class="week-nav-btn" onclick="shiftWeek(1)">→</button>
+          <!-- View mode toggle: Today / Week -->
+          <div class="view-toggle">
+            <button class="view-toggle-btn" id="btn-view-today" onclick="setViewMode('today')">Today</button>
+            <button class="view-toggle-btn active" id="btn-view-week" onclick="setViewMode('week')">Week</button>
           </div>
-          <button class="today-btn" onclick="goToday()">Today</button>
+
+          <!-- Date / period navigation -->
+          <div class="date-nav">
+            <div class="chevron-pill">
+              <button class="chevron-pill-btn" onclick="shiftPeriod(-1)">‹</button>
+              <button class="chevron-pill-btn" onclick="shiftPeriod(1)">›</button>
+            </div>
+            <!-- Today mode: single icon -->
+            <div class="cal-icon-widget" id="cal-icon-widget" style="display:none">
+              <div class="cal-icon-month" id="cal-icon-month">MAR</div>
+              <div class="cal-icon-day" id="cal-icon-day">21</div>
+            </div>
+            <!-- Week mode: start + dash + end -->
+            <div class="cal-icon-widget" id="cal-icon-widget-start">
+              <div class="cal-icon-month" id="cal-icon-month-start">MAR</div>
+              <div class="cal-icon-day" id="cal-icon-day-start">16</div>
+            </div>
+            <span class="cal-icon-dash" id="cal-icon-dash">–</span>
+            <div class="cal-icon-widget" id="cal-icon-widget-end">
+              <div class="cal-icon-month" id="cal-icon-month-end">MAR</div>
+              <div class="cal-icon-day" id="cal-icon-day-end">22</div>
+            </div>
+          </div>
+
+          <!-- Sub-view toggle: Calendar / List -->
+          <div class="view-toggle view-toggle--sub" id="sub-view-toggle" style="display:none">
+            <button class="view-toggle-btn active" id="btn-sub-calendar" onclick="setSubView('calendar')" title="Calendar view"><i class="ph ph-calendar-dots"></i></button>
+            <button class="view-toggle-btn" id="btn-sub-list" onclick="setSubView('list')" title="List view"><i class="ph ph-list-bullets"></i></button>
+          </div>
 
           <div id="path-filter-chip" class="path-filter-chip" style="display:none" onclick="setActivePath(null)"></div>
 
@@ -3427,7 +3857,7 @@
           <div class="new-btn-wrap" id="new-btn-wrap">
             <button class="new-btn" onclick="toggleNewMenu()">+ New</button>
             <div class="new-menu" id="new-menu">
-              <div class="new-menu-item" onclick="openPopover(TODAY_DAY_INDEX, 9, 0); closeNewMenu()">
+              <div class="new-menu-item" onclick="openPopoverDefault(); closeNewMenu()">
                 <span class="new-menu-icon">▭</span>
                 <div class="new-menu-text">
                   <span class="new-menu-label">Focus block</span>
@@ -3443,10 +3873,16 @@
               </div>
             </div>
           </div>
+
+          <button id="focusPlannerClose" title="Close planner (Esc)">
+            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path>
+            </svg>
+          </button>
         </div>
 
         <!-- CALENDAR -->
-        <div class="calendar">
+        <div class="calendar" id="calendar">
 
           <!-- Day headers -->
           <div class="cal-head" id="cal-head">
@@ -3460,6 +3896,12 @@
           </div>
 
         </div>
+
+        <!-- Today list view (today mode + list sub-view only) -->
+        <div class="today-list-view" id="today-list-view" style="display:none">
+          <!-- filled by JS -->
+        </div>
+
       </div>
     </div>
 
@@ -3472,7 +3914,7 @@
     <div class="popover-overlay" id="popover-overlay" onclick="closePopover()"></div>
     <div class="popover" id="popover">
       <div class="popover-title">
-        New block
+        <span id="popover-title-text">New block</span>
         <button class="popover-close" onclick="closePopover()">×</button>
       </div>
 
@@ -3599,6 +4041,97 @@
         </div>
       </div>
     </div>
+
+    <!-- ── AREA MODAL ── -->
+    <div class="modal-overlay" id="area-modal-overlay" onclick="closeAreaModalIfBg(event)">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">▭ New Focus Area</div>
+          <button class="popover-close" onclick="closeAreaModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label>Name <span class="label-required">required</span></label>
+            <input type="text" id="area-modal-name" placeholder="e.g. Deep Work · Research">
+          </div>
+          <div class="modal-field">
+            <label>Category</label>
+            <select id="area-modal-category" onchange="onAreaCategoryChange(this.value)"></select>
+          </div>
+          <div class="modal-field" id="area-new-category-row" style="display:none;">
+            <input type="text" id="area-modal-new-cat-name" placeholder="New Category Name…">
+            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+              <button type="button" class="area-modal-icon-btn" id="area-modal-icon-btn" onclick="toggleAreaIconPicker()">
+                <span id="area-modal-selected-icon">📁</span>
+                <svg width="10" height="10" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></svg>
+              </button>
+              <div class="area-modal-icon-picker" id="area-modal-icon-picker" style="display:none;">
+                <button type="button" onclick="selectAreaIcon('🎓')">🎓</button>
+                <button type="button" onclick="selectAreaIcon('💼')">💼</button>
+                <button type="button" onclick="selectAreaIcon('💪')">💪</button>
+                <button type="button" onclick="selectAreaIcon('🏠')">🏠</button>
+                <button type="button" onclick="selectAreaIcon('🎨')">🎨</button>
+                <button type="button" onclick="selectAreaIcon('🧪')">🧪</button>
+                <button type="button" onclick="selectAreaIcon('📚')">📚</button>
+                <button type="button" onclick="selectAreaIcon('🚀')">🚀</button>
+                <button type="button" onclick="selectAreaIcon('🧠')">🧠</button>
+                <button type="button" onclick="selectAreaIcon('🎯')">🎯</button>
+                <button type="button" onclick="selectAreaIcon('💻')">💻</button>
+                <button type="button" onclick="selectAreaIcon('📈')">📈</button>
+                <button type="button" onclick="selectAreaIcon('🔧')">🔧</button>
+                <button type="button" onclick="selectAreaIcon('🧹')">🧹</button>
+                <button type="button" onclick="selectAreaIcon('🛒')">🛒</button>
+              </div>
+              <input type="hidden" id="area-modal-new-cat-icon" value="📁">
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>Colour</label>
+            <div class="path-color-picker" id="area-color-picker">
+              <div class="path-color-swatch active" data-color="#58a6ff" style="background:#58a6ff;" onclick="selectAreaColor('#58a6ff', this)"></div>
+              <div class="path-color-swatch" data-color="#22c55e" style="background:#22c55e;" onclick="selectAreaColor('#22c55e', this)"></div>
+              <div class="path-color-swatch" data-color="#a855f7" style="background:#a855f7;" onclick="selectAreaColor('#a855f7', this)"></div>
+              <div class="path-color-swatch" data-color="#f97316" style="background:#f97316;" onclick="selectAreaColor('#f97316', this)"></div>
+              <div class="path-color-swatch" data-color="#ec4899" style="background:#ec4899;" onclick="selectAreaColor('#ec4899', this)"></div>
+              <div class="path-color-swatch" data-color="#fbbf24" style="background:#fbbf24;" onclick="selectAreaColor('#fbbf24', this)"></div>
+              <div class="path-color-swatch" data-color="#ef4444" style="background:#ef4444;" onclick="selectAreaColor('#ef4444', this)"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-cancel" onclick="closeAreaModal()">Cancel</button>
+          <button class="modal-save" onclick="saveNewArea()">Create Area</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MOBILE BOTTOM BAR ── -->
+    <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+      <button class="mobile-tab active" id="mobile-tab-calendar" onclick="mobileTab('calendar')">
+        <i class="ph ph-calendar-blank"></i>
+        <span>Calendar</span>
+      </button>
+      <button class="mobile-tab" id="mobile-tab-paths" onclick="mobileTab('paths')">
+        <i class="ph ph-map-trifold"></i>
+        <span>Paths</span>
+      </button>
+      <button class="mobile-tab" id="mobile-tab-areas" onclick="mobileTab('areas')">
+        <i class="ph ph-lightning"></i>
+        <span>Areas</span>
+      </button>
+    </div>
+
+    <!-- ── MOBILE SHEETS ── -->
+    <div class="mobile-sheet-backdrop" id="mobile-sheet-backdrop" onclick="closeMobileSheet()"></div>
+    <div class="mobile-sheet" id="mobile-sheet-paths">
+      <div class="mobile-sheet-handle"></div>
+      <!-- .sidebar-section--paths reparented here by initMobile() -->
+    </div>
+    <div class="mobile-sheet" id="mobile-sheet-areas">
+      <div class="mobile-sheet-handle"></div>
+      <!-- focus areas .sidebar-section reparented here by initMobile() -->
+    </div>
+
   </div>
   </div><!-- /.app-shell -->
 
