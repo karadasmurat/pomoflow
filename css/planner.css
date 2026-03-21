@@ -2976,19 +2976,17 @@
     align-items: center;
   }
 
-  /* Row 1: [Today|Week] (left) · [< date >] (flex center) · [×] (right) */
-  #focusPlannerOverlay .view-toggle { order: 1; flex-shrink: 0; }
-  #focusPlannerOverlay .date-nav    { order: 2; flex: 1; justify-content: center; }
-  #focusPlannerClose                { order: 3; flex-shrink: 0; }
+  /* Row 1: [< date >] (fills, left-aligned) · [×] (right) */
+  #focusPlannerOverlay .date-nav    { order: 1; flex: 1; justify-content: flex-start; }
+  #focusPlannerClose                { order: 2; flex-shrink: 0; }
 
-  /* Row 2: Calendar|List — flex-basis 100% forces its own line */
+  /* Row 2: [Day|Week] · [📅|☰] · [All|Planned|Actual] */
+  #focusPlannerOverlay .view-toggle { order: 10; flex-shrink: 0; }
   #focusPlannerOverlay #sub-view-toggle {
-    order: 10;
-    flex-basis: 100%;
+    order: 11;
+    flex-basis: auto;
   }
-
-  /* Hide on mobile: filter group, new btn, spacer, path chip */
-  #focusPlannerOverlay .filter-group { display: none; }
+  #focusPlannerOverlay .filter-group { order: 12; display: flex; }
   #focusPlannerOverlay .new-btn-wrap { display: none; }
   #focusPlannerOverlay .header-spacer { display: none; }
   #focusPlannerOverlay #path-filter-chip { display: none !important; }

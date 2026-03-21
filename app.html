@@ -1916,6 +1916,7 @@
         transition: box-shadow 0.15s, border-color 0.15s;
         position: relative;
         overflow: hidden;
+        flex-shrink: 0;
       }
 
       #focusPlannerOverlay .today-list-item:hover {
@@ -2040,6 +2041,7 @@
         padding: 12px 4px 6px;
         border-bottom: 1px solid var(--rule);
         margin-top: 8px;
+        flex-shrink: 0;
       }
       #focusPlannerOverlay .week-list-day-header:first-child {
         margin-top: 0;
@@ -3752,6 +3754,53 @@
         #focusPlannerOverlay .filter-group { display: none; }
       }
 
+      /* Hidden on desktop; becomes a flex line-break on mobile */
+      #focusPlannerOverlay .planner-row-break { display: none; }
+
+      /* ── MOBILE ≤480px: override base header height so 2-row layout works ── */
+      /* (planner.css 480px sets height:auto but this inline style's base rule
+         sets height:52px and loads later in the cascade — this re-overrides it) */
+      @media (max-width: 480px) {
+        #focusPlannerOverlay .planner-header {
+          height: auto;
+          flex-wrap: wrap;
+          padding: 8px 12px 6px;
+          gap: 6px;
+          row-gap: 6px;
+        }
+        #focusPlannerOverlay #sub-view-toggle {
+          order: 11;
+          flex-basis: auto;
+          justify-content: flex-start;
+        }
+        /* Line-break: forces Day/Week + Cal/List + Filter onto row 2 */
+        #focusPlannerOverlay .planner-row-break {
+          display: block;
+          order: 5;
+          flex-basis: 100%;
+          height: 0;
+        }
+        /* Show filter group on mobile (overrides the ≤768px hide) */
+        #focusPlannerOverlay .filter-group {
+          order: 12;
+          display: flex;
+        }
+        /* Compact filter buttons on mobile */
+        #focusPlannerOverlay .filter-btn {
+          padding: 4px 7px;
+          font-size: 11px;
+        }
+        /* Match cal-icon-widget height to chevron-pill (30px btn + 3px×2 padding = 36px) */
+        #focusPlannerOverlay .cal-icon-widget {
+          height: 36px;
+        }
+        /* Prevent list card rows from shrinking in constrained flex chains */
+        #focusPlannerOverlay .tli-row1,
+        #focusPlannerOverlay .tli-row2 {
+          flex-shrink: 0;
+        }
+      }
+
     </style>
 
     <!-- ── PLANNER ── -->
@@ -3811,7 +3860,7 @@
         <div class="planner-header">
           <!-- View mode toggle: Today / Week -->
           <div class="view-toggle">
-            <button class="view-toggle-btn" id="btn-view-today" onclick="setViewMode('today')">Today</button>
+            <button class="view-toggle-btn" id="btn-view-today" onclick="setViewMode('today')">Day</button>
             <button class="view-toggle-btn active" id="btn-view-week" onclick="setViewMode('week')">Week</button>
           </div>
 
@@ -3879,6 +3928,9 @@
               <path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path>
             </svg>
           </button>
+
+          <!-- flex line-break: forces row 2 (Day/Week + Cal/List) below row 1 on mobile -->
+          <div class="planner-row-break" aria-hidden="true"></div>
         </div>
 
         <!-- CALENDAR -->
