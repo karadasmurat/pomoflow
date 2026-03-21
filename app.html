@@ -3038,21 +3038,23 @@
 
       #focusPlannerOverlay .detail-actions {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: 4px;
       }
 
       #focusPlannerOverlay .detail-action {
+        flex: 1;
         border: 1px solid var(--rule);
         background: var(--bg-card);
         border-radius: var(--r);
-        padding: 7px 11px;
-        font-size: 12px;
+        padding: 7px 6px;
+        font-size: 11px;
         font-weight: 600;
         color: var(--ink-mid);
         cursor: pointer;
         font-family: var(--f);
-        text-align: left;
+        text-align: center;
+        white-space: nowrap;
         transition: border-color 0.15s, color 0.15s;
       }
 
