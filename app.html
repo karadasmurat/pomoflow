@@ -21,7 +21,7 @@
   <script src="coi-serviceworker.js"></script>
 </head>
 
-<body>
+<body class="app-loading">
 
   <!-- AUTH OVERLAY — shown when no session, hides app-shell -->
   <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -121,8 +121,52 @@
       font-size: 14px; color: var(--text-secondary);
       text-align: center; line-height: 1.5;
     }
+
+    /* ── App loading bar ─────────────────────────────────────────────── */
+    @keyframes loadingShimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+    #appLoadingBar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 3px; z-index: 9999;
+      background: var(--surface-elevated);
+      overflow: hidden;
+      transition: opacity 0.4s ease;
+    }
+    #appLoadingBar::after {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 25%; height: 100%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: loadingShimmer 1.2s ease-in-out infinite;
+    }
+    #appLoadingBar.done {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ── Skeleton pulse on focus area selector while loading ─────────── */
+    @keyframes skeletonPulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 0.8; }
+    }
+    body.app-loading .timer-focus-area-display {
+      pointer-events: none;
+    }
+    body.app-loading .timer-focus-area-link,
+    body.app-loading .focus-area-question {
+      animation: skeletonPulse 1.4s ease-in-out infinite;
+      opacity: 0.4;
+    }
+    body.app-loading #sidenavFocusPlannerBtn,
+    body.app-loading #sidenavFocusPlanBtn {
+      opacity: 0.4;
+      pointer-events: none;
+    }
   </style>
 
+  <div id="appLoadingBar"></div>
   <div class="app-shell">
     <nav class="sidenav" id="sidenav">
       <div class="sidenav-header">

@@ -155,6 +155,12 @@ async function init() {
     });
 
     refreshUI();
+
+    // Signal app ready — hide loading bar and unlock UI
+    const loadingBar = document.getElementById('appLoadingBar');
+    if (loadingBar) loadingBar.classList.add('done');
+    document.body.classList.remove('app-loading');
+
     updateDateTime();
     state.lastRefreshTime = Date.now();
     setInterval(updateDateTime, 1000);
