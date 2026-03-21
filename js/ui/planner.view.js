@@ -242,7 +242,7 @@ export const PlannerView = {
         this.render();
     },
 
-    openDetail(b) {
+    openDetail(b, anchorEl) {
         this.closePopover();
         const panel = document.getElementById('detail-panel');
         if (!panel) return;
@@ -269,11 +269,50 @@ export const PlannerView = {
         if (actions[1]) actions[1].onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
         if (actions[2]) actions[2].onclick = () => this.deleteBlock(b.id);
 
+        this._detailAnchorEl = anchorEl || null;
+
+        // Show first (triggers display:flex) so offsetHeight is measurable
         panel.classList.add('visible');
+        this._positionPanelNearBlock(panel, anchorEl);
+    },
+
+    _positionPanelNearBlock(panel, anchorEl) {
+        if (!anchorEl) return;
+
+        const PANEL_W = panel.offsetWidth  || 240;
+        const PANEL_H = panel.offsetHeight || 220;
+        const GAP    = 8;   // gap between block edge and panel
+        const MARGIN = 8;   // min distance from overlay edge
+
+        const anchor  = anchorEl.getBoundingClientRect();
+        const overlay = document.getElementById('focusPlannerOverlay')?.getBoundingClientRect();
+        if (!overlay) return;
+
+        // Horizontal: prefer right side of block, flip to left if it would clip
+        let left = anchor.right + GAP;
+        if (left + PANEL_W > overlay.right - MARGIN) {
+            left = anchor.left - PANEL_W - GAP;
+        }
+        // Clamp within overlay horizontally
+        left = Math.max(overlay.left + MARGIN, Math.min(left, overlay.right - PANEL_W - MARGIN));
+
+        // Vertical: align panel top to block top, clamp within overlay
+        let top = anchor.top;
+        top = Math.max(overlay.top + MARGIN, Math.min(top, overlay.bottom - PANEL_H - MARGIN));
+
+        panel.style.left  = `${left}px`;
+        panel.style.top   = `${top}px`;
+        panel.style.right = 'auto'; // override CSS `right: 20px`
     },
 
     closeDetail() {
-        document.getElementById('detail-panel')?.classList.remove('visible');
+        const panel = document.getElementById('detail-panel');
+        if (!panel) return;
+        panel.classList.remove('visible');
+        // Reset inline position so CSS defaults apply on next open before anchor is known
+        panel.style.left = '';
+        panel.style.top  = '';
+        panel.style.right = '';
     },
 
     openPopoverForEdit(b) {
@@ -308,10 +347,9 @@ export const PlannerView = {
         this.updateSessionDisplay();
         this.updatePathDisplay();
 
-        pop.style.top = '130px';
-        pop.style.left = '220px';
         overlay.classList.add('visible');
         pop.classList.add('visible');
+        this._positionPanelNearBlock(pop, this._detailAnchorEl);
         this.populateAreaPicker();
         this.populatePathPicker();
     },
@@ -884,7 +922,7 @@ export const PlannerView = {
         `;
 
         if (b.type === 'planned') {
-            item.addEventListener('click', () => this.openDetail(b));
+            item.addEventListener('click', () => this.openDetail(b, item));
         }
 
         if (this.activePathSet !== null && (!b.pathId || !this.activePathSet.has(b.pathId))) {
@@ -1357,7 +1395,7 @@ export const PlannerView = {
                 const wasDragging = blockDragActive;
                 endDrag(wasDragging && moved, e.clientX, e.clientY);
                 if (!wasDragging && !moved) {
-                    if (b.type === 'planned') this.openDetail(b);
+                    if (b.type === 'planned') this.openDetail(b, el);
                 }
             });
 
@@ -1863,18 +1901,30 @@ export const PlannerView = {
         }
         this.updatePathDisplay();
 
-        pop.style.top = '130px';
-        pop.style.left = '220px';
-
         overlay.classList.add('visible');
         pop.classList.add('visible');
+
+        // Position near calendar body center as a sensible default for new blocks
+        const calBody = document.getElementById('cal-body') || document.getElementById('focusPlannerOverlay');
+        if (calBody) {
+            const r = calBody.getBoundingClientRect();
+            const pw = pop.offsetWidth  || 280;
+            const ph = pop.offsetHeight || 320;
+            pop.style.left  = `${Math.round(r.left + (r.width  - pw) / 2)}px`;
+            pop.style.top   = `${Math.round(r.top  + (r.height - ph) / 2)}px`;
+            pop.style.right = 'auto';
+        }
         this.populateAreaPicker();
         this.populatePathPicker();
     },
 
     closePopover() {
         document.getElementById('popover-overlay').classList.remove('visible');
-        document.getElementById('popover').classList.remove('visible');
+        const pop = document.getElementById('popover');
+        pop.classList.remove('visible');
+        pop.style.left = '';
+        pop.style.top  = '';
+        pop.style.right = '';
     },
 
     // ── PATH MODAL ──
