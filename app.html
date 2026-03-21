@@ -3039,23 +3039,27 @@
       #focusPlannerOverlay .detail-actions {
         display: flex;
         flex-direction: row;
-        gap: 4px;
+        gap: 6px;
       }
 
       #focusPlannerOverlay .detail-action {
         flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        height: var(--btn-size-sm);
         border: 1px solid var(--rule);
-        background: var(--bg-card);
-        border-radius: var(--r);
-        padding: 7px 6px;
-        font-size: 11px;
+        background: var(--surface);
+        border-radius: var(--r-md);
+        padding: 0 10px;
+        font-size: 12px;
         font-weight: 600;
         color: var(--ink-mid);
         cursor: pointer;
-        font-family: var(--f);
-        text-align: center;
+        font-family: var(--font-sans);
         white-space: nowrap;
-        transition: border-color 0.15s, color 0.15s;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
       }
 
       #focusPlannerOverlay .detail-action:hover {
@@ -3064,20 +3068,43 @@
       }
 
       #focusPlannerOverlay .detail-action.destructive {
-        color: #9B4444;
+        color: var(--danger);
+        border-color: var(--danger-muted);
       }
       #focusPlannerOverlay .detail-action.destructive:hover {
-        border-color: #9B4444;
-        background: rgba(155, 68, 68, 0.06);
+        background: var(--danger-muted);
+        border-color: var(--danger);
       }
 
       #focusPlannerOverlay .detail-action.primary {
         background: var(--accent);
         border-color: var(--accent);
-        color: #fff;
+        color: var(--text-on-accent);
       }
       #focusPlannerOverlay .detail-action.primary:hover {
         opacity: 0.88;
+      }
+
+      /* Inline delete confirmation */
+      #focusPlannerOverlay .detail-confirm {
+        display: none;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #focusPlannerOverlay .detail-confirm.visible {
+        display: flex;
+      }
+      #focusPlannerOverlay .detail-actions.confirming {
+        display: none;
+      }
+      #focusPlannerOverlay .detail-confirm-label {
+        font-size: 11px;
+        color: var(--ink-mid);
+        text-align: center;
+      }
+      #focusPlannerOverlay .detail-confirm-btns {
+        display: flex;
+        gap: 6px;
       }
 
       #focusPlannerOverlay
@@ -4104,9 +4131,16 @@
           </div>
         </div>
         <div class="detail-divider"></div>
-        <div class="detail-actions">
-          <button class="detail-action destructive"><i class="ph ph-trash"></i> Delete</button>
-          <button class="detail-action primary"><i class="ph ph-pencil"></i> Edit</button>
+        <div class="detail-actions" id="detail-actions">
+          <button class="detail-action destructive" id="detail-delete-btn"><i class="ph ph-trash"></i> Delete</button>
+          <button class="detail-action primary" id="detail-edit-btn"><i class="ph ph-pencil"></i> Edit</button>
+        </div>
+        <div class="detail-confirm" id="detail-confirm">
+          <span class="detail-confirm-label">Remove this block?</span>
+          <div class="detail-confirm-btns">
+            <button class="detail-action" id="detail-cancel-btn">Cancel</button>
+            <button class="detail-action destructive" id="detail-confirm-btn"><i class="ph ph-trash"></i> Remove</button>
+          </div>
         </div>
       </div>
     </div>

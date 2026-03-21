@@ -264,9 +264,22 @@ export const PlannerView = {
         document.getElementById('detail-sessions').textContent = b.sessions;
         document.getElementById('detail-duration').textContent = this.formatDuration(dur);
 
-        const actions = panel.querySelectorAll('.detail-action');
-        if (actions[0]) actions[0].onclick = () => this.deleteBlock(b.id);
-        if (actions[1]) actions[1].onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
+        // Reset confirmation state each time panel opens
+        document.getElementById('detail-actions')?.classList.remove('confirming');
+        document.getElementById('detail-confirm')?.classList.remove('visible');
+
+        document.getElementById('detail-delete-btn').onclick = () => {
+            document.getElementById('detail-actions').classList.add('confirming');
+            document.getElementById('detail-confirm').classList.add('visible');
+            this._positionPanelNearBlock(panel, this._detailAnchorEl); // reflow height
+        };
+        document.getElementById('detail-edit-btn').onclick = () => { this.closeDetail(); this.openPopoverForEdit(b); };
+        document.getElementById('detail-cancel-btn').onclick = () => {
+            document.getElementById('detail-actions').classList.remove('confirming');
+            document.getElementById('detail-confirm').classList.remove('visible');
+            this._positionPanelNearBlock(panel, this._detailAnchorEl); // reflow height
+        };
+        document.getElementById('detail-confirm-btn').onclick = () => this.deleteBlock(b.id);
 
         this._detailAnchorEl = anchorEl || null;
 
