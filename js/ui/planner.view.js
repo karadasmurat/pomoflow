@@ -2387,6 +2387,7 @@ export const PlannerView = {
             this.open();
         });
         document.getElementById('focusPlannerClose')?.addEventListener('click', () => this.close());
+        document.getElementById('mobile-tab-timer')?.addEventListener('click', () => this.close());
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('focusPlannerOverlay').style.display !== 'none') {

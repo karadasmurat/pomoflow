@@ -3012,9 +3012,9 @@
     align-items: center;
   }
 
-  /* Row 1: [< date >] (fills, left-aligned) · [×] (right) */
+  /* Row 1: [< date >] fills — close button hidden (Timer tab in bottom bar replaces it) */
   #focusPlannerOverlay .date-nav    { order: 1; flex: 1; justify-content: flex-start; }
-  #focusPlannerClose                { order: 2; flex-shrink: 0; }
+  #focusPlannerClose                { display: none; }
 
   /* Row 2: [Day|Week] · [📅|☰] · [All|Planned|Actual] */
   #focusPlannerOverlay .view-toggle { order: 10; flex-shrink: 0; }
