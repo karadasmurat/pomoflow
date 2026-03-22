@@ -978,34 +978,30 @@
     </div>
 
     <div class="settings-tabs" id="settingsTabs">
-      <button class="settings-tab active" data-tab="general" title="General Settings">
-        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
-          <path
-            d="M233,111.41l-22.1-4.42a100,100,0,0,0-4.66-11.24l13.6-18.13a8,8,0,0,0-1.1-10.45l-19.8-19.8a8,8,0,0,0-10.45-1.1l-18.13,13.6a100,100,0,0,0-11.24-4.66l-4.42-22.1A8,8,0,0,0,136.79,16H119.21a8,8,0,0,0-7.92,6.41l-4.42,22.1a100,100,0,0,0-11.24,4.66L77.5,35.57a8,8,0,0,0-10.45,1.1L47.25,56.47a8,8,0,0,0-1.1,10.45l13.6,18.13a100,100,0,0,0-4.66,11.24l-22.1,4.42A8,8,0,0,0,26.58,119.21v17.58a8,8,0,0,0,6.41,7.92l22.1,4.42a100,100,0,0,0,4.66,11.24l-13.6,18.13a8,8,0,0,0,1.1,10.45l19.8,19.8a8,8,0,0,0,10.45,1.1l18.13-13.6a100,100,0,0,0,11.24,4.66l4.42,22.1A8,8,0,0,0,119.21,240h17.58a8,8,0,0,0,7.92-6.41l4.42-22.1a100,100,0,0,0,11.24-4.66l18.13,13.6a8,8,0,0,0,10.45-1.1l19.8-19.8a8,8,0,0,0,1.1-10.45l-13.6-18.13a100,100,0,0,0,4.66-11.24l22.1-4.42a8,8,0,0,0,6.41-7.92V119.21A8,8,0,0,0,233,111.41ZM128,160a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z">
-          </path>
-        </svg>
-        <span>General</span>
+      <button class="settings-tab active" data-tab="timer" title="Timer Settings">
+        <i class="ph ph-timer"></i>
+        <span>Timer</span>
+      </button>
+      <button class="settings-tab" data-tab="calendar" title="Calendar Settings">
+        <i class="ph ph-calendar"></i>
+        <span>Calendar</span>
+      </button>
+      <button class="settings-tab" data-tab="notifications" title="Notification Settings">
+        <i class="ph ph-bell"></i>
+        <span>Notify</span>
       </button>
       <button class="settings-tab" data-tab="sharing" title="Sharing Templates">
-        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
-          <path
-            d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8H120a8,8,0,0,1,0-16h8V124h-8a8,8,0,0,1,0-16h16a8,8,0,0,1,8,8v48A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z">
-          </path>
-        </svg>
+        <i class="ph ph-share-network"></i>
         <span>Sharing</span>
       </button>
       <button class="settings-tab" data-tab="data" title="Data Management">
-        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
-          <path
-            d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z">
-          </path>
-        </svg>
+        <i class="ph ph-database"></i>
         <span>Data</span>
       </button>
     </div>
 
     <div class="settings-content">
-      <div class="settings-section active" id="tab-general">
+      <div class="settings-section active" id="tab-timer">
         <div class="setting-group">
           <div class="setting-label">
             <div class="setting-label-row">
@@ -1058,6 +1054,18 @@
         </div>
 
         <div class="setting-group">
+          <label class="setting-label">Card Style</label>
+          <div class="filter-group" id="cardVariantSelect">
+            <button class="filter-btn active" data-variant="glass">Glass</button>
+            <button class="filter-btn" data-variant="bento">Bento</button>
+            <button class="filter-btn" data-variant="skeuo">Skeuo</button>
+            <button class="filter-btn" data-variant="flat">Flat</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section" id="tab-calendar">
+        <div class="setting-group">
           <div class="setting-row">
             <label class="setting-label">12h Time Format</label>
             <div class="setting-toggle" id="timeFormat" role="switch" aria-checked="false"></div>
@@ -1077,40 +1085,24 @@
             <select id="activeHoursEnd" class="setting-select"></select>
           </div>
         </div>
+      </div>
 
+      <div class="settings-section" id="tab-notifications">
         <div class="setting-group">
           <label class="setting-label">Notifications</label>
           <div class="setting-row setting-row--gap">
             <button class="filter-btn" id="requestNotifyManual">
-              <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-                <path
-                  d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,1,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z">
-                </path>
-              </svg>
+              <i class="ph ph-bell-ringing" style="font-size:14px"></i>
               Enable Push
             </button>
             <button class="filter-btn" id="testNotify">
-              <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-                <path
-                  d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,1,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z">
-                </path>
-              </svg>
+              <i class="ph ph-bell" style="font-size:14px"></i>
               Test Notify
             </button>
             <button class="filter-btn" id="testSound">
               <i class="ph ph-speaker-high" style="font-size:14px"></i>
               Test Sound
             </button>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <label class="setting-label">Card Style</label>
-          <div class="filter-group" id="cardVariantSelect">
-            <button class="filter-btn active" data-variant="glass">Glass</button>
-            <button class="filter-btn" data-variant="bento">Bento</button>
-            <button class="filter-btn" data-variant="skeuo">Skeuo</button>
-            <button class="filter-btn" data-variant="flat">Flat</button>
           </div>
         </div>
 

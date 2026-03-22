@@ -767,13 +767,48 @@ function openSettings() {
     closeFocusAreas(); closePlan();
     const p = document.getElementById('settingsPanel'); const o = document.getElementById('settingsOverlay');
     p.classList.add('open'); o.classList.add('open');
+
+    // Reset to first tab (Timer)
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.settings-tab[data-tab="timer"]')?.classList.add('active');
+    document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-timer')?.classList.add('active');
+
     document.getElementById('workDuration').value = state.settings.workDuration;
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
 
+    // Initialize toggles
+    const toggles = {
+        'autoStartBreaks': state.settings.autoStartBreaks,
+        'autoStartWork': state.settings.autoStartWork,
+        'timeFormat': state.settings.use12Hour
+    };
+    Object.entries(toggles).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('active', !!val);
+            el.setAttribute('aria-checked', !!val);
+        }
+    });
+
     _buildHourOptions(document.getElementById('activeHoursStart'), state.settings.activeHoursStart ?? 8);
     _buildHourOptions(document.getElementById('activeHoursEnd'), state.settings.activeHoursEnd ?? 22);
+
+    // Update labels on input
+    ['workDuration', 'shortBreakDuration', 'longBreakDuration'].forEach(id => {
+        const input = document.getElementById(id);
+        const label = document.getElementById(`${id}Value`);
+        if (input && label) {
+            input.oninput = () => { label.textContent = `${input.value} min`; };
+        }
+    });
+    const volInput = document.getElementById('soundVolume');
+    const volLabel = document.getElementById('soundVolumeValue');
+    if (volInput && volLabel) {
+        volInput.oninput = () => { volLabel.textContent = `${volInput.value}%`; };
+    }
 
     const variant = state.settings.cardVariant || 'glass';
     document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
@@ -860,10 +895,14 @@ function closeSettings() {
         workDuration: parseInt(document.getElementById('workDuration').value),
         shortBreakDuration: parseInt(document.getElementById('shortBreakDuration').value),
         longBreakDuration: parseInt(document.getElementById('longBreakDuration').value),
+        sessionsBeforeLongBreak: parseInt(document.getElementById('sessionsBeforeLongBreak').value),
+        autoStartBreaks: document.getElementById('autoStartBreaks')?.classList.contains('active'),
+        autoStartWork: document.getElementById('autoStartWork')?.classList.contains('active'),
         use12Hour: document.getElementById('timeFormat')?.classList.contains('active'),
         activeHoursStart: parseInt(document.getElementById('activeHoursStart').value),
         activeHoursEnd: parseInt(document.getElementById('activeHoursEnd').value),
-        cardVariant: activeVariantBtn ? activeVariantBtn.dataset.variant : 'glass'
+        cardVariant: activeVariantBtn ? activeVariantBtn.dataset.variant : 'glass',
+        soundVolume: parseInt(document.getElementById('soundVolume').value)
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');
     saveData(); refreshUI();
@@ -1277,6 +1316,25 @@ function setupEventListeners() {
             const mins = parseInt(btn.dataset.mins);
             if (mins) setDurationFromOrbit(mins);
             closeOrbit();
+        };
+    });
+
+    // Settings tabs switching
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.onclick = () => {
+            const target = tab.dataset.tab;
+            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`tab-${target}`)?.classList.add('active');
+        };
+    });
+
+    // Settings toggles
+    document.querySelectorAll('.setting-toggle').forEach(toggle => {
+        toggle.onclick = () => {
+            const isActive = toggle.classList.toggle('active');
+            toggle.setAttribute('aria-checked', isActive);
         };
     });
 
