@@ -234,10 +234,13 @@ async function checkBlockReminders() {
                 // 1. System Notification
                 await SettingsService.sendNotification(title, body);
                 
-                // 2. In-app Toast
+                // 2. Sound
+                timer.playNotificationSound();
+                
+                // 3. In-app Toast
                 notify(`Reminder: ${title} in ${timeStr}`, 'milestone');
                 
-                // 3. Mark as sent in DB
+                // 4. Mark as sent in DB
                 await dbManager.setPlannedBlockReminderSent(b.id);
             }
         }
@@ -1217,19 +1220,33 @@ function setupEventListeners() {
             updateCustomSelectUI();
         },
         'requestNotifyManual': () => {
+            console.log('[Settings] requestNotifyManual clicked');
             if (!("Notification" in window)) {
                 notify("Notifications not supported", "error");
                 return;
             }
+            notify("Requesting permission...");
             Notification.requestPermission().then(permission => {
+                console.log('[Settings] Permission result:', permission);
                 notify(`Notifications: ${permission}`);
                 if (permission === 'granted') {
                     SettingsService.sendNotification("PomoFlow", "Notifications enabled! 🎯");
                 }
+            }).catch(err => {
+                console.error('[Settings] Permission error:', err);
+                notify("Permission request failed", "error");
             });
         },
         'testNotify': () => {
+            console.log('[Settings] testNotify clicked');
+            if (Notification.permission !== 'granted') {
+                notify("Please enable notifications first", "warning");
+            }
             SettingsService.sendNotification("Test Notification", "It works! 🎯");
+        },
+        'testSound': () => {
+            console.log('[Settings] testSound clicked');
+            timer.playNotificationSound();
         },
         'categoryEditIconBtn': () => document.getElementById('categoryEditIconDropdown')?.classList.toggle('open'),
         'saveCategoryEdit': saveCategoryFromModal,
