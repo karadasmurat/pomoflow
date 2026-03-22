@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 400 400">
+
+  <!-- App icon rounded square -->
+  <rect x="60" y="60" width="280" height="280" rx="60" fill="#18181A"/>
+
+  <!-- CALENDAR CARD -->
+  <rect x="90" y="110" width="220" height="195" rx="14" fill="#26262A"/>
+  <rect x="90" y="110" width="220" height="46" rx="14" fill="#2D8F58"/>
+  <rect x="90" y="140" width="220" height="16" rx="0" fill="#2D8F58"/>
+  <rect x="140" y="98" width="13" height="28" rx="6.5" fill="#E8E6E1"/>
+  <rect x="247" y="98" width="13" height="28" rx="6.5" fill="#E8E6E1"/>
+
+  <!-- LEFT BLOCKS -->
+  <rect x="100" y="163" width="13" height="28" rx="6.5" fill="#E8524A"/>
+  <rect x="100" y="210" width="13" height="38" rx="6.5" fill="#F0C040"/>
+  <rect x="100" y="265" width="13" height="26" rx="6.5" fill="#5560E8"/>
+  <rect x="119" y="168" width="13" height="22" rx="6.5" fill="#5560E8"/>
+  <rect x="119" y="206" width="13" height="32" rx="6.5" fill="#E8524A"/>
+  <rect x="119" y="255" width="13" height="30" rx="6.5" fill="#F0C040"/>
+  <rect x="138" y="163" width="13" height="18" rx="6.5" fill="#F0C040"/>
+  <rect x="138" y="262" width="13" height="22" rx="6.5" fill="#5560E8"/>
+
+  <!-- RIGHT BLOCKS -->
+  <rect x="249" y="163" width="13" height="18" rx="6.5" fill="#E8524A"/>
+  <rect x="249" y="262" width="13" height="22" rx="6.5" fill="#F0C040"/>
+  <rect x="268" y="166" width="13" height="26" rx="6.5" fill="#5560E8"/>
+  <rect x="268" y="206" width="13" height="36" rx="6.5" fill="#E8524A"/>
+  <rect x="268" y="256" width="13" height="28" rx="6.5" fill="#F0C040"/>
+  <rect x="287" y="163" width="13" height="32" rx="6.5" fill="#F0C040"/>
+  <rect x="287" y="212" width="13" height="22" rx="6.5" fill="#5560E8"/>
+  <rect x="287" y="250" width="13" height="34" rx="6.5" fill="#E8524A"/>
+
+  <!-- ph-clock-clockwise BOLD — arc + dots white, hands green -->
+  <g transform="translate(134.97,164.97) scale(0.508)">
+    <path d="M236,137A108.13,108.13,0,1,1,119,20,12,12,0,0,1,121,44,84.12,84.12,0,1,0,212,135,12,12,0,1,1,236,137Z" fill="#E8E6E1"/>
+    <path d="M208,96a16,16,0,1,0-16-16A16,16,0,0,0,208,96Z" fill="#E8E6E1"/>
+    <path d="M176,64a16,16,0,1,0-16-16A16,16,0,0,0,176,64Z" fill="#E8E6E1"/>
+    <path d="M116,76v52a12,12,0,0,0,12,12h52a12,12,0,0,0,0-24H140V76a12,12,0,0,0-24,0Z" fill="#3D8F5A"/>
+  </g>
+
+</svg>
