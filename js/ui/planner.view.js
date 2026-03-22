@@ -89,12 +89,19 @@ export const PlannerView = {
         const pathSearch = document.getElementById('path-search');
         if (areaSearch) areaSearch.value = '';
         if (pathSearch) pathSearch.value = '';
+        this._setMobileTab('calendar');
         this.loadData().then(() => this.render());
     },
 
     close() {
         document.getElementById('focusPlannerOverlay').style.display = 'none';
         this.closePopover();
+        this._setMobileTab('timer');
+    },
+
+    _setActiveMobileTab(tab) {
+        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(`mobile-tab-${tab}`)?.classList.add('active');
     },
 
     // ── DATA LOADING ──
@@ -363,7 +370,9 @@ export const PlannerView = {
         const currentArea = areas.find(a => a.id === b.areaId) || areas[0];
         if (currentArea) {
             document.getElementById('popover-area-name').textContent = currentArea.name;
-            document.getElementById('popover-area-dot').className = `popover-area-dot ${currentArea.color}`;
+            const dot = document.getElementById('popover-area-dot');
+            if (dot) { dot.className = `popover-area-dot ${currentArea.color}`; dot.style.display = ''; }
+            document.getElementById('popover-area-pill')?.classList.remove('is-empty');
         }
 
         document.getElementById('popover-time').value =
@@ -480,7 +489,7 @@ export const PlannerView = {
     formatDuration(mins) {
         const h = Math.floor(mins / 60);
         const m = mins % 60;
-        if (h === 0) return `${m} min`;
+        if (h === 0) return `${m}m`;
         if (m === 0) return `${h}h`;
         return `${h}h ${m}m`;
     },
@@ -658,7 +667,7 @@ export const PlannerView = {
                 const flag = document.createElement('div');
                 flag.className = 'deadline-flag path-deadline-flag';
                 flag.style.setProperty('--path-color', p.color);
-                flag.innerHTML = `<span class="deadline-flag-icon" style="color:${p.color}">◎</span>${p.name}`;
+                flag.innerHTML = `<i class="ph ph-circle-dashed deadline-flag-icon" style="color:${p.color}"></i>${p.name}`;
                 flagsEl.appendChild(flag);
             });
             dh.appendChild(flagsEl);
@@ -713,7 +722,7 @@ export const PlannerView = {
                 const flag = document.createElement('div');
                 flag.className = 'deadline-flag path-deadline-flag';
                 flag.style.setProperty('--path-color', p.color);
-                flag.innerHTML = `<span class="deadline-flag-icon" style="color:${p.color}">◎</span>${p.name}`;
+                flag.innerHTML = `<i class="ph ph-circle-dashed deadline-flag-icon" style="color:${p.color}"></i>${p.name}`;
                 flagsEl.appendChild(flag);
             });
             dh.appendChild(flagsEl);
@@ -820,7 +829,7 @@ export const PlannerView = {
             marker.innerHTML = `
                 <div class="deadline-marker-line" style="background:${p.color};"></div>
                 <div class="deadline-marker-label">
-                    <span style="color:${p.color}">◎</span> ${p.name}
+                    <i class="ph ph-circle-dashed" style="color:${p.color}"></i> ${p.name}
                     <span class="dm-time">end of day</span>
                 </div>
             `;
@@ -856,7 +865,6 @@ export const PlannerView = {
         body.appendChild(col);
         const h = this.getHours();
         const totalH = h.length * this.ROW_HEIGHT;
-        body.style.minHeight = `${totalH}px`;
         col.style.minHeight = `${totalH}px`;
     },
 
@@ -893,7 +901,6 @@ export const PlannerView = {
             body.appendChild(col);
         }
 
-        body.style.minHeight = `${this.getHours().length * this.ROW_HEIGHT}px`;
     },
 
     renderTodayList() {
@@ -908,7 +915,7 @@ export const PlannerView = {
         if (blocks.length === 0) {
             listEl.innerHTML = `
                 <div class="today-list-empty">
-                    <div class="today-list-empty-icon">▭</div>
+                    <div class="today-list-empty-icon"><i class="ph ph-calendar-blank"></i></div>
                     <div>No sessions for this day.</div>
                     <div style="font-size:12px;margin-top:2px">Switch to Calendar view and drag a focus area to plan one.</div>
                 </div>
@@ -928,7 +935,7 @@ export const PlannerView = {
         const barColor = `var(--${b.color}-bar)`;
 
         const pathHtml = b.pathName
-            ? `<span class="tli-path" style="color:${b.pathColor};border-color:${b.pathColor}40">◎ ${b.pathName}</span>`
+            ? `<span class="tli-path" style="color:${b.pathColor};border-color:${b.pathColor}40"><i class="ph ph-circle-dashed"></i> ${b.pathName}</span>`
             : '';
         const sessionsHtml = b.sessions > 1
             ? `<span class="block-session-chip">${b.sessions}×</span>`
@@ -979,7 +986,7 @@ export const PlannerView = {
         if (blocks.length === 0) {
             listEl.innerHTML = `
                 <div class="today-list-empty">
-                    <div class="today-list-empty-icon">▭</div>
+                    <div class="today-list-empty-icon"><i class="ph ph-calendar-blank"></i></div>
                     <div>No sessions this week.</div>
                     <div style="font-size:12px;margin-top:2px">Switch to Calendar view and drag a focus area to plan one.</div>
                 </div>
@@ -1283,20 +1290,20 @@ export const PlannerView = {
         if (count === 0) {
             chip.innerHTML = `
                 <span class="path-filter-chip-label">All dimmed</span>
-                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()">×</span>
+                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()"><i class="ph ph-x"></i></span>
             `;
         } else if (count === 1) {
             const path = this.paths.find(p => this.activePathSet.has(p.id));
             chip.innerHTML = path ? `
                 <span class="path-filter-chip-dot" style="background:${path.color}"></span>
                 <span class="path-filter-chip-name">${path.name}</span>
-                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()">×</span>
+                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()"><i class="ph ph-x"></i></span>
             ` : '';
         } else {
             chip.innerHTML = `
                 <span class="path-filter-chip-label">Filtering:</span>
                 <span class="path-filter-chip-name">${count} paths</span>
-                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()">×</span>
+                <span class="path-filter-chip-clear" title="Clear filter" onclick="clearPathFilter()"><i class="ph ph-x"></i></span>
             `;
         }
     },
@@ -1539,7 +1546,7 @@ export const PlannerView = {
             dlSnapGhost.style.top = `${top}px`;
             dlSnapGhost.innerHTML = `
                 <div class="deadline-snap-line"></div>
-                <div class="deadline-snap-label">◎ New Path deadline · ${timeStr}</div>
+                <div class="deadline-snap-label"><i class="ph ph-circle-dashed"></i> New Path deadline · ${timeStr}</div>
             `;
         };
 
@@ -1578,7 +1585,7 @@ export const PlannerView = {
                 this.handleDeadlineDrop(d);
             } else if (this.dragging.color) {
                 const { h, m } = getSnapPos(e);
-                this.handleDrop(d, h, m);
+                this.handleDrop(d, h, m, e.target);
             }
             this.dragging = { areaId: null, color: null };
         });
@@ -1653,7 +1660,7 @@ export const PlannerView = {
                 const endAbsMins = getAbsMins(e.clientY);
                 const durationMins = Math.max(30, endAbsMins - selStartAbsMins);
                 const sessions = Math.max(1, this.calcSessionsFromDuration(durationMins));
-                this.openPopover(d, selStartH, selStartM, sessions);
+                this.openPopover(d, selStartH, selStartM, sessions, selGhost);
             }
         });
 
@@ -1691,8 +1698,8 @@ export const PlannerView = {
         menu.className = 'cal-ctx-menu';
 
         const items = [
-            { label: 'New Focus Session', icon: '▶', action: () => this.openPopover(d, h, m) },
-            { label: 'New Path Deadline', icon: '◎', action: () => this.openPathModal(dateStr) },
+            { label: 'New Focus Session', icon: '<i class="ph ph-play"></i>', action: (a) => this.openPopover(d, h, m, undefined, a) },
+            { label: 'New Path Deadline', icon: '<i class="ph ph-circle-dashed"></i>', action: () => this.openPathModal(dateStr) },
         ];
 
         items.forEach(({ label, icon, action }) => {
@@ -1701,8 +1708,10 @@ export const PlannerView = {
             btn.innerHTML = `<span class="cal-ctx-icon">${icon}</span>${label}`;
             btn.addEventListener('click', (ev) => {
                 ev.stopPropagation();
+                const btnRect = btn.getBoundingClientRect();
+                const fakeAnchor = { getBoundingClientRect: () => btnRect };
                 menu.remove();
-                action();
+                action(fakeAnchor);
             });
             menu.appendChild(btn);
         });
@@ -1886,15 +1895,15 @@ export const PlannerView = {
         this.renderPathsSidebar();
     },
 
-    handleDrop(day, h, m) {
+    handleDrop(day, h, m, anchorEl) {
         this.pendingDay = day;
         this.pendingHour = h;
         this.pendingMinutes = m;
-        this.openPopover(day, h, m);
+        this.openPopover(day, h, m, undefined, anchorEl);
     },
 
     // ── POPOVER ──
-    openPopover(day, hour, mins, sessions) {
+    openPopover(day, hour, mins, sessions, anchorEl) {
         this.editingBlockId = null;
         this.closeDetail();
         const overlay = document.getElementById('popover-overlay');
@@ -1907,44 +1916,41 @@ export const PlannerView = {
         this.pendingHour = hour;
         this.pendingMinutes = mins || 0;
 
-        // Ensure we have a pending area selected
-        const areas = this.getAreas();
-        if (!this.pendingAreaId && areas.length > 0) {
-            this.pendingAreaId = areas[0].id;
-            this.pendingColor = areas[0].color;
-        }
+        // Reset to unselected state — user must pick explicitly
+        this.pendingAreaId = null;
+        this.pendingColor = null;
+        this.pendingPathId = null;
 
-        const currentArea = areas.find(a => a.id === this.pendingAreaId) || areas[0];
-        if (currentArea) {
-            document.getElementById('popover-area-name').textContent = currentArea.name;
-            document.getElementById('popover-area-dot').className = `popover-area-dot ${currentArea.color}`;
-        }
+        const areaDot = document.getElementById('popover-area-dot');
+        if (areaDot) { areaDot.className = 'popover-area-dot'; areaDot.style.display = 'none'; }
+        document.getElementById('popover-area-name').textContent = 'Select Focus Area';
+        document.getElementById('popover-area-pill')?.classList.add('is-empty');
 
         document.getElementById('popover-time').value =
             `${String(hour).padStart(2, '0')}:${String(this.pendingMinutes).padStart(2, '0')}`;
-        
+
         this.sessionCount = sessions ?? 2;
         this.updateSessionDisplay();
-
-        // Pre-select active path if exactly one is filtered
-        if (this.activePathSet !== null && this.activePathSet.size === 1) {
-            this.pendingPathId = [...this.activePathSet][0];
-        }
         this.updatePathDisplay();
 
         overlay.classList.add('visible');
         pop.classList.add('visible');
 
-        // Position near calendar body center as a sensible default for new blocks
-        const calBody = document.getElementById('cal-body') || document.getElementById('focusPlannerOverlay');
-        if (calBody) {
-            const r = calBody.getBoundingClientRect();
-            const pw = pop.offsetWidth  || 280;
-            const ph = pop.offsetHeight || 320;
-            pop.style.left  = `${Math.round(r.left + (r.width  - pw) / 2)}px`;
-            pop.style.top   = `${Math.round(r.top  + (r.height - ph) / 2)}px`;
-            pop.style.right = 'auto';
+        if (anchorEl) {
+            this._positionPanelNearBlock(pop, anchorEl);
+        } else {
+            // Fallback: center of cal-body
+            const calBody = document.getElementById('cal-body') || document.getElementById('focusPlannerOverlay');
+            if (calBody) {
+                const r = calBody.getBoundingClientRect();
+                const pw = pop.offsetWidth  || 280;
+                const ph = pop.offsetHeight || 320;
+                pop.style.left  = `${Math.round(r.left + (r.width  - pw) / 2)}px`;
+                pop.style.top   = `${Math.round(r.top  + (r.height - ph) / 2)}px`;
+                pop.style.right = 'auto';
+            }
         }
+
         this.populateAreaPicker();
         this.populatePathPicker();
     },
@@ -1956,6 +1962,9 @@ export const PlannerView = {
         pop.style.left = '';
         pop.style.top  = '';
         pop.style.right = '';
+        // Reset chevrons
+        document.getElementById('popover-area-chevron')?.classList.replace('ph-caret-up', 'ph-caret-down');
+        document.getElementById('popover-path-chevron')?.classList.replace('ph-caret-up', 'ph-caret-down');
     },
 
     // ── PATH MODAL ──
@@ -2118,32 +2127,98 @@ export const PlannerView = {
         this.renderSidebarAreas(this.areaSearchQuery);
     },
 
+    _buildPickerSearchPill(picker, placeholder) {
+        const pill = document.createElement('div');
+        pill.className = 'popover-picker-search-pill';
+
+        const icon = document.createElement('i');
+        icon.className = 'ph ph-magnifying-glass';
+        pill.appendChild(icon);
+
+        const search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'popover-picker-search';
+        search.placeholder = placeholder;
+        search.addEventListener('click', e => e.stopPropagation());
+        pill.appendChild(search);
+
+        const clear = document.createElement('button');
+        clear.className = 'popover-picker-search-clear';
+        clear.innerHTML = '&times;';
+        clear.tabIndex = -1;
+        clear.style.display = 'none';
+        clear.addEventListener('mousedown', e => {
+            e.preventDefault();
+            search.value = '';
+            clear.style.display = 'none';
+            search.dispatchEvent(new Event('input'));
+            search.focus();
+        });
+        clear.addEventListener('click', e => e.stopPropagation());
+        pill.appendChild(clear);
+
+        search.addEventListener('input', () => {
+            clear.style.display = search.value ? '' : 'none';
+        });
+
+        picker.appendChild(pill);
+        return search;
+    },
+
     populateAreaPicker() {
         const picker = document.getElementById('popover-area-picker');
         if (!picker) return;
         picker.innerHTML = '';
-        this.getAreas().forEach(a => {
-            const opt = document.createElement('div');
-            opt.className = `popover-area-option${a.id === this.pendingAreaId ? ' active' : ''}`;
-            opt.innerHTML = `
-                <div class="popover-area-option-dot" style="background:var(--${a.color}-bar)"></div>
-                ${a.name}
-            `;
-            opt.onclick = (e) => {
-                e.stopPropagation();
-                this.pendingAreaId = a.id;
-                this.pendingColor = a.color;
-                document.getElementById('popover-area-name').textContent = a.name;
-                document.getElementById('popover-area-dot').className = `popover-area-dot ${a.color}`;
-                picker.classList.remove('open');
-            };
-            picker.appendChild(opt);
-        });
+
+        const search = this._buildPickerSearchPill(picker, 'Search areas…');
+
+        const list = document.createElement('div');
+        list.className = 'popover-picker-list';
+        picker.appendChild(list);
+
+        const renderOptions = (query) => {
+            list.innerHTML = '';
+            const q = query.toLowerCase();
+            this.getAreas()
+                .filter(a => !q || a.name.toLowerCase().includes(q))
+                .forEach(a => {
+                    const opt = document.createElement('div');
+                    opt.className = `popover-area-option${a.id === this.pendingAreaId ? ' active' : ''}`;
+                    opt.innerHTML = `
+                        <div class="popover-area-option-dot" style="background:var(--${a.color}-bar)"></div>
+                        ${a.name}
+                    `;
+                    opt.onclick = (e) => {
+                        e.stopPropagation();
+                        this.pendingAreaId = a.id;
+                        this.pendingColor = a.color;
+                        document.getElementById('popover-area-name').textContent = a.name;
+                        const dot = document.getElementById('popover-area-dot');
+                        if (dot) { dot.className = `popover-area-dot ${a.color}`; dot.style.display = ''; }
+                        document.getElementById('popover-area-pill')?.classList.remove('is-empty');
+                        picker.classList.remove('open');
+                    };
+                    list.appendChild(opt);
+                });
+        };
+
+        search.addEventListener('input', e => renderOptions(e.target.value));
+        renderOptions('');
     },
 
     toggleAreaPicker() {
-        document.getElementById('popover-area-picker').classList.toggle('open');
+        const picker = document.getElementById('popover-area-picker');
+        picker.classList.toggle('open');
         document.getElementById('popover-path-picker').classList.remove('open');
+        const isOpen = picker.classList.contains('open');
+        const chevron = document.getElementById('popover-area-chevron');
+        if (chevron) chevron.className = `ph ${isOpen ? 'ph-caret-up' : 'ph-caret-down'} popover-chevron`;
+        const pathChevron = document.getElementById('popover-path-chevron');
+        if (pathChevron) pathChevron.className = 'ph ph-caret-down popover-chevron';
+        if (isOpen) {
+            const search = picker.querySelector('.popover-picker-search');
+            if (search) { search.value = ''; search.focus(); }
+        }
     },
 
     populatePathPicker() {
@@ -2151,56 +2226,92 @@ export const PlannerView = {
         if (!picker) return;
         picker.innerHTML = '';
 
-        // "No path" option
-        const noneOpt = document.createElement('div');
-        noneOpt.className = `popover-area-option${!this.pendingPathId ? ' active' : ''}`;
-        noneOpt.innerHTML = `<div class="popover-area-option-dot" style="background:var(--ink-soft)"></div> No path`;
-        noneOpt.onclick = (e) => {
-            e.stopPropagation();
-            this.pendingPathId = null;
-            this.updatePathDisplay();
-            picker.classList.remove('open');
-        };
-        picker.appendChild(noneOpt);
+        const search = this._buildPickerSearchPill(picker, 'Search paths…');
 
-        this.paths.filter(p => p.status === 'active').forEach(p => {
-            const opt = document.createElement('div');
-            opt.className = `popover-area-option${p.id === this.pendingPathId ? ' active' : ''}`;
-            opt.innerHTML = `<div class="popover-area-option-dot" style="background:${p.color}"></div> ${p.name}`;
-            opt.onclick = (e) => {
+        const list = document.createElement('div');
+        list.className = 'popover-picker-list';
+        picker.appendChild(list);
+
+        const renderOptions = (query) => {
+            list.innerHTML = '';
+            const q = query.toLowerCase();
+
+            const noneOpt = document.createElement('div');
+            noneOpt.className = `popover-area-option${!this.pendingPathId ? ' active' : ''}`;
+            noneOpt.innerHTML = `<div class="popover-area-option-dot" style="background:var(--ink-soft)"></div> No path`;
+            noneOpt.onclick = (e) => {
                 e.stopPropagation();
-                this.pendingPathId = p.id;
+                this.pendingPathId = null;
                 this.updatePathDisplay();
                 picker.classList.remove('open');
             };
-            picker.appendChild(opt);
-        });
+            list.appendChild(noneOpt);
+
+            this.paths
+                .filter(p => p.status === 'active' && (!q || p.name.toLowerCase().includes(q)))
+                .forEach(p => {
+                    const opt = document.createElement('div');
+                    opt.className = `popover-area-option${p.id === this.pendingPathId ? ' active' : ''}`;
+                    opt.innerHTML = `<div class="popover-area-option-dot" style="background:${p.color}"></div> ${p.name}`;
+                    opt.onclick = (e) => {
+                        e.stopPropagation();
+                        this.pendingPathId = p.id;
+                        this.updatePathDisplay();
+                        picker.classList.remove('open');
+                    };
+                    list.appendChild(opt);
+                });
+        };
+
+        search.addEventListener('input', e => renderOptions(e.target.value));
+        renderOptions('');
     },
 
     togglePathPicker() {
-        document.getElementById('popover-path-picker').classList.toggle('open');
+        const picker = document.getElementById('popover-path-picker');
+        picker.classList.toggle('open');
         document.getElementById('popover-area-picker').classList.remove('open');
+        const isOpen = picker.classList.contains('open');
+        const chevron = document.getElementById('popover-path-chevron');
+        if (chevron) chevron.className = `ph ${isOpen ? 'ph-caret-up' : 'ph-caret-down'} popover-chevron`;
+        const areaChevron = document.getElementById('popover-area-chevron');
+        if (areaChevron) areaChevron.className = 'ph ph-caret-down popover-chevron';
+        if (isOpen) {
+            const search = picker.querySelector('.popover-picker-search');
+            if (search) { search.value = ''; search.focus(); }
+        }
     },
 
     updatePathDisplay() {
         const path = this.paths.find(p => p.id === this.pendingPathId);
         const dot = document.getElementById('popover-path-dot');
         const name = document.getElementById('popover-path-name');
+        const pill = document.getElementById('popover-path-pill');
         if (!dot || !name) return;
         if (path) {
             dot.style.background = path.color;
             dot.style.display = 'inline-block';
             name.textContent = path.name;
+            pill?.classList.add('has-path');
         } else {
             dot.style.display = 'none';
-            name.textContent = 'No path';
+            name.textContent = 'Select Path';
+            pill?.classList.remove('has-path');
         }
     },
 
     confirmBlock() {
         const areas = this.getAreas();
-        const area = areas.find(a => a.id === this.pendingAreaId) || areas[0];
-        if (!area) return;
+        const area = areas.find(a => a.id === this.pendingAreaId);
+        if (!area) {
+            // Highlight the area picker pill to prompt selection
+            const pill = document.getElementById('popover-area-pill');
+            if (pill) {
+                pill.style.outline = '2px solid var(--danger)';
+                setTimeout(() => { pill.style.outline = ''; }, 1200);
+            }
+            return;
+        }
 
         const timeVal = document.getElementById('popover-time').value;
         const [h, m] = timeVal ? timeVal.split(':').map(Number) : [this.pendingHour, this.pendingMinutes];
@@ -2278,42 +2389,43 @@ export const PlannerView = {
 
     // ── MOBILE ──
     initMobile() {
-        if (!window.matchMedia('(max-width: 480px)').matches) return;
+        // No-op: sidebar sections stay in-place; CSS data-mobile-tab attribute handles visibility.
+    },
 
-        // Move sidebar sections into their mobile sheets (IDs stay the same, render logic unchanged)
-        const pathsSection = document.querySelector('#focusPlannerOverlay .sidebar-section--paths');
-        const areasSection = document.querySelector('#focusPlannerOverlay .sidebar-section:not(.sidebar-section--paths)');
-        const pathsSheet  = document.getElementById('mobile-sheet-paths');
-        const areasSheet  = document.getElementById('mobile-sheet-areas');
-
-        if (pathsSection && pathsSheet) pathsSheet.appendChild(pathsSection);
-        if (areasSection && areasSheet) areasSheet.appendChild(areasSection);
+    _setMobileTab(tab) {
+        const overlay = document.getElementById('focusPlannerOverlay');
+        if (overlay) overlay.dataset.mobileTab = tab;
+        this._setActiveMobileTab(tab);
     },
 
     mobileTab(tab) {
-        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(`mobile-tab-${tab}`)?.classList.add('active');
-        if (tab === 'calendar') {
-            this.closeMobileSheet();
-        } else {
-            this.openMobileSheet(`mobile-sheet-${tab}`);
+        if (tab === 'timer') {
+            this.close();
+            if (typeof closeFocusAreas === 'function') closeFocusAreas();
+            return;
         }
+        if (tab === 'areas') {
+            // Reuse the existing Focus Areas panel — no duplication
+            const overlay = document.getElementById('focusPlannerOverlay');
+            if (overlay && overlay.style.display !== 'none') overlay.style.display = 'none';
+            this._setActiveMobileTab('areas');
+            if (typeof openFocusAreas === 'function') openFocusAreas();
+            return;
+        }
+        const overlay = document.getElementById('focusPlannerOverlay');
+        const isOpen = overlay && overlay.style.display !== 'none';
+        if (!isOpen) this.open();
+        this._setMobileTab(tab);
     },
 
     openMobileSheet(id) {
-        const sheet = document.getElementById(id);
-        const backdrop = document.getElementById('mobile-sheet-backdrop');
-        document.querySelectorAll('.mobile-sheet').forEach(s => s.classList.remove('open'));
-        if (sheet) sheet.classList.add('open');
-        if (backdrop) backdrop.classList.add('open');
+        // Legacy: map sheet id → tab name
+        const tab = id.replace('mobile-sheet-', '');
+        this._setMobileTab(tab);
     },
 
     closeMobileSheet() {
-        document.querySelectorAll('.mobile-sheet').forEach(s => s.classList.remove('open'));
-        const backdrop = document.getElementById('mobile-sheet-backdrop');
-        if (backdrop) backdrop.classList.remove('open');
-        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('mobile-tab-calendar')?.classList.add('active');
+        this._setMobileTab('calendar');
     },
 
     setupEventListeners() {
@@ -2333,9 +2445,9 @@ export const PlannerView = {
             if (this.viewMode === 'today') this.setTodaySubView(mode);
             else this.setWeekSubView(mode);
         };
-        window.openPopoverDefault = () => {
+        window.openPopoverDefault = (el) => {
             const day = this.viewMode === 'today' ? 0 : (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
-            this.openPopover(day, 9, 0);
+            this.openPopover(day, 9, 0, undefined, el || null);
         };
         window.setFilter = (f, el) => {
             this.activeFilter = f;
@@ -2344,8 +2456,7 @@ export const PlannerView = {
             this.render();
         };
         window.closePopover = () => this.closePopover();
-        window.toggleNewMenu = () => document.getElementById('new-menu').classList.toggle('open');
-        window.closeNewMenu = () => document.getElementById('new-menu').classList.remove('open');
+
         window.toggleAreaPicker = () => this.toggleAreaPicker();
         window.adjustSessions = (d) => this.adjustSessions(d);
         window.updateDerivedTime = () => this.updateDerivedTime();
@@ -2387,7 +2498,6 @@ export const PlannerView = {
             this.open();
         });
         document.getElementById('focusPlannerClose')?.addEventListener('click', () => this.close());
-        document.getElementById('mobile-tab-timer')?.addEventListener('click', () => this.close());
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('focusPlannerOverlay').style.display !== 'none') {

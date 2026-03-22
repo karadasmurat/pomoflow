@@ -284,9 +284,18 @@
       </div>
     </nav>
 
-  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
-    <i class="ph ph-list"></i>
-  </button>
+  <div class="mobile-header" id="mobileHeader">
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+      <i class="ph ph-list"></i>
+    </button>
+    <button class="mobile-header-btn mobile-avatar-btn" id="mobileAvatarBtn" aria-label="Profile">
+      <span id="mobileAvatar">🦉</span>
+    </button>
+    <div class="mobile-header-spacer"></div>
+    <button class="mobile-header-btn" id="mobileSettingsBtn" aria-label="Settings">
+      <i class="ph ph-gear"></i>
+    </button>
+  </div>
 
   <div class="app">
     <!-- SVG Filters for Liquid Animations -->
@@ -1286,7 +1295,7 @@
   <script type="module" src="js/components/sliding-card.js"></script>
   <script type="module" src="js/app.js"></script>
   <!-- ══ FOCUS PLANNER MODAL ══ -->
-  <div id="focusPlannerOverlay" style="display:none; position:fixed; inset:0; z-index:9000;">
+  <div id="focusPlannerOverlay" style="display:none; position:fixed; z-index:9000;">
     <style>
       #focusPlannerOverlay
 
@@ -1918,7 +1927,7 @@
       /* Today mode: single-column cal-head and cal-body */
       #focusPlannerOverlay .cal-head.today-mode,
       #focusPlannerOverlay .cal-body.today-mode {
-        grid-template-columns: 52px 1fr;
+        grid-template-columns: 52px minmax(0, 1fr);
       }
 
       /* ── TODAY LIST VIEW ── */
@@ -2279,13 +2288,22 @@
         flex-direction: column;
       }
 
+      /* Shared scroll container: head + body share the same clientWidth so fr units align */
+      #focusPlannerOverlay .cal-scroll-wrapper {
+        flex: 1;
+        min-height: 0;
+        overflow-y: scroll;
+        overflow-x: hidden;
+      }
+
       #focusPlannerOverlay .cal-head {
-        display: grid;
-        grid-template-columns: 52px repeat(7, 1fr);
-        border-bottom: 1px solid var(--rule);
-        flex-shrink: 0;
-        background: var(--white);
+        position: sticky;
+        top: 0;
         z-index: 50;
+        display: grid;
+        grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+        border-bottom: 1px solid var(--rule);
+        background: var(--white);
       }
 
       #focusPlannerOverlay .cal-time-gutter-head {
@@ -2441,11 +2459,10 @@
 
       /* ── GRID BODY ── */
       .cal-body {
-        flex: 1;
-        overflow-y: auto;
         display: grid;
-        grid-template-columns: 52px repeat(7, 1fr);
+        grid-template-columns: 52px repeat(7, minmax(0, 1fr));
         position: relative;
+        /* scrolling handled by .cal-scroll-wrapper */
       }
 
       #focusPlannerOverlay .time-gutter {
@@ -2737,25 +2754,28 @@
       }
 
       #focusPlannerOverlay .popover-title {
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--ink);
-        letter-spacing: -0.01em;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
         display: flex;
         align-items: center;
         justify-content: space-between;
       }
 
       #focusPlannerOverlay .popover-close {
-        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
         color: var(--ink-soft);
         cursor: pointer;
         line-height: 1;
         transition: color 0.15s;
         background: none;
         border: none;
-        font-family: var(--f);
-        padding: 0;
+        padding: 2px;
       }
 
       #focusPlannerOverlay .popover-close:hover {
@@ -2765,37 +2785,118 @@
       #focusPlannerOverlay .popover-area-pill {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: var(--bg-card);
-        border: 1px solid var(--rule);
-        border-radius: var(--r);
-        padding: 6px 10px;
-        font-size: 12px;
+        gap: 8px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: var(--r-input);
+        padding: 0 12px;
+        min-height: 42px;
+        font-size: 13px;
         font-weight: 700;
         color: var(--ink);
+        cursor: pointer;
+        user-select: none;
+        transition: border-color 0.15s;
+      }
+
+      #focusPlannerOverlay .popover-area-pill:hover {
+        border-color: var(--ink-soft);
+      }
+
+      #focusPlannerOverlay .popover-area-pill.is-empty {
+        border-style: dashed;
+        color: var(--ink-soft);
+      }
+
+      #focusPlannerOverlay .popover-chevron {
+        margin-left: auto;
+        color: var(--ink-soft);
+        font-size: 18px;
+        line-height: 1;
+        flex-shrink: 0;
+        transition: color 0.15s;
       }
 
       #focusPlannerOverlay .popover-area-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
+        flex-shrink: 0;
       }
 
       #focusPlannerOverlay .popover-area-picker {
         display: none;
         flex-direction: column;
-        gap: 2px;
         background: var(--white);
         border: 1px solid var(--rule);
         border-radius: var(--r);
-        padding: 4px;
         margin-top: -4px;
-        max-height: 160px;
-        overflow-y: auto;
+        overflow: hidden;
       }
 
       #focusPlannerOverlay .popover-area-picker.open {
         display: flex;
+      }
+
+      /* iOS-style search pill */
+      #focusPlannerOverlay .popover-picker-search-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 6px 10px;
+        margin: 8px 8px 4px;
+      }
+
+      #focusPlannerOverlay .popover-picker-search-pill i {
+        color: var(--ink-soft);
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+
+      #focusPlannerOverlay .popover-picker-search {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        font-family: var(--f);
+        color: var(--ink);
+        outline: none;
+        min-width: 0;
+      }
+
+      #focusPlannerOverlay .popover-picker-search::placeholder {
+        color: var(--ink-soft);
+      }
+
+      #focusPlannerOverlay .popover-picker-search-clear {
+        background: var(--ink-soft);
+        border: none;
+        color: var(--surface-elevated);
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+        font-size: 10px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+      }
+
+      #focusPlannerOverlay .popover-picker-list {
+        padding: 4px;
+        max-height: 160px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
       }
 
       #focusPlannerOverlay .popover-area-option {
@@ -2812,7 +2913,7 @@
       }
 
       #focusPlannerOverlay .popover-area-option:hover {
-        background: var(--bg-card);
+        background: var(--surface);
       }
 
       #focusPlannerOverlay .popover-area-option.active {
@@ -2828,27 +2929,36 @@
 
       #focusPlannerOverlay .popover-field label {
         display: block;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
+        color: var(--ink-mid);
+        margin-bottom: 6px;
+      }
+
+      #focusPlannerOverlay .label-optional {
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
         color: var(--ink-soft);
-        margin-bottom: 5px;
+        font-size: 10px;
       }
 
       #focusPlannerOverlay .popover-field input[type="time"],
       #focusPlannerOverlay .popover-field input[type="text"] {
         width: 100%;
-        border: 1px solid var(--rule);
-        border-radius: var(--r);
-        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--r-input);
+        background: var(--surface-elevated);
         color: var(--ink);
         font-family: var(--f);
         font-size: 13px;
-        font-weight: 600;
-        padding: 7px 10px;
+        font-weight: 500;
+        padding: 9px 12px;
         outline: none;
         transition: border-color 0.15s;
+        box-sizing: border-box;
       }
 
       #focusPlannerOverlay .popover-field input:focus {
@@ -2860,22 +2970,20 @@
         font-weight: 400;
       }
 
-      #focusPlannerOverlay
-
       /* session stepper */
-      .session-stepper {
+      #focusPlannerOverlay .session-stepper {
         display: flex;
         align-items: center;
-        gap: 0;
-        border: 1px solid var(--rule);
-        border-radius: var(--r);
+        border: 1px solid var(--border);
+        border-radius: var(--r-input);
         overflow: hidden;
-        background: var(--bg-card);
+        background: var(--surface-elevated);
+        height: 38px;
       }
 
       #focusPlannerOverlay .stepper-btn {
-        width: 36px;
-        height: 34px;
+        width: 38px;
+        height: 38px;
         border: none;
         background: transparent;
         color: var(--ink-mid);
@@ -2887,10 +2995,11 @@
         transition: background 0.15s, color 0.15s;
         font-family: var(--f);
         font-weight: 300;
+        flex-shrink: 0;
       }
 
       #focusPlannerOverlay .stepper-btn:hover {
-        background: var(--rule);
+        background: var(--border);
         color: var(--ink);
       }
 
@@ -2900,40 +3009,47 @@
         font-size: 13px;
         font-weight: 700;
         color: var(--ink);
-        border-left: 1px solid var(--rule);
-        border-right: 1px solid var(--rule);
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+
+      /* derived time — plain inline text, no pill */
+      #focusPlannerOverlay .planner-detail-stack {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
       }
 
       #focusPlannerOverlay .derived-time {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px;
-        background: var(--accent-dim);
-        border-radius: var(--r);
+        gap: 4px;
+        color: var(--ink-mid);
         font-size: 12px;
-        font-weight: 600;
-        color: var(--accent);
+        white-space: nowrap;
       }
 
       #focusPlannerOverlay .derived-time span:first-child {
-        font-weight: 500;
-        color: var(--ink-mid);
-        font-size: 11px;
+        color: var(--ink-soft);
+      }
+
+      #focusPlannerOverlay .derived-time span:last-child {
+        font-weight: 600;
       }
 
       #focusPlannerOverlay .popover-confirm {
         background: var(--accent);
-        color: #fff;
+        color: var(--text-on-accent);
         border: none;
-        border-radius: var(--r);
-        padding: 9px;
-        font-size: 13px;
+        border-radius: var(--r-md);
+        height: 44px;
+        font-size: 14px;
         font-weight: 700;
         font-family: var(--f);
         cursor: pointer;
         width: 100%;
-        transition: opacity 0.15s, transform 0.15s;
+        transition: opacity 0.15s, transform 0.1s;
+        letter-spacing: -0.01em;
       }
 
       #focusPlannerOverlay .popover-confirm:hover {
@@ -3352,6 +3468,62 @@
 
       #focusPlannerOverlay .modal-save:hover {
         opacity: 0.88;
+      }
+
+      /* ── MODAL → BOTTOM SHEET on mobile ── */
+      @media (max-width: 480px) {
+        #focusPlannerOverlay .modal-overlay {
+          align-items: flex-end;
+          justify-content: stretch;
+          /* escape the planner's stacking context so the sheet covers full viewport */
+          position: fixed;
+          inset: 0;
+          z-index: 9800;
+        }
+
+        #focusPlannerOverlay .modal {
+          width: 100%;
+          border-radius: var(--r-lg) var(--r-lg) 0 0;
+          max-height: 90dvh;
+          overflow-y: auto;
+          animation: sheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+          /* drag handle */
+          padding-top: 20px;
+          position: relative;
+        }
+
+        #focusPlannerOverlay .modal::before {
+          content: '';
+          position: absolute;
+          top: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 32px;
+          height: 3px;
+          border-radius: 2px;
+          background: var(--rule);
+        }
+
+        #focusPlannerOverlay .modal-footer {
+          padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* full-width save button on mobile */
+        #focusPlannerOverlay .modal-footer {
+          flex-direction: column-reverse;
+        }
+
+        #focusPlannerOverlay .modal-save,
+        #focusPlannerOverlay .modal-cancel {
+          width: 100%;
+          justify-content: center;
+          text-align: center;
+        }
+      }
+
+      @keyframes sheetIn {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
       }
 
       #focusPlannerOverlay
@@ -3796,16 +3968,16 @@
 
       #focusPlannerOverlay
 
-      /* ── SCROLLBAR ── */
-      .cal-body::-webkit-scrollbar {
+      /* ── SCROLLBAR — on the shared wrapper, not cal-body ── */
+      #focusPlannerOverlay .cal-scroll-wrapper::-webkit-scrollbar {
         width: 5px;
       }
 
-      #focusPlannerOverlay .cal-body::-webkit-scrollbar-track {
+      #focusPlannerOverlay .cal-scroll-wrapper::-webkit-scrollbar-track {
         background: transparent;
       }
 
-      #focusPlannerOverlay .cal-body::-webkit-scrollbar-thumb {
+      #focusPlannerOverlay .cal-scroll-wrapper::-webkit-scrollbar-thumb {
         background: var(--rule);
         border-radius: 3px;
       }
@@ -3834,13 +4006,40 @@
         }
       }
 
-      /* ── TABLET ≤768px: hide filter group to prevent overflow ── */
-      @media (max-width: 768px) {
+      /* ── TABLET ≤767px: hide filter group to prevent overflow ── */
+      @media (max-width: 767px) {
         #focusPlannerOverlay .filter-group { display: none; }
       }
 
-      /* Hidden on desktop; becomes a flex line-break on mobile */
+      /* Hidden on desktop; becomes a flex line-break on mobile/tablet */
       #focusPlannerOverlay .planner-row-break { display: none; }
+
+      /* ── TABLET 481–900px: 2-row header layout for iPad mini / Air ── */
+      @media (min-width: 481px) and (max-width: 900px) {
+        #focusPlannerOverlay .planner-header {
+          height: auto;
+          flex-wrap: wrap;
+          padding: 8px 16px 6px;
+          gap: 8px;
+          row-gap: 6px;
+        }
+        /* Row 1: [< date >] fills · [X] */
+        #focusPlannerOverlay .date-nav    { order: 1; flex: 1; justify-content: flex-start; }
+        #focusPlannerOverlay #focusPlannerClose { order: 3; }
+        #focusPlannerOverlay .header-spacer { display: none; }
+        #focusPlannerOverlay #path-filter-chip { display: none !important; }
+        /* Line-break: forces row 2 */
+        #focusPlannerOverlay .planner-row-break {
+          display: block;
+          order: 5;
+          flex-basis: 100%;
+          height: 0;
+        }
+        /* Row 2: [Day|Week] · [📅|☰] · [All|Planned|Actual] */
+        #focusPlannerOverlay .view-toggle { order: 10; flex-shrink: 0; }
+        #focusPlannerOverlay #sub-view-toggle { order: 11; flex-basis: auto; }
+        #focusPlannerOverlay .filter-group { order: 12; display: flex; }
+      }
 
       /* ── MOBILE ≤480px: override base header height so 2-row layout works ── */
       /* (planner.css 480px sets height:auto but this inline style's base rule
@@ -3988,25 +4187,6 @@
             <button class="filter-btn" onclick="setFilter('actual', this)">Actual</button>
           </div>
 
-          <div class="new-btn-wrap" id="new-btn-wrap">
-            <button class="new-btn" onclick="toggleNewMenu()">+ New</button>
-            <div class="new-menu" id="new-menu">
-              <div class="new-menu-item" onclick="openPopoverDefault(); closeNewMenu()">
-                <span class="new-menu-icon">▭</span>
-                <div class="new-menu-text">
-                  <span class="new-menu-label">Focus block</span>
-                  <span class="new-menu-hint">Plan a session on the calendar</span>
-                </div>
-              </div>
-              <div class="new-menu-item" onclick="openPathModal(); closeNewMenu()">
-                <span class="new-menu-icon">◎</span>
-                <div class="new-menu-text">
-                  <span class="new-menu-label">Path</span>
-                  <span class="new-menu-hint">Create a goal with a deadline</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <button id="focusPlannerClose" title="Close planner (Esc)">
             <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
@@ -4020,18 +4200,21 @@
 
         <!-- CALENDAR -->
         <div class="calendar" id="calendar">
+          <!-- Shared scroll wrapper: both head and body live here so fr units share the same coordinate space -->
+          <div class="cal-scroll-wrapper">
 
-          <!-- Day headers -->
-          <div class="cal-head" id="cal-head">
-            <div class="cal-time-gutter-head"></div>
-            <!-- filled by JS -->
+            <!-- Day headers (sticky inside the scroll wrapper) -->
+            <div class="cal-head" id="cal-head">
+              <div class="cal-time-gutter-head"></div>
+              <!-- filled by JS -->
+            </div>
+
+            <!-- Grid body -->
+            <div class="cal-body" id="cal-body">
+              <!-- filled by JS -->
+            </div>
+
           </div>
-
-          <!-- Grid body -->
-          <div class="cal-body" id="cal-body">
-            <!-- filled by JS -->
-          </div>
-
         </div>
 
         <!-- Today list view (today mode + list sub-view only) -->
@@ -4052,13 +4235,13 @@
     <div class="popover" id="popover">
       <div class="popover-title">
         <span id="popover-title-text">New block</span>
-        <button class="popover-close" onclick="closePopover()">×</button>
+        <button class="popover-close" onclick="closePopover()"><i class="ph ph-x"></i></button>
       </div>
 
       <div class="popover-area-pill" id="popover-area-pill" onclick="toggleAreaPicker()">
-        <div class="popover-area-dot green" id="popover-area-dot"></div>
-        <span id="popover-area-name">Deep Work</span>
-        <span class="popover-chevron">▾</span>
+        <div class="popover-area-dot" id="popover-area-dot" style="display:none"></div>
+        <span id="popover-area-name">Select Focus Area</span>
+        <i class="ph ph-caret-down popover-chevron" id="popover-area-chevron"></i>
       </div>
       <div class="popover-area-picker" id="popover-area-picker"></div>
 
@@ -4083,11 +4266,11 @@
 
       <div class="planner-detail-stack">
         <div class="derived-time">
-          <span>total focus</span>
+          <span><i class="ph ph-clock"></i> Duration</span>
           <span id="derived-duration">1h 25m</span>
         </div>
         <div class="derived-time derived-time--dim">
-          <span>ends at</span>
+          <span><i class="ph ph-calendar-check"></i> Ends</span>
           <span id="derived-end">10:25 am</span>
         </div>
       </div>
@@ -4097,10 +4280,10 @@
         <div class="popover-path-pill" id="popover-path-pill" onclick="togglePathPicker()">
           <div class="popover-path-dot" id="popover-path-dot" style="display:none;"></div>
           <span id="popover-path-name">No path</span>
-          <span class="popover-chevron">▾</span>
+          <i class="ph ph-caret-down popover-chevron" id="popover-path-chevron"></i>
         </div>
-        <div class="popover-path-picker" id="popover-path-picker"></div>
       </div>
+      <div class="popover-path-picker" id="popover-path-picker"></div>
 
       <button class="popover-confirm" onclick="confirmBlock()">Confirm block</button>
     </div>
@@ -4112,7 +4295,7 @@
           <div class="area-chip green detail-dot" id="detail-dot"></div>
           <span id="detail-area-name">Deep Work</span>
         </div>
-        <button class="popover-close" onclick="closeDetail()">×</button>
+        <button class="popover-close" onclick="closeDetail()"><i class="ph ph-x"></i></button>
       </div>
       <div class="detail-body">
         <div>
@@ -4150,7 +4333,7 @@
       <div class="modal">
         <div class="modal-header">
           <div class="modal-title"><span class="modal-title-icon">◎</span> New Path</div>
-          <button class="popover-close" onclick="closePathModal()">×</button>
+          <button class="popover-close" onclick="closePathModal()"><i class="ph ph-x"></i></button>
         </div>
         <div class="modal-body">
           <div class="modal-field">
@@ -4190,7 +4373,7 @@
       <div class="modal">
         <div class="modal-header">
           <div class="modal-title">▭ New Focus Area</div>
-          <button class="popover-close" onclick="closeAreaModal()">×</button>
+          <button class="popover-close" onclick="closeAreaModal()"><i class="ph ph-x"></i></button>
         </div>
         <div class="modal-body">
           <div class="modal-field">
@@ -4248,26 +4431,6 @@
       </div>
     </div>
 
-    <!-- ── MOBILE BOTTOM BAR ── -->
-    <div class="mobile-bottom-bar" id="mobile-bottom-bar">
-      <button class="mobile-tab active" id="mobile-tab-calendar" onclick="mobileTab('calendar')">
-        <i class="ph ph-calendar-blank"></i>
-        <span>Calendar</span>
-      </button>
-      <button class="mobile-tab" id="mobile-tab-paths" onclick="mobileTab('paths')">
-        <i class="ph ph-map-trifold"></i>
-        <span>Paths</span>
-      </button>
-      <button class="mobile-tab" id="mobile-tab-areas" onclick="mobileTab('areas')">
-        <i class="ph ph-lightning"></i>
-        <span>Areas</span>
-      </button>
-      <button class="mobile-tab" id="mobile-tab-timer">
-        <i class="ph ph-timer"></i>
-        <span>Timer</span>
-      </button>
-    </div>
-
     <!-- ── MOBILE SHEETS ── -->
     <div class="mobile-sheet-backdrop" id="mobile-sheet-backdrop" onclick="closeMobileSheet()"></div>
     <div class="mobile-sheet" id="mobile-sheet-paths">
@@ -4280,6 +4443,27 @@
     </div>
 
   </div>
+
+  <!-- ── MOBILE BOTTOM NAV (app-level, always visible on mobile) ── -->
+  <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+    <button class="mobile-tab active" id="mobile-tab-timer" onclick="mobileTab('timer')">
+      <i class="ph ph-timer"></i>
+      <span>Timer</span>
+    </button>
+    <button class="mobile-tab" id="mobile-tab-calendar" onclick="mobileTab('calendar')">
+      <i class="ph ph-calendar-blank"></i>
+      <span>Calendar</span>
+    </button>
+    <button class="mobile-tab" id="mobile-tab-paths" onclick="mobileTab('paths')">
+      <i class="ph ph-map-trifold"></i>
+      <span>Paths</span>
+    </button>
+    <button class="mobile-tab" id="mobile-tab-areas" onclick="mobileTab('areas')">
+      <i class="ph ph-lightning"></i>
+      <span>Areas</span>
+    </button>
+  </div>
+
   </div><!-- /.app-shell -->
 
   <script>
@@ -4289,13 +4473,24 @@
       const submenuToggles = document.querySelectorAll('.sidenav-submenu-toggle');
       const searchInput = document.querySelector('.sidenav-search-wrapper input');
 
-      const isMobile = () => window.innerWidth <= 768;
+      const isMobile = () => window.innerWidth <= 767;
+
+      // Default to collapsed on desktop; restore persisted preference
+      if (!isMobile()) {
+        const saved = localStorage.getItem('sidenavCollapsed');
+        if (saved === 'false') {
+          sidenav.classList.remove('collapsed');
+        } else {
+          sidenav.classList.add('collapsed'); // collapsed by default
+        }
+      }
 
       toggleBtn.addEventListener('click', () => {
         if (isMobile()) {
           sidenav.classList.toggle('expanded-mobile');
         } else {
           sidenav.classList.toggle('collapsed');
+          localStorage.setItem('sidenavCollapsed', sidenav.classList.contains('collapsed'));
         }
       });
 

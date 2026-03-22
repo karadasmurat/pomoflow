@@ -118,6 +118,7 @@ async function init() {
             if (el) el.textContent = email;
         }
         const avatarEl = document.getElementById('sidenavAvatar');
+        const mobileAvatarEl = document.getElementById('mobileAvatar');
         if (avatarEl) {
             const avatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
             if (avatarUrl) {
@@ -125,7 +126,9 @@ async function init() {
                     .then(r => r.blob())
                     .then(blob => {
                         const blobUrl = URL.createObjectURL(blob);
-                        avatarEl.innerHTML = `<img src="${blobUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                        const imgHtml = `<img src="${blobUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                        avatarEl.innerHTML = imgHtml;
+                        if (mobileAvatarEl) mobileAvatarEl.innerHTML = imgHtml;
                     })
                     .catch(() => {}); // keep emoji fallback on error
             }
@@ -627,14 +630,21 @@ function openFocusAreas() {
     document.getElementById('focusAreaPanel').classList.add('open'); 
     document.getElementById('focusAreaOverlay').classList.add('open'); 
 }
-function closeFocusAreas() { 
-    document.getElementById('focusAreaPanel').classList.remove('open'); 
+function closeFocusAreas() {
+    document.getElementById('focusAreaPanel').classList.remove('open');
     document.getElementById('focusAreaOverlay').classList.remove('open');
     document.getElementById('focusAreaCreateWrapper')?.classList.remove('open');
     document.getElementById('toggleFocusAreaCreate')?.classList.remove('active');
+    // Reset mobile bottom nav to Timer when panel is dismissed
+    if (window.innerWidth <= 480) {
+        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('mobile-tab-timer')?.classList.add('active');
+    }
 }
+window.openFocusAreas = openFocusAreas;
+window.closeFocusAreas = closeFocusAreas;
 
-function openPlan() { 
+function openPlan() {
     closeFocusAreas(); populateCustomFocusAreaSelect();
     document.getElementById('planPanel').classList.add('open'); document.getElementById('planOverlay').classList.add('open'); 
 }
@@ -673,6 +683,8 @@ function updateProfileUI() {
     if (circle) circle.textContent = avatar;
     const sidenavAvatar = document.getElementById('sidenavAvatar');
     if (sidenavAvatar) sidenavAvatar.textContent = avatar;
+    const mobileAvatar = document.getElementById('mobileAvatar');
+    if (mobileAvatar) mobileAvatar.textContent = avatar;
 
     const option = document.querySelector(`.avatar-option[data-avatar="${avatar}"]`);
     if (option && moodLabel) {
@@ -1065,9 +1077,10 @@ function setupEventListeners() {
             await supabase.auth.signOut();
             showAuthOverlay();
         },
-        'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'closeSettings': closeSettings,
+        'settingsBtn': openSettings, 'sidenavSettingsBtn': openSettings, 'mobileSettingsBtn': openSettings, 'closeSettings': closeSettings,
         'saveSettings': closeSettings,
         'sidenav-user-profile': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(), 'closeProfile': closeProfile,
+        'mobileAvatarBtn': () => document.getElementById('profilePanel').classList.contains('open') ? closeProfile() : openProfile(),
         'editPersonaBtn': () => togglePersonaEdit(true),
         'cancelPersonaEdit': () => togglePersonaEdit(false),
         'shareMoodBtn': () => {

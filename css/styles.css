@@ -148,6 +148,13 @@ body {
     padding: 16px;
 }
 
+@media (max-width: 767px) {
+    .app {
+        padding-top: calc(56px + 16px);
+        padding-bottom: calc(44px + 16px + 16px + env(safe-area-inset-bottom, 0));
+    }
+}
+
 @media (min-width: 768px) {
     .app {
         padding: 24px;
@@ -337,6 +344,26 @@ header {
         transform: none;
         flex: 1;
         justify-content: center;
+    }
+
+    /* Clear space for the persistent bottom nav */
+    .main-content {
+        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Focus Areas panel: full-page tab on mobile, not a side drawer */
+    .focus-area-panel {
+        width: 100% !important;
+        height: 100dvh !important;
+        transform: translateY(100%) !important;
+        transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1) !important;
+    }
+    .focus-area-panel.open {
+        transform: translateY(0) !important;
+    }
+    /* No backdrop — it's a full-page view, nothing to dim */
+    .focus-area-overlay {
+        display: none !important;
     }
 }
 
@@ -4702,7 +4729,7 @@ button {
 
 @media (max-width: 600px) {
     .toast {
-        bottom: 32px;
+        bottom: calc(44px + 16px + 16px + env(safe-area-inset-bottom, 0px));
         min-width: 320px;
         max-width: calc(100vw - 32px);
         font-size: 15px;
@@ -5407,21 +5434,14 @@ sliding-card [slot="menu"] span {
 
 .planner-detail-stack {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.derived-time {
-    opacity: 0.7;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
 }
 
 .detail-dot {
     width: 8px;
     height: 8px;
-}
-
-.derived-time--dim {
-    opacity: 0.7;
 }
 
 .icon-dim { opacity: 0.6; }
