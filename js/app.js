@@ -1242,7 +1242,7 @@ function setupEventListeners() {
             if (Notification.permission !== 'granted') {
                 notify("Please enable notifications first", "warning");
             }
-            SettingsService.sendNotification("Test Notification", "It works! 🎯");
+            SettingsService.sendNotification("Test Notification", "It works! 🎯", true);
         },
         'testSound': () => {
             console.log('[Settings] testSound clicked');
