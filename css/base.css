@@ -39,6 +39,7 @@
   --f:
     "Manrope", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
     sans-serif;
+  --font-sans: var(--f); /* canonical alias used by styles.css and planner.css */
 
   /* Layout */
   --max: 1100px; /* Max content width */
@@ -694,25 +695,12 @@ td code {
 }
 
 /* ── SHWN BRAND TOKENS ──────────────────────────────────────── */
-/*
- * Override base tokens for shwn. brand palette.
- * Import after base.css resets to apply shwn. colours globally.
- */
+/* Tokens used by base.css components not covered by styles.css  */
 
 :root {
-  --f: "Manrope", sans-serif;
-  --mono: "DM Mono", monospace;
-  --accent: #3d8f5a;
-  --accent-dim: #edf7f1;
+  --mono:  "DM Mono", monospace;
   --grove: #3d8f5a;
   --honey: #8f5218;
-  --bg: #f8f7fc;
-  --bg-card: #ffffff;
-  --white: #ffffff;
-  --ink: #18181a;
-  --ink-mid: #7a7a85;
-  --ink-soft: #bfbec8;
-  --rule: #e4e3ea;
 }
 
 /* ── DARK THEME ─────────────────────────────────────────────── */

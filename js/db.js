@@ -120,12 +120,17 @@ class DatabaseManager {
             durationMinutes: block.durationMinutes,
             notes: block.notes || null,
             pathId: block.pathId || null,
+            reminderMinutes: block.reminderMinutes || null,
+            reminderSent: block.reminderSent || 0,
             skipSync: block.skipSync ?? false,
         });
     }
     async deletePlannedBlock(id) { return this._send('delete_planned_block', { id }); }
     async walkPlannedBlock(blockId, sessionId) {
         return this._send('walk_planned_block', { blockId, sessionId });
+    }
+    async setPlannedBlockReminderSent(id) {
+        return this._send('update_planned_block_reminder_sent', { id });
     }
     async getPlannedBlocksForWeek(startDate, endDate) {
         const rows = await this._send('get_planned_blocks_for_week', { startDate, endDate });

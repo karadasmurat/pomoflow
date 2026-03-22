@@ -75,8 +75,29 @@ export class SettingsService {
         document.querySelectorAll('.expand-group.open').forEach(g => g.classList.remove('open'));
     }
 
-    static sendNotification(title, body) {
+    static async sendNotification(title, body) {
         if (!("Notification" in window) || Notification.permission !== "granted") return;
-        new Notification(title, { body, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎯</text></svg>' });
+
+        const options = {
+            body,
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎯</text></svg>',
+            badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎯</text></svg>',
+            tag: 'pomoflow-reminder',
+            renotify: true
+        };
+
+        try {
+            // Try Service Worker notification first (better background support)
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            if (registrations.length > 0 && registrations[0].showNotification) {
+                await registrations[0].showNotification(title, options);
+                return;
+            }
+            
+            // Fallback to standard Notification API
+            new Notification(title, options);
+        } catch (e) {
+            console.error("[Notification] Failed to send notification:", e);
+        }
     }
 }

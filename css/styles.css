@@ -4712,7 +4712,7 @@ button {
     color: var(--text-primary);
     border-radius: var(--r-lg);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    z-index: 6000;
+    z-index: 10000;
     font-size: 14px;
     font-weight: 500;
     opacity: 0;

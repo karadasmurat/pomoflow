@@ -122,7 +122,7 @@ export class DashboardView {
         const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
         const durationMin = Math.round(session.duration / 60);
         
-        const moreIcon = '<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"></path></svg>';
+        const moreIcon = '<i class="ph ph-dots-three-vertical"></i>';
 
         tr.innerHTML = `
             <td class="col-indicator">
@@ -161,7 +161,7 @@ export class DashboardView {
         
         const editBtn = document.createElement('button');
         editBtn.className = 'fa-popover-item';
-        editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108,148,64l24-24,44,44Zm-101,96H48V160l88-88,44,44Z"></path></svg><span>Adjust Duration</span>`;
+        editBtn.innerHTML = `<i class="ph ph-pencil"></i><span>Adjust Duration</span>`;
         editBtn.onclick = () => {
             popover.remove();
             if (callbacks.onEdit) callbacks.onEdit(session);
@@ -169,7 +169,7 @@ export class DashboardView {
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
-        deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg><span>Delete Session</span>`;
+        deleteBtn.innerHTML = `<i class="ph ph-trash"></i><span>Delete Session</span>`;
         deleteBtn.onclick = () => {
             popover.remove();
             if (callbacks.onDelete) callbacks.onDelete(session.id);

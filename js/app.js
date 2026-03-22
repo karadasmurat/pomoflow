@@ -174,6 +174,10 @@ async function init() {
     restoreTimerState();
     checkAchievements();
     checkPathDeadlines();
+    
+    // Check reminders immediately and then every minute
+    checkBlockReminders();
+    setInterval(checkBlockReminders, 60000);
 }
 
 function checkPathDeadlines() {
@@ -192,6 +196,54 @@ function checkPathDeadlines() {
             }
         });
     }).catch(() => {});
+}
+
+async function checkBlockReminders() {
+    if (!dbManager.initialized) return;
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    try {
+        const blocks = await dbManager.getPlannedBlocksForWeek(dateStr, dateStr);
+        if (!blocks || blocks.length === 0) return;
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        for (const b of blocks) {
+            const rawReminder = b.reminder_minutes;
+            const reminderMins = rawReminder ? parseInt(rawReminder) : 0;
+            
+            if (isNaN(reminderMins) || reminderMins <= 0) continue;
+            if (b.reminder_sent) continue;
+
+            const triggerTime = b.start_minutes - reminderMins;
+            
+            // Trigger if we are in the window between triggerTime and startTime
+            if (currentMinutes >= triggerTime && currentMinutes < b.start_minutes) {
+                console.log(`[Reminder] !!! TRIGGERING !!! for "${b.area_name}" (Start: ${b.start_minutes}, Now: ${currentMinutes})`);
+                
+                const timeStr = reminderMins >= 60 ? `${reminderMins/60}h` : `${reminderMins}m`;
+                const title = `Upcoming: ${b.area_name || 'Session'}`;
+                const body = `${timeStr} until your planned session${b.notes ? ': ' + b.notes : ''}.`;
+                
+                // 1. System Notification
+                await SettingsService.sendNotification(title, body);
+                
+                // 2. In-app Toast
+                notify(`Reminder: ${title} in ${timeStr}`, 'milestone');
+                
+                // 3. Mark as sent in DB
+                await dbManager.setPlannedBlockReminderSent(b.id);
+            }
+        }
+    } catch (e) {
+        console.error('[Reminder] Error checking reminders:', e);
+    }
 }
 
 // --- 2. TIMER LOGIC ---
@@ -953,23 +1005,22 @@ function updateDateTime() {
 function notify(msg, type = '') {
     const toast = document.createElement('div');
     toast.className = `toast show ${type}`;
-    
+
     toast.innerHTML = `
         <div class="toast-content">${msg}</div>
         <div class="toast-progress-container">
             <div class="toast-progress"></div>
         </div>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // Auto-remove after 5s (matching animation)
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 5000);
 }
-
 function confirmAction(msg) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirmModal');
@@ -1164,6 +1215,21 @@ function setupEventListeners() {
             if (btn) btn.classList.remove('active');
             state.selectedFocusAreaIds = [];
             updateCustomSelectUI();
+        },
+        'requestNotifyManual': () => {
+            if (!("Notification" in window)) {
+                notify("Notifications not supported", "error");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                notify(`Notifications: ${permission}`);
+                if (permission === 'granted') {
+                    SettingsService.sendNotification("PomoFlow", "Notifications enabled! 🎯");
+                }
+            });
+        },
+        'testNotify': () => {
+            SettingsService.sendNotification("Test Notification", "It works! 🎯");
         },
         'categoryEditIconBtn': () => document.getElementById('categoryEditIconDropdown')?.classList.toggle('open'),
         'saveCategoryEdit': saveCategoryFromModal,

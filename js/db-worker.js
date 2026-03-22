@@ -23,7 +23,7 @@ let sqlite3 = null;
 //   4 → 5  Fix: transition detector was stamping CURRENT_SCHEMA_VERSION (4) directly,
 //           skipping sync_log creation. Re-create idempotently for affected databases.
 
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 6;
 
 function migrate(db) {
     let version = db.exec("PRAGMA user_version", { returnValue: 'resultRows' })[0][0];
@@ -49,12 +49,19 @@ function migrate(db) {
                 db.exec("ALTER TABLE planned_blocks ADD COLUMN path_id TEXT REFERENCES paths(id) ON DELETE SET NULL");
             if (!pbCols.includes('walked_session_id'))
                 db.exec("ALTER TABLE planned_blocks ADD COLUMN walked_session_id TEXT");
+            if (!pbCols.includes('reminder_minutes'))
+                db.exec("ALTER TABLE planned_blocks ADD COLUMN reminder_minutes INTEGER");
+            if (!pbCols.includes('reminder_sent'))
+                db.exec("ALTER TABLE planned_blocks ADD COLUMN reminder_sent INTEGER DEFAULT 0");
+
             db.exec("CREATE INDEX IF NOT EXISTS idx_paths_status ON paths(status)");
             db.exec("CREATE INDEX IF NOT EXISTS idx_planned_blocks_path ON planned_blocks(path_id)");
             db.exec("CREATE TRIGGER IF NOT EXISTS trg_paths_updated_at AFTER UPDATE ON paths FOR EACH ROW BEGIN UPDATE paths SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;");
-            db.exec("PRAGMA user_version = 3");
-            version = 3;
-            console.log('Transition complete, stamped user_version = 3');
+            
+            // If user was on old unversioned schema, jump them to 6 directly since they have everything now
+            db.exec("PRAGMA user_version = 6");
+            version = 6;
+            console.log('Transition complete, stamped user_version = 6');
         }
     }
 
@@ -230,6 +237,13 @@ function migrate(db) {
         `);
         db.exec("PRAGMA user_version = 5");
         console.log('Migration 4→5 complete');
+    }
+
+    if (version < 6) {
+        db.exec("ALTER TABLE planned_blocks ADD COLUMN reminder_minutes INTEGER");
+        db.exec("ALTER TABLE planned_blocks ADD COLUMN reminder_sent INTEGER DEFAULT 0");
+        db.exec("PRAGMA user_version = 6");
+        console.log('Migration 5→6 complete');
     }
 }
 
@@ -456,22 +470,29 @@ self.onmessage = async (e) => {
             case 'insert_planned_block':
                 withTransaction(() => {
                     db.exec(`
-                        INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, path_id, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        INSERT INTO planned_blocks (id, focus_area_id, planned_date, start_minutes, duration_minutes, notes, path_id, reminder_minutes, reminder_sent, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                         ON CONFLICT(id) DO UPDATE SET
                             focus_area_id = excluded.focus_area_id,
                             planned_date = excluded.planned_date,
                             start_minutes = excluded.start_minutes,
                             duration_minutes = excluded.duration_minutes,
                             notes = excluded.notes,
-                            path_id = excluded.path_id
+                            path_id = excluded.path_id,
+                            reminder_minutes = excluded.reminder_minutes,
+                            reminder_sent = excluded.reminder_sent
                     `, {
-                        bind: [payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, payload.durationMinutes, payload.notes || null, payload.pathId || null]
+                        bind: [
+                            payload.id, payload.focusAreaId, payload.plannedDate, payload.startMinutes, 
+                            payload.durationMinutes, payload.notes || null, payload.pathId || null, 
+                            payload.reminderMinutes || null, payload.reminderSent || 0
+                        ]
                     });
                     if (!payload.skipSync) logSync('UPSERT_PLANNED_BLOCK', {
                         id: payload.id, focus_area_id: payload.focusAreaId, planned_date: payload.plannedDate,
                         start_minutes: payload.startMinutes, duration_minutes: payload.durationMinutes,
-                        notes: payload.notes || null, path_id: payload.pathId || null
+                        notes: payload.notes || null, path_id: payload.pathId || null,
+                        reminder_minutes: payload.reminderMinutes || null
                     });
                 });
                 break;
@@ -498,6 +519,11 @@ self.onmessage = async (e) => {
                         bind: [payload.sessionId, payload.blockId]
                     });
                     logSync('WALK_PLANNED_BLOCK', { block_id: payload.blockId, session_id: payload.sessionId });
+                });
+                break;
+            case 'update_planned_block_reminder_sent':
+                db.exec(`UPDATE planned_blocks SET reminder_sent = 1 WHERE id = ?`, {
+                    bind: [payload.id]
                 });
                 break;
             case 'insert_path':
