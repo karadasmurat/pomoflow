@@ -673,32 +673,51 @@
           </div>
         </div>
 
-        <div class="stats-bar compact momentum-tier">
-          <div class="stat-item">
-            <div class="stat-value" id="todayFocusTime">0:00</div>
-            <div class="stat-label">Focus Time</div>
-            <div class="stat-trend" id="focusTimeTrend"></div>
+        <div class="stats-bar momentum-tier">
+          <div class="stat-card">
+            <div class="stat-icon-wrap stat-icon--blue">
+              <i class="ph ph-timer"></i>
+            </div>
+            <div class="stat-body">
+              <div class="stat-label">Focus Time</div>
+              <div class="stat-row">
+                <div class="stat-value" id="todayFocusTime">0m</div>
+                <div class="stat-trend" id="focusTimeTrend"></div>
+              </div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="todaySessions">0</div>
-            <div class="stat-label">Sessions</div>
-            <div class="stat-trend" id="sessionsTrend"></div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap stat-icon--violet">
+              <i class="ph ph-lightning"></i>
+            </div>
+            <div class="stat-body">
+              <div class="stat-label">Sessions</div>
+              <div class="stat-row">
+                <div class="stat-value" id="todaySessions">0</div>
+                <div class="stat-trend" id="sessionsTrend"></div>
+              </div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="currentStreak">--</div>
-            <div class="stat-label">Day Streak</div>
-            <div class="stat-trend" id="streakTrend"></div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap stat-icon--amber">
+              <i class="ph ph-fire"></i>
+            </div>
+            <div class="stat-body">
+              <div class="stat-label">Streak</div>
+              <div class="stat-row">
+                <div class="stat-value" id="currentStreak">--</div>
+                <div class="stat-trend" id="streakTrend"></div>
+              </div>
+            </div>
           </div>
-          <div class="stats-refresh-container">
-            <span id="lastUpdatedLabel">Updated just now</span>
-            <button id="manualRefreshBtn" class="refresh-btn" aria-label="Refresh metrics">
-              <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-                <path
-                  d="M240,128a112,112,0,1,1-212.52-56,12,12,0,0,1,21,11.48A88,88,0,1,0,128,40V64a12,12,0,0,1-24,0V16a12,12,0,0,1,12-12h48a12,12,0,0,1,0,24H148.29A111.6,111.16,0,0,1,240,128Z">
-                </path>
-              </svg>
-            </button>
-          </div>
+        </div>
+        <div class="stats-refresh-row">
+          <span id="lastUpdatedLabel">Updated just now</span>
+          <button id="manualRefreshBtn" class="refresh-btn" aria-label="Refresh metrics">
+            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M240,128a112,112,0,1,1-212.52-56,12,12,0,0,1,21,11.48A88,88,0,1,0,128,40V64a12,12,0,0,1-24,0V16a12,12,0,0,1,12-12h48a12,12,0,0,1,0,24H148.29A111.6,111.16,0,0,1,240,128Z"></path>
+            </svg>
+          </button>
         </div>
 
         <div class="history-content-grid">
@@ -710,14 +729,25 @@
             <div class="history-chart" id="historyChart"></div>
           </div>
 
-          <div class="history-list-col">
-            <div class="history-list-header">
-              <span class="history-list-title">Activity Log</span>
-              <div class="history-show-all-container">
-                <button class="filter-btn" data-filter="showAll">Show All</button>
+          <div class="history-list-col" id="activityLogCol">
+            <div class="history-list-header" id="activityLogToggle">
+              <button class="activity-log-toggle-btn" aria-label="Toggle Activity Log">
+                <svg class="activity-log-chevron" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                <span class="history-list-title">Activity Log</span>
+              </button>
+              <div class="history-log-controls">
+                <select id="historyCategoryFilter" class="history-cat-select">
+                  <option value="">All Categories</option>
+                </select>
+                <button id="historySortBtn" class="history-sort-btn">Newest ↕</button>
               </div>
             </div>
             <div class="history-list" id="historyList"></div>
+            <div class="history-pagination" id="historyPagination" style="display:none">
+              <button id="historyPrevPage" class="page-btn">←</button>
+              <span id="historyPageLabel">Page 1 of 1</span>
+              <button id="historyNextPage" class="page-btn">→</button>
+            </div>
           </div>
         </div>
       </section>
@@ -1543,59 +1573,66 @@
         flex: 1 1 0;
         min-height: 0;
         overflow-y: auto;
-        padding: 0 10px 10px;
+        padding: 0;
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 0;
       }
 
-      #focusPlannerOverlay
-
-      /* area card */
-      .area-card {
-        background: var(--white);
-        border: 1px solid var(--rule);
-        border-radius: 7px;
-        padding: 6px 8px 6px 6px;
-        cursor: grab;
-        transition: box-shadow 0.15s, border-color 0.15s;
+      /* area card — compact row */
+      #focusPlannerOverlay .area-card {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--rule);
+        border-radius: 0;
+        height: 36px;
+        flex-shrink: 0;
+        padding: 0 8px 0 8px;
+        display: flex;
+        align-items: center;
+        cursor: default;
+        transition: background 0.12s;
         position: relative;
         user-select: none;
       }
 
+      #focusPlannerOverlay .area-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 16px;
+        border-radius: 0 2px 2px 0;
+        background: transparent;
+      }
+
       #focusPlannerOverlay .area-card:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background: var(--surface-elevated);
+        box-shadow: none;
       }
 
       #focusPlannerOverlay .area-card:active {
         cursor: grabbing;
       }
 
-      #focusPlannerOverlay .area-card.green {
-        border-left: 3px solid var(--green-bar);
-      }
-
-      #focusPlannerOverlay .area-card.amber {
-        border-left: 3px solid var(--amber-bar);
-      }
-
-      #focusPlannerOverlay .area-card.violet {
-        border-left: 3px solid var(--violet-bar);
-      }
-
-      #focusPlannerOverlay .area-card.blue {
-        border-left: 3px solid var(--blue-bar);
-      }
+      #focusPlannerOverlay .area-card.green::before  { background: var(--green-bar); }
+      #focusPlannerOverlay .area-card.amber::before  { background: var(--amber-bar); }
+      #focusPlannerOverlay .area-card.violet::before { background: var(--violet-bar); }
+      #focusPlannerOverlay .area-card.blue::before   { background: var(--blue-bar); }
 
       #focusPlannerOverlay .area-card-header {
         display: flex;
         align-items: center;
         gap: 5px;
+        flex: 1;
+        min-width: 0;
       }
 
       #focusPlannerOverlay .area-card-name {
-        font-size: 11px;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 500;
         color: var(--ink);
         letter-spacing: -0.01em;
         white-space: nowrap;
@@ -4555,6 +4592,20 @@
       document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
         sidenav.classList.toggle('expanded-mobile');
       });
+
+      // Activity Log collapse toggle
+      const activityLogCol = document.getElementById('activityLogCol');
+      const activityLogToggle = document.getElementById('activityLogToggle');
+      if (activityLogCol && activityLogToggle) {
+        if (localStorage.getItem('activityLogCollapsed') !== 'false') {
+          activityLogCol.classList.add('collapsed');
+        }
+        activityLogToggle.addEventListener('click', (e) => {
+          if (e.target.closest('.history-log-controls')) return;
+          const isCollapsed = activityLogCol.classList.toggle('collapsed');
+          localStorage.setItem('activityLogCollapsed', isCollapsed);
+        });
+      }
 
     });
   </script>

@@ -422,11 +422,12 @@ self.onmessage = async (e) => {
                 break;
             case 'get_all_sessions':
                 result = db.exec(`
-                    SELECT s.*, 
+                    SELECT s.*,
                            COALESCE(f.name, s.task_name, 'Unknown Focus Area') as display_name,
-                           COALESCE(f.color, s.task_color, '#58a6ff') as display_color
-                    FROM sessions s 
-                    LEFT JOIN focus_areas f ON s.focus_area_id = f.id 
+                           COALESCE(f.color, s.task_color, '#58a6ff') as display_color,
+                           f.category as task_category
+                    FROM sessions s
+                    LEFT JOIN focus_areas f ON s.focus_area_id = f.id
                     WHERE s.is_deleted = 0
                     ORDER BY s.timestamp DESC
                 `, { returnValue: 'resultRows', rowMode: 'object' });

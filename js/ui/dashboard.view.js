@@ -4,7 +4,7 @@ import { HistoryService } from '../services/history.service.js';
 export class DashboardView {
     static updateStats() {
         const data = HistoryService.getDashboardData();
-        
+
         // Update Focus Time
         const h = Math.floor(data.todaySecs / 3600);
         const m = Math.floor((data.todaySecs % 3600) / 60);
@@ -22,31 +22,48 @@ export class DashboardView {
         // Update Trends
         this._updateTrend('focusTimeTrend', data.todaySecs, data.yesterdaySecs);
         this._updateTrend('sessionsTrend', data.todaySessions.length, data.yesterdaySessions.length);
-        
+
         const streakTrendEl = document.getElementById('streakTrend');
         if (streakTrendEl) {
-            streakTrendEl.innerHTML = data.streak > 0 ? '<span class="trend-up">🔥 Active</span>' : '';
+            streakTrendEl.innerHTML = data.streak > 0 ? '<span class="trend-up">↑ Active</span>' : '';
         }
     }
 
     static renderHistory(filter = 'today', options = {}) {
+        const { sort = 'newest', category = null, page = 0,
+                pageSize = 20, callbacks = {} } = options;
         const list = document.getElementById('historyList');
         if (!list) return;
-        
-        let sessions = HistoryService.filterSessions(state.sessions, filter);
-        this.renderChart(sessions);
 
-        if (sessions.length === 0) {
+        // Full period sessions — used for chart and category dropdown
+        const allPeriodSessions = HistoryService.filterSessions(state.sessions, filter);
+        this.renderChart(allPeriodSessions);
+        this._updateCategoryDropdown(allPeriodSessions, category);
+
+        // Apply category filter
+        let sessions = category
+            ? allPeriodSessions.filter(s => s.taskCategory === category)
+            : [...allPeriodSessions];
+
+        // Sort
+        sessions.sort((a, b) => {
+            const d = new Date(b.timestamp) - new Date(a.timestamp);
+            return sort === 'newest' ? d : -d;
+        });
+
+        const total = sessions.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const safePage = Math.min(page, totalPages - 1);
+        const displaySessions = sessions.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+        if (displaySessions.length === 0) {
             list.innerHTML = '<div class="empty-state"><p>No sessions found for this period.</p></div>';
+            this._updatePagination(safePage, totalPages, total);
+            this._updateSortBtn(sort);
             return;
         }
-        
-        sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
-        const showAll = options.showAllHistory || false;
-        const displaySessions = showAll ? sessions : sessions.slice(0, 4);
 
-        // Build Table
+        // Build table
         const table = document.createElement('table');
         table.className = 'history-table';
         table.innerHTML = `
@@ -54,6 +71,7 @@ export class DashboardView {
                 <tr>
                     <th class="col-indicator"></th>
                     <th class="col-area">Focus Area</th>
+                    <th class="col-category">Category</th>
                     <th class="col-duration">Duration</th>
                     <th class="col-time">Finished</th>
                     <th class="col-actions"></th>
@@ -63,31 +81,44 @@ export class DashboardView {
         `;
         const tbody = table.querySelector('tbody');
 
-        // Group by category
-        const groups = {};
-        displaySessions.forEach(s => {
-            const cat = s.taskCategory || 'Uncategorized';
-            if (!groups[cat]) groups[cat] = [];
-            groups[cat].push(s);
-        });
-
-        Object.entries(groups).forEach(([cat, groupSessions]) => {
-            if (cat !== 'Uncategorized') {
-                const groupRow = document.createElement('tr');
-                groupRow.className = 'group-header-row';
-                groupRow.innerHTML = `<td colspan="5">${cat}</td>`;
-                tbody.appendChild(groupRow);
-            }
-
-            groupSessions.forEach(session => {
-                tbody.appendChild(this._createHistoryRow(session, options.callbacks || {}));
-            });
+        displaySessions.forEach(session => {
+            tbody.appendChild(this._createHistoryRow(session, callbacks));
         });
 
         list.innerHTML = '';
         list.appendChild(table);
+        this._updatePagination(safePage, totalPages, total);
+        this._updateSortBtn(sort);
+    }
 
-        this._updateShowAllButton(sessions.length, showAll);
+    static _updateCategoryDropdown(sessions, activeCategory) {
+        const select = document.getElementById('historyCategoryFilter');
+        if (!select) return;
+        const categories = [...new Set(
+            sessions.map(s => s.taskCategory).filter(Boolean)
+        )].sort();
+        select.innerHTML = '<option value="">All Categories</option>' +
+            categories.map(c =>
+                `<option value="${this._escapeHtml(c)}"${c === activeCategory ? ' selected' : ''}>${this._escapeHtml(c)}</option>`
+            ).join('');
+    }
+
+    static _updatePagination(page, totalPages, total) {
+        const pag = document.getElementById('historyPagination');
+        const label = document.getElementById('historyPageLabel');
+        const prevBtn = document.getElementById('historyPrevPage');
+        const nextBtn = document.getElementById('historyNextPage');
+        if (!pag) return;
+
+        pag.style.display = totalPages <= 1 ? 'none' : 'flex';
+        if (label) label.textContent = `Page ${page + 1} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = page === 0;
+        if (nextBtn) nextBtn.disabled = page >= totalPages - 1;
+    }
+
+    static _updateSortBtn(sort) {
+        const btn = document.getElementById('historySortBtn');
+        if (btn) btn.textContent = sort === 'newest' ? 'Newest ↕' : 'Oldest ↕';
     }
 
     static renderChart(sessions) {
@@ -98,7 +129,7 @@ export class DashboardView {
         if (heroContainer) heroContainer.innerHTML = '';
 
         if (sessions.length === 0) return;
-        
+
         const data = {};
         sessions.forEach(s => {
             const name = s.taskName || 'Unknown';
@@ -106,7 +137,7 @@ export class DashboardView {
             if (!data[name]) data[name] = { time: 0, color: s.taskColor || '#58a6ff' };
             data[name].time += duration;
         });
-        
+
         const sorted = Object.entries(data).sort((a, b) => b[1].time - a[1].time);
         const top = sorted.slice(0, 5);
         const total = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
@@ -118,10 +149,10 @@ export class DashboardView {
 
     static _createHistoryRow(session, callbacks) {
         const tr = document.createElement('tr');
-        
+
         const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
         const durationMin = Math.round(session.duration / 60);
-        
+
         const moreIcon = '<i class="ph ph-dots-three-vertical"></i>';
 
         tr.innerHTML = `
@@ -130,6 +161,9 @@ export class DashboardView {
             </td>
             <td class="col-area" title="${this._escapeHtml(session.taskName)}">
                 ${this._escapeHtml(session.taskName)}
+            </td>
+            <td class="col-category">
+                ${session.taskCategory ? this._escapeHtml(session.taskCategory) : '—'}
             </td>
             <td class="col-duration">
                 ${durationMin} min
@@ -149,16 +183,16 @@ export class DashboardView {
             e.stopPropagation();
             this._showSessionPopover(moreBtn, session, callbacks);
         };
-        
+
         return tr;
     }
 
     static _showSessionPopover(anchorEl, session, callbacks) {
         document.querySelectorAll('.fa-popover').forEach(p => p.remove());
-        
+
         const popover = document.createElement('div');
         popover.className = 'fa-popover';
-        
+
         const editBtn = document.createElement('button');
         editBtn.className = 'fa-popover-item';
         editBtn.innerHTML = `<i class="ph ph-pencil"></i><span>Adjust Duration</span>`;
@@ -166,7 +200,7 @@ export class DashboardView {
             popover.remove();
             if (callbacks.onEdit) callbacks.onEdit(session);
         };
-        
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
         deleteBtn.innerHTML = `<i class="ph ph-trash"></i><span>Delete Session</span>`;
@@ -174,16 +208,15 @@ export class DashboardView {
             popover.remove();
             if (callbacks.onDelete) callbacks.onDelete(session.id);
         };
-        
+
         popover.appendChild(editBtn);
         popover.appendChild(deleteBtn);
         document.body.appendChild(popover);
-        
+
         const rect = anchorEl.getBoundingClientRect();
-        // Since .fa-popover is position: fixed, we use client coordinates
         popover.style.top = `${rect.bottom + 5}px`;
         popover.style.left = `${rect.right - popover.offsetWidth}px`;
-        
+
         const closePopover = (e) => {
             if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {
                 popover.remove();
@@ -193,18 +226,17 @@ export class DashboardView {
         setTimeout(() => document.addEventListener('mousedown', closePopover), 0);
     }
 
-
     static _updateTrend(elementId, today, yesterday) {
         const el = document.getElementById(elementId);
         if (!el) return;
 
         if (today === 0) {
-            el.innerHTML = '<span class="trend-neutral">Ready to start?</span>';
+            el.innerHTML = '';
             return;
         }
 
         if (yesterday === 0) {
-            el.innerHTML = '<span class="trend-up">↑ 100% vs yesterday</span>';
+            el.innerHTML = '<span class="trend-up">↑ 100%</span>';
             return;
         }
 
@@ -213,9 +245,9 @@ export class DashboardView {
         const isUp = diff >= 0;
 
         if (diff === 0) {
-            el.innerHTML = '<span class="trend-neutral">Same as yesterday</span>';
+            el.innerHTML = '';
         } else {
-            el.innerHTML = `<span class="trend-${isUp ? 'up' : 'down'}">${isUp ? '↑' : '↓'} ${percent}% vs yesterday</span>`;
+            el.innerHTML = `<span class="trend-${isUp ? 'up' : 'down'}">${isUp ? '↑' : '↓'} ${percent}%</span>`;
         }
     }
 
@@ -236,7 +268,7 @@ export class DashboardView {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', `0 0 ${chartSize} ${chartSize}`);
         svg.classList.add('pie-chart');
-        
+
         top.forEach(([name, d]) => {
             const slice = (d.time / total) * 360;
             if (isNaN(slice)) return;
@@ -259,23 +291,15 @@ export class DashboardView {
         wrapper.className = 'pie-chart-container'; wrapper.appendChild(svg);
         const legend = document.createElement('div');
         legend.className = 'pie-legend';
-        
+
         top.forEach(([name, d]) => {
             const item = document.createElement('div');
             item.className = 'legend-item';
             item.innerHTML = `<div class="legend-color" style="background: ${d.color}"></div><div class="legend-label">${this._escapeHtml(name)}</div><div class="legend-value">${Math.round(d.time/60)}m (${Math.round(d.time/total*100)}%)</div>`;
             legend.appendChild(item);
         });
-        
-        wrapper.appendChild(legend); container.appendChild(wrapper);
-    }
 
-    static _updateShowAllButton(totalCount, isShowingAll) {
-        const showAllBtn = document.querySelector('.history-show-all-container .filter-btn');
-        if (showAllBtn) {
-            showAllBtn.style.display = totalCount > 4 ? 'flex' : 'none';
-            showAllBtn.innerHTML = isShowingAll ? 'Show Less' : 'Show All';
-        }
+        wrapper.appendChild(legend); container.appendChild(wrapper);
     }
 
     static _escapeHtml(text) {

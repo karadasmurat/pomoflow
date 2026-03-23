@@ -164,40 +164,7 @@ export class FocusView {
             body.appendChild(label);
 
             matchedTasks.forEach(task => {
-                const item = document.createElement('div');
-                item.className = 'fa-cat-item'; 
-                
-                const isCurrent = state.timerState.activeTaskId === task.id;
-                const playIconHtml = `
-                    <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}" style="margin: 0; pointer-events: none;">
-                        <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
-                            ${isCurrent ? '<path d="M80,48h48V208H80Zm48,0V208h48V48Z"></path>' : '<path d="M228.44,112.64l-144-88A16,16,0,0,0,60,38.62V217.38a16,16,0,0,0,24.44,13.34l144-88A16,16,0,0,0,228.44,112.64Z"></path>'}
-                        </svg>
-                    </button>
-                `;
-
-                item.innerHTML = `
-                    <div class="fa-cat-icon">
-                        ${playIconHtml}
-                    </div>
-                    <div class="fa-cat-info">
-                        <div class="fa-cat-name" style="color: ${task.color}">${this._highlight(task.name, q)}</div>
-                        <div class="fa-cat-meta">${task.category}</div>
-                    </div>
-                    <button class="fa-more-btn" title="More Actions">
-                        <i class="ph ph-dots-three-vertical"></i>
-                    </button>
-                `;
-                
-                item.onclick = (e) => {
-                    const moreBtn = e.target.closest('.fa-more-btn');
-                    if (moreBtn) {
-                        e.stopPropagation();
-                        this._showTaskPopover(moreBtn, task, callbacks);
-                        return;
-                    }
-                    if (callbacks.onPlay) callbacks.onPlay(task);
-                };
+                const item = this._createTaskItem(task, callbacks);
                 body.appendChild(item);
             });
         }
@@ -215,18 +182,13 @@ export class FocusView {
         ` : '';
 
         item.innerHTML = `
-            <div class="fa-cat-icon">${cat.icon === '📁' || !cat.icon ? '<i class="ph ph-folder"></i>' : cat.icon}</div>
+            <span class="fa-cat-icon">${cat.icon === '📁' || !cat.icon ? '<i class="ph ph-folder"></i>' : cat.icon}</span>
             <div class="fa-cat-info">
-                <div class="fa-cat-name">${this._highlight(cat.name, q)}</div>
-                <div class="fa-cat-meta">
-                    <span class="fa-cat-badge">${count}</span>
-                    <span>focus area${count !== 1 ? 's' : ''}</span>
-                </div>
+                <span class="fa-cat-name">${this._highlight(cat.name, q)}</span>
+                <span class="fa-cat-meta"><span class="fa-cat-badge">${count}</span></span>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-                ${moreBtnHtml}
-                <i class="ph ph-caret-right fa-cat-chevron"></i>
-            </div>
+            ${moreBtnHtml}
+            <i class="ph ph-caret-right fa-cat-chevron"></i>
         `;
 
         item.onclick = (e) => {
@@ -417,74 +379,53 @@ export class FocusView {
 
     static _createTaskItem(task, callbacks) {
         const item = document.createElement('div');
-        item.className = 'fa-cat-item';
-        
+        item.className = 'fa-row';
+        item.setAttribute('draggable', 'true');
+
         const panel = document.getElementById('faTaskPanel');
         const isManagement = panel?.classList.contains('management-mode');
-        
-        if (isManagement) {
-            item.setAttribute('draggable', 'true');
-        } else {
-            item.setAttribute('draggable', 'false');
-        }
+        const isCurrent = state.timerState.activeTaskId === task.id;
 
-        const handleDragStart = (e) => {
-            if (!isManagement) { e.preventDefault(); return; }
+        item.innerHTML = `
+            <i class="ph ph-dots-six-vertical fa-row-drag"></i>
+            <span class="fa-row-color" style="background:${task.color || 'var(--border)'}"></span>
+            <span class="fa-row-name">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</span>
+            <button class="fa-row-play ${isCurrent ? 'active' : ''}" title="Start focus" tabindex="-1">
+                <i class="ph ${isCurrent ? 'ph-pause' : 'ph-play'}"></i>
+            </button>
+            <button class="fa-more-btn fa-row-more" title="More Actions">
+                <i class="ph ph-dots-three-vertical"></i>
+            </button>
+        `;
+
+        item.addEventListener('dragstart', (e) => {
             item.classList.add('is-dragging');
             document.body.classList.add('is-dragging-active');
             e.dataTransfer.setData('taskId', task.id);
             e.dataTransfer.setData('text/plain', task.id);
             e.dataTransfer.effectAllowed = 'move';
-            if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(item, 24, 24);
+            if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(item, 20, 18);
             document.querySelectorAll('.fa-cat-item').forEach(g => g.classList.add('can-drop-active'));
-        };
+        });
 
-        item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', () => {
             item.classList.remove('is-dragging');
             document.body.classList.remove('is-dragging-active');
             document.querySelectorAll('.can-drop-active').forEach(g => g.classList.remove('can-drop-active'));
         });
 
-        const todayTime = this._getTodayTimeForFocusArea(task.id);
-        const totalTime = this._getTotalTimeForFocusArea(task.id);
-        const isCurrent = state.timerState.activeTaskId === task.id;
-        
-        const playIconHtml = `
-            <button class="focus-area-play-btn ${isCurrent ? 'active' : ''}" style="margin: 0; pointer-events: none;">
-                <i class="ph ${isCurrent ? 'ph-pause' : 'ph-play'}"></i>
-            </button>
-        `;
-
-        item.innerHTML = `
-            <div class="fa-cat-icon">
-                ${isManagement ? 
-                    '<i class="ph ph-pencil" style="opacity:0.6;font-size:18px"></i>' : 
-                    playIconHtml
-                }
-            </div>
-            <div class="fa-cat-info">
-                <div class="fa-cat-name" style="color: ${task.color}">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</div>
-                <div class="fa-cat-meta">
-                    <span>Today: ${this.formatDurationHM(todayTime)}</span>
-                    <span style="opacity: 0.3;">|</span>
-                    <span>Total: ${this.formatDurationHM(totalTime)}</span>
-                </div>
-            </div>
-            <button class="fa-more-btn" title="More Actions">
-                <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor"><path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"></path></svg>
-            </button>
-        `;
-
         item.onclick = (e) => {
-            const moreBtn = e.target.closest('.fa-more-btn');
-            if (moreBtn) {
+            if (e.target.closest('.fa-row-more')) {
                 e.stopPropagation();
-                this._showTaskPopover(moreBtn, task, callbacks);
+                this._showTaskPopover(e.target.closest('.fa-row-more'), task, callbacks);
                 return;
             }
-            if (isManagement) return;
-            if (callbacks.onPlay) callbacks.onPlay(task);
+            if (e.target.closest('.fa-row-play')) {
+                e.stopPropagation();
+                if (!isManagement && callbacks.onPlay) callbacks.onPlay(task);
+                return;
+            }
+            if (!isManagement && callbacks.onPlay) callbacks.onPlay(task);
         };
 
         return item;

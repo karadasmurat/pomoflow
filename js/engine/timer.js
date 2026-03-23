@@ -14,7 +14,6 @@ class TimerEngine {
     init(callbacks) {
         this.callbacks = { ...this.callbacks, ...callbacks };
         this._initWorker();
-        this._initAudio();
     }
 
     _initWorker() {
@@ -63,6 +62,7 @@ class TimerEngine {
     playTone(freq, duration, delay) {
         this._initAudio();
         if (!this.audioContext) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
 
         const osc = this.audioContext.createOscillator();
         const gain = this.audioContext.createGain();
@@ -89,8 +89,6 @@ class TimerEngine {
         this.playTone(1318, 0.2, 0.3);
     }
     start() {
-        if (this.audioContext && this.audioContext.state === 'suspended') this.audioContext.resume();
-        
         mutations.updateTimer({ 
             isRunning: true, 
             startTime: Date.now(),

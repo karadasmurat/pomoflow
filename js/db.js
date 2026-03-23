@@ -241,6 +241,7 @@ class DatabaseManager {
             taskId: s.focus_area_id,
             taskName: s.display_name,
             taskColor: s.display_color,
+            taskCategory: s.task_category || null,
             duration: s.duration_seconds,
             xp: s.xp_earned,
             createdAt: s.created_at,

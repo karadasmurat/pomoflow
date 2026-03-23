@@ -19,7 +19,10 @@ import { syncService } from './services/sync.service.js';
 import { supabase } from './services/supabase.js';
 
 let currentFilter = 'today';
-let showAllHistory = false;
+let historySort = 'newest';
+let historyCategory = null;
+let historyPage = 0;
+const HISTORY_PAGE_SIZE = 20;
 let editingSessionId = null;
 let editingTaskId = null;
 
@@ -301,8 +304,14 @@ function handleSessionComplete(isSkip = false) {
         const title = wasWork ? 'Focus Session Finished!' : 'Break Finished!';
         const body = wasWork ? 'Time for a break!' : 'Ready to focus?';
         SettingsService.sendNotification(title, body);
+
+        const shouldAutoStart = wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork;
+        if (shouldAutoStart) {
+            timer.applyMode(nextMode);
+            timer.start();
+        }
     }
-    
+
     refreshUI();
     saveData();
 }
@@ -1302,12 +1311,34 @@ function setupEventListeners() {
         'decDuration': () => adjustDuration(-1),
         'focusAreaLink': openFocusAreas, 
         'clearFocusArea': (e) => { e.stopPropagation(); mutations.updateTimer({ activeTaskId: null }); refreshUI(); saveData(); },
-        'focusAreaOverlay': closeFocusAreas, 'planOverlay': closePlan
+        'focusAreaOverlay': closeFocusAreas, 'planOverlay': closePlan,
+        'historyPrevPage': () => { if (historyPage > 0) { historyPage--; refreshUI(); } },
+        'historyNextPage': () => { historyPage++; refreshUI(); },
+        'historySortBtn':  () => { historySort = historySort === 'newest' ? 'oldest' : 'newest'; historyPage = 0; refreshUI(); },
     };
 
     Object.entries(clickMap).forEach(([id, fn]) => {
         const el = document.getElementById(id);
         if (el) el.onclick = fn;
+    });
+
+    // Today / Week / All time-period buttons
+    document.querySelectorAll('.history-filters .filter-btn').forEach(btn => {
+        btn.onclick = () => {
+            currentFilter = btn.dataset.filter;
+            historyPage = 0;
+            historyCategory = null;
+            document.querySelectorAll('.history-filters .filter-btn')
+                .forEach(b => b.classList.toggle('active', b === btn));
+            refreshUI();
+        };
+    });
+
+    // Category filter dropdown
+    document.getElementById('historyCategoryFilter')?.addEventListener('change', e => {
+        historyCategory = e.target.value || null;
+        historyPage = 0;
+        refreshUI();
     });
 
     // Orbit option buttons
@@ -1423,13 +1454,12 @@ function setupEventListeners() {
 function refreshUI() {
     renderFocusAreas();
     DashboardView.updateStats();
-    DashboardView.renderHistory(currentFilter, { 
-        showAllHistory, 
-        callbacks: { 
-            formatTimestamp, 
-            onDelete: deleteSession, 
-            onEdit: openSessionEditModal 
-        } 
+    DashboardView.renderHistory(currentFilter, {
+        sort: historySort,
+        category: historyCategory,
+        page: historyPage,
+        pageSize: HISTORY_PAGE_SIZE,
+        callbacks: { formatTimestamp, onDelete: deleteSession, onEdit: openSessionEditModal }
     });
     renderPlan();
     TimerView.updateDisplay();
