@@ -63,30 +63,39 @@ export class DashboardView {
             return;
         }
 
-        // Build table
-        const table = document.createElement('table');
-        table.className = 'history-table';
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th class="col-indicator"></th>
-                    <th class="col-area">Focus Area</th>
-                    <th class="col-category">Category</th>
-                    <th class="col-duration">Duration</th>
-                    <th class="col-time">Finished</th>
-                    <th class="col-actions"></th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
-        const tbody = table.querySelector('tbody');
+        // Build table for desktop, cards for mobile
+        if (this._isMobile()) {
+            // Mobile: render cards directly
+            list.innerHTML = '';
+            displaySessions.forEach(session => {
+                list.appendChild(this._createHistoryCard(session, callbacks));
+            });
+        } else {
+            // Desktop: render table
+            const table = document.createElement('table');
+            table.className = 'history-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="col-indicator"></th>
+                        <th class="col-area">Focus Area</th>
+                        <th class="col-category">Category</th>
+                        <th class="col-duration">Duration</th>
+                        <th class="col-time">Finished</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
 
-        displaySessions.forEach(session => {
-            tbody.appendChild(this._createHistoryRow(session, callbacks));
-        });
+            displaySessions.forEach(session => {
+                tbody.appendChild(this._createHistoryRow(session, callbacks));
+            });
 
-        list.innerHTML = '';
-        list.appendChild(table);
+            list.innerHTML = '';
+            list.appendChild(table);
+        }
         this._updatePagination(safePage, totalPages, total);
         this._updateSortBtn(sort);
     }
@@ -147,7 +156,15 @@ export class DashboardView {
         this._renderPieChart(container, top, total);
     }
 
+    static _isMobile() {
+        return window.innerWidth <= 768;
+    }
+
     static _createHistoryRow(session, callbacks) {
+        if (this._isMobile()) {
+            return this._createHistoryCard(session, callbacks);
+        }
+
         const tr = document.createElement('tr');
 
         const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
@@ -166,10 +183,10 @@ export class DashboardView {
                 ${session.taskCategory ? this._escapeHtml(session.taskCategory) : '—'}
             </td>
             <td class="col-duration">
-                ${durationMin} min
+                <i class="ph ph-timer" style="margin-right:4px;opacity:0.7"></i>${durationMin}m
             </td>
             <td class="col-time">
-                ${timeStr}
+                <i class="ph ph-calendar-check" style="margin-right:4px;opacity:0.7"></i>${timeStr}
             </td>
             <td class="col-actions">
                 <button class="action-btn more-btn" aria-label="More actions">
@@ -185,6 +202,47 @@ export class DashboardView {
         };
 
         return tr;
+    }
+
+    static _createHistoryCard(session, callbacks) {
+        const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
+        const durationMin = Math.round(session.duration / 60);
+
+        const card = document.createElement('div');
+        card.className = 'activity-log-card';
+
+        card.innerHTML = `
+            <div class="activity-log-card-row activity-log-card-row-top">
+                <div class="activity-log-card-left">
+                    <div class="activity-log-card-dot" style="background: ${session.taskColor || '#58a6ff'}"></div>
+                    <div class="activity-log-card-title" title="${this._escapeHtml(session.taskName)}">${this._escapeHtml(session.taskName)}</div>
+                </div>
+                <button class="activity-log-card-more" aria-label="More actions">
+                    <i class="ph ph-dots-three-vertical"></i>
+                </button>
+            </div>
+            <div class="activity-log-card-row activity-log-card-row-bottom">
+                <span class="activity-log-card-category">
+                    ${session.taskCategory ? this._escapeHtml(session.taskCategory) : 'No category'}
+                </span>
+                <div class="activity-log-card-meta">
+                    <span class="activity-log-card-duration">
+                        <i class="ph ph-timer"></i> ${durationMin}m
+                    </span>
+                    <span class="activity-log-card-time">
+                        <i class="ph ph-calendar-check"></i> ${timeStr}
+                    </span>
+                </div>
+            </div>
+        `;
+
+        const moreBtn = card.querySelector('.activity-log-card-more');
+        moreBtn.onclick = (e) => {
+            e.stopPropagation();
+            this._showSessionPopover(moreBtn, session, callbacks);
+        };
+
+        return card;
     }
 
     static _showSessionPopover(anchorEl, session, callbacks) {

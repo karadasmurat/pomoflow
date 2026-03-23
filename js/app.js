@@ -178,6 +178,7 @@ async function init() {
     });
 
     refreshUI();
+    scheduleMidnightRefresh();
 
     // Signal app ready — hide loading bar and unlock UI
     const loadingBar = document.getElementById('appLoadingBar');
@@ -1120,7 +1121,54 @@ function confirmAction(msg) {
 
 function formatTimestamp(ts) {
     const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = new Date();
+    
+    // Check if the timestamp is from today (not when page loaded, but actual date comparison)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // If timestamp is between today 00:00 and tomorrow 00:00, show "Today"
+    if (d >= today && d < tomorrow) {
+        return `Today, ${timeStr}`;
+    }
+    
+    // Check if yesterday
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d >= yesterday && d < today) {
+        return `Yesterday, ${timeStr}`;
+    }
+    
+    // For older dates, show date and time
+    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `${dateStr}, ${timeStr}`;
+}
+
+// Schedule UI refresh at midnight to update timestamps
+function scheduleMidnightRefresh() {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const msUntilMidnight = tomorrow - now;
+    
+    setTimeout(() => {
+        // Re-render history with updated timestamps
+        DashboardView.renderHistory(currentFilter, {
+            sort: historySort,
+            category: historyCategory,
+            page: historyPage,
+            pageSize: HISTORY_PAGE_SIZE,
+            callbacks: { formatTimestamp, onDelete: deleteSession, onEdit: openSessionEditModal }
+        });
+        // Schedule next midnight refresh
+        scheduleMidnightRefresh();
+    }, msUntilMidnight);
 }
 
 function checkAchievements() {
@@ -1548,6 +1596,23 @@ supabase.auth.onAuthStateChange((event, session) => {
         if (!dbManager.initialized) init();
     }
     if (event === 'SIGNED_OUT') showAuthOverlay();
+});
+
+// Re-render history when crossing mobile/desktop breakpoint
+let wasMobile = window.innerWidth <= 768;
+window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile !== wasMobile) {
+        wasMobile = isMobile;
+        // Re-render history with current filters
+        DashboardView.renderHistory(currentFilter, {
+            sort: historySort,
+            category: historyCategory,
+            page: historyPage,
+            pageSize: HISTORY_PAGE_SIZE,
+            callbacks: { formatTimestamp, onDelete: deleteSession, onEdit: openSessionEditModal }
+        });
+    }
 });
 
 (async () => { await init(); })();
