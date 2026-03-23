@@ -185,7 +185,10 @@ export class FocusView {
             <span class="fa-cat-icon">${cat.icon === '📁' || !cat.icon ? '<i class="ph ph-folder"></i>' : cat.icon}</span>
             <div class="fa-cat-info">
                 <span class="fa-cat-name">${this._highlight(cat.name, q)}</span>
-                <span class="fa-cat-meta"><span class="fa-cat-badge">${count}</span></span>
+                <div class="fa-cat-subtitle">
+                    <span class="fa-mini-badge">${count}</span>
+                    <span>Focus Area${count !== 1 ? 's' : ''}</span>
+                </div>
             </div>
             ${moreBtnHtml}
             <i class="ph ph-caret-right fa-cat-chevron"></i>
@@ -379,40 +382,22 @@ export class FocusView {
 
     static _createTaskItem(task, callbacks) {
         const item = document.createElement('div');
-        item.className = 'fa-row';
-        item.setAttribute('draggable', 'true');
+        const isCurrent = state.timerState.activeTaskId === task.id;
+        item.className = `fa-row ${isCurrent ? 'active' : ''}`;
 
         const panel = document.getElementById('faTaskPanel');
         const isManagement = panel?.classList.contains('management-mode');
-        const isCurrent = state.timerState.activeTaskId === task.id;
 
         item.innerHTML = `
-            <i class="ph ph-dots-six-vertical fa-row-drag"></i>
-            <span class="fa-row-color" style="background:${task.color || 'var(--border)'}"></span>
-            <span class="fa-row-name">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</span>
             <button class="fa-row-play ${isCurrent ? 'active' : ''}" title="Start focus" tabindex="-1">
                 <i class="ph ${isCurrent ? 'ph-pause' : 'ph-play'}"></i>
             </button>
+            <span class="fa-row-color" style="background:${task.color || 'var(--border)'}"></span>
+            <span class="fa-row-name">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</span>
             <button class="fa-more-btn fa-row-more" title="More Actions">
                 <i class="ph ph-dots-three-vertical"></i>
             </button>
         `;
-
-        item.addEventListener('dragstart', (e) => {
-            item.classList.add('is-dragging');
-            document.body.classList.add('is-dragging-active');
-            e.dataTransfer.setData('taskId', task.id);
-            e.dataTransfer.setData('text/plain', task.id);
-            e.dataTransfer.effectAllowed = 'move';
-            if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(item, 20, 18);
-            document.querySelectorAll('.fa-cat-item').forEach(g => g.classList.add('can-drop-active'));
-        });
-
-        item.addEventListener('dragend', () => {
-            item.classList.remove('is-dragging');
-            document.body.classList.remove('is-dragging-active');
-            document.querySelectorAll('.can-drop-active').forEach(g => g.classList.remove('can-drop-active'));
-        });
 
         item.onclick = (e) => {
             if (e.target.closest('.fa-row-more')) {
