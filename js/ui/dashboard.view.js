@@ -60,6 +60,7 @@ export class DashboardView {
             list.innerHTML = '<div class="empty-state"><p>No sessions found for this period.</p></div>';
             this._updatePagination(safePage, totalPages, total);
             this._updateSortBtn(sort);
+            this._updateActivityLogCount(total);
             return;
         }
 
@@ -98,6 +99,7 @@ export class DashboardView {
         }
         this._updatePagination(safePage, totalPages, total);
         this._updateSortBtn(sort);
+        this._updateActivityLogCount(total);
     }
 
     static _updateCategoryDropdown(sessions, activeCategory) {
@@ -128,6 +130,13 @@ export class DashboardView {
     static _updateSortBtn(sort) {
         const btn = document.getElementById('historySortBtn');
         if (btn) btn.textContent = sort === 'newest' ? 'Newest ↕' : 'Oldest ↕';
+    }
+
+    static _updateActivityLogCount(total) {
+        const countEl = document.getElementById('activityLogCount');
+        if (countEl) {
+            countEl.textContent = total > 0 ? `${total}` : '';
+        }
     }
 
     static renderChart(sessions) {
@@ -254,7 +263,8 @@ export class DashboardView {
         const editBtn = document.createElement('button');
         editBtn.className = 'fa-popover-item';
         editBtn.innerHTML = `<i class="ph ph-pencil"></i><span>Adjust Duration</span>`;
-        editBtn.onclick = () => {
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
             popover.remove();
             if (callbacks.onEdit) callbacks.onEdit(session);
         };
@@ -262,7 +272,8 @@ export class DashboardView {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
         deleteBtn.innerHTML = `<i class="ph ph-trash"></i><span>Delete Session</span>`;
-        deleteBtn.onclick = () => {
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
             popover.remove();
             if (callbacks.onDelete) callbacks.onDelete(session.id);
         };
@@ -272,8 +283,23 @@ export class DashboardView {
         document.body.appendChild(popover);
 
         const rect = anchorEl.getBoundingClientRect();
-        popover.style.top = `${rect.bottom + 5}px`;
-        popover.style.left = `${rect.right - popover.offsetWidth}px`;
+        const popoverRect = popover.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        let top = rect.bottom + 5;
+        let left = rect.right - popoverRect.width;
+
+        if (top + popoverRect.height > viewportHeight) {
+            top = rect.top - popoverRect.height - 5;
+        }
+
+        if (left < 0) {
+            left = rect.left;
+        }
+
+        popover.style.top = `${top}px`;
+        popover.style.left = `${left}px`;
 
         const closePopover = (e) => {
             if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {

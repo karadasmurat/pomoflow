@@ -319,7 +319,8 @@ export class FocusView {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
         deleteBtn.innerHTML = '<i class="ph ph-trash"></i><span>Delete</span>';
-        deleteBtn.onclick = () => {
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
             popover.remove();
             if (callbacks.onDeleteCategory) callbacks.onDeleteCategory(categoryName);
         };
@@ -329,8 +330,23 @@ export class FocusView {
         document.body.appendChild(popover);
 
         const rect = anchorEl.getBoundingClientRect();
-        popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
-        popover.style.left = `${rect.right + window.scrollX - popover.offsetWidth}px`;
+        const popoverRect = popover.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        let top = rect.bottom + 5;
+        let left = rect.right - popoverRect.width;
+
+        if (top + popoverRect.height > viewportHeight) {
+            top = rect.top - popoverRect.height - 5;
+        }
+
+        if (left < 0) {
+            left = rect.left;
+        }
+
+        popover.style.top = `${top}px`;
+        popover.style.left = `${left}px`;
 
         const closePopover = (e) => {
             if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {
@@ -346,7 +362,7 @@ export class FocusView {
 
         const popover = document.createElement('div');
         popover.className = 'fa-popover';
-        
+
         const editBtn = document.createElement('button');
         editBtn.className = 'fa-popover-item';
         editBtn.innerHTML = '<i class="ph ph-pencil"></i><span>Edit</span>';
@@ -358,7 +374,8 @@ export class FocusView {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'fa-popover-item danger';
         deleteBtn.innerHTML = '<i class="ph ph-trash"></i><span>Delete</span>';
-        deleteBtn.onclick = () => {
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
             popover.remove();
             if (callbacks.onDelete) callbacks.onDelete(task.id);
         };
@@ -368,8 +385,23 @@ export class FocusView {
         document.body.appendChild(popover);
 
         const rect = anchorEl.getBoundingClientRect();
-        popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
-        popover.style.left = `${rect.right + window.scrollX - popover.offsetWidth}px`;
+        const popoverRect = popover.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        let top = rect.bottom + 5;
+        let left = rect.right - popoverRect.width;
+
+        if (top + popoverRect.height > viewportHeight) {
+            top = rect.top - popoverRect.height - 5;
+        }
+
+        if (left < 0) {
+            left = rect.left;
+        }
+
+        popover.style.top = `${top}px`;
+        popover.style.left = `${left}px`;
 
         const closePopover = (e) => {
             if (!popover.contains(e.target) && !anchorEl.contains(e.target)) {

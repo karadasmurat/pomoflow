@@ -1490,21 +1490,20 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 }
 
 .clear-all-btn {
-    background: transparent;
+    background: var(--surface-elevated);
     border: 1px solid var(--border);
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 0 14px;
-    border-radius: var(--r-md);
+    padding: 6px 12px;
+    border-radius: var(--r);
     transition: all 200ms ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 500;
     height: 30px;
-    min-height: 0;
 }
 
 .filter-btn:hover:not(.active) {
@@ -1520,12 +1519,13 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 }
 
 .clear-all-btn:hover {
+    background: var(--border);
     color: var(--text-primary);
-    border-color: var(--text-secondary);
-    background: var(--surface-elevated);
 }
 
 .clear-all-btn svg {
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
     opacity: 0.8;
 }
@@ -1588,44 +1588,97 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--surface-elevated);
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    padding: 16px 20px;
+    padding: 0;
     min-width: 0;
+    overflow: hidden;
 }
 
 .history-list-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding: 0;
+    margin-bottom: 0;
+    padding: 16px;
     cursor: pointer;
     user-select: none;
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s ease, border-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.history-list-header:hover {
+    background: var(--surface-elevated);
+}
+
+#activityLogCol.collapsed .history-list-header {
+    border-bottom: none;
+    padding: 12px 16px;
+}
+
+#activityLogCol.collapsed .history-list-header:hover {
+    background: transparent;
 }
 
 .activity-log-toggle-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     background: none;
     border: none;
     padding: 0;
+    margin: 0;
     cursor: pointer;
     color: inherit;
+    flex: 1;
+    min-width: 0;
 }
 
 .activity-log-chevron {
+    font-size: 18px;
     color: var(--text-secondary);
     transition: transform 0.2s ease;
     flex-shrink: 0;
+    line-height: 1;
+}
+
+#activityLogCol.collapsed .activity-log-chevron {
+    transform: rotate(-90deg);
 }
 
 .history-list-title {
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.activity-log-count {
+    font-size: 12px;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    background: var(--primary);
+    padding: 2px 8px;
+    border-radius: var(--r-xl);
+    margin-left: 6px;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#activityLogCol.collapsed .activity-log-count {
+    display: inline-flex;
+}
+
+#activityLogCol:not(.collapsed) .activity-log-count {
+    display: none;
 }
 
 /* Collapsed state */
@@ -1638,56 +1691,57 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 #activityLogCol.collapsed .history-pagination {
     display: none !important;
 }
-#activityLogCol.collapsed .history-list-header {
-    margin-bottom: 0;
-}
-#activityLogCol.collapsed .activity-log-chevron {
-    transform: rotate(-90deg);
-}
 
 /* Activity Log controls */
 .history-log-controls {
     display: flex;
     align-items: center;
-    gap: 2px;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
+    gap: 8px;
+    padding: 0 16px 16px 16px;
 }
 
 .history-cat-select,
 .history-sort-btn {
     appearance: none;
     -webkit-appearance: none;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     font-family: inherit;
-    color: var(--text-secondary);
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    height: 26px;
+    color: var(--text-primary);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--r-input);
+    padding: 0 12px;
+    height: 42px;
     cursor: pointer;
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.12s, border-color 0.12s;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .history-cat-select {
-    padding-right: 22px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 256 256'%3E%3Cpath fill='%23888' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 256 256'%3E%3Cpath fill='%23888' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 6px center;
-    max-width: 150px;
+    background-position: right 10px center;
+    max-width: 200px;
 }
 
-.history-sort-btn { white-space: nowrap; }
+.history-sort-btn {
+    white-space: nowrap;
+}
 
 .history-cat-select:hover,
 .history-sort-btn:hover {
     background: var(--surface);
-    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.history-sort-btn i {
+    font-size: 16px;
+    color: var(--text-secondary);
 }
 
 /* Pagination */
@@ -1696,9 +1750,8 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     align-items: center;
     justify-content: center;
     gap: 12px;
-    padding: 10px 0 2px;
+    padding: 10px 16px;
     border-top: 1px solid var(--border);
-    margin-top: 8px;
 }
 
 .history-pagination .page-btn {
@@ -2854,6 +2907,14 @@ sliding-card[active] .focus-area-play-btn {
     margin-top: 4px;
     text-transform: uppercase;
     letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.timer-mode i.ph {
+    font-size: 16px;
 }
 
 .timer-duration-shortcuts.orbit {
@@ -3598,6 +3659,7 @@ sliding-card[active] .focus-area-play-btn {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 16px;
     max-height: 400px;
     overflow-y: auto;
     width: 100%;
@@ -3730,19 +3792,34 @@ sliding-card[active] .focus-area-play-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 5000;
+    z-index: 11000;
     opacity: 0;
     visibility: hidden;
     transition: all 200ms ease;
+    pointer-events: none; /* Initially disable interactions */
 }
 
 .modal-overlay.open {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto; /* Enable interactions when open */
+}
+
+/* Settings overlay - simple backdrop, no flex centering */
+#settingsOverlay {
+    display: none;
+    z-index: 3900;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+#settingsOverlay.open {
+    display: block;
 }
 
 .modal {
     background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--r-lg);
     padding: 24px;
     width: 90%;
@@ -3751,6 +3828,8 @@ sliding-card[active] .focus-area-play-btn {
     overflow-y: auto;
     transform: scale(0.9);
     transition: transform 200ms ease;
+    position: relative;
+    pointer-events: auto; /* Ensure modal content is interactive */
 }
 
 .modal-overlay.open .modal {
@@ -3852,19 +3931,36 @@ sliding-card[active] .focus-area-play-btn {
 }
 
 .btn-danger {
-    background: var(--danger);
-    color: var(--text-on-accent);
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--r-md);
+    background: var(--danger) !important;
+    color: var(--text-on-accent) !important;
+    border: none !important;
+    height: 40px !important;
+    padding: 0 20px !important;
+    border-radius: var(--r-input) !important;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: opacity 150ms;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    transition: opacity 150ms, transform 150ms;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .btn-danger:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-danger svg, .btn-danger i.ph {
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
 }
 
 .btn-save {
@@ -5738,11 +5834,55 @@ sliding-card [slot="menu"] span {
     .history-table .col-time { width: 80px; font-size: 11px; }
 
     .history-list-col {
-        padding: 12px;
+        padding: 0;
     }
 
     .history-list {
         gap: 6px;
+        padding: 12px;
+    }
+
+    /* Mobile-friendly filter controls */
+    .history-log-controls {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        padding: 0 12px 12px 12px;
+    }
+
+    .history-cat-select,
+    .history-sort-btn {
+        height: 44px;
+        padding: 0 12px;
+        font-size: 13px;
+    }
+
+    .history-cat-select {
+        max-width: none;
+        flex: 1;
+        min-width: 140px;
+        background-position: right 10px center;
+    }
+
+    .history-sort-btn {
+        flex: 0 0 auto;
+    }
+
+    /* Mobile-friendly header */
+    .history-list-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        align-items: stretch;
+    }
+
+    .activity-log-toggle-btn {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .history-list-title {
+        font-size: 16px;
     }
 
     /* ── ACTIVITY LOG CARDS (Mobile - Dense) ─────────────────── */

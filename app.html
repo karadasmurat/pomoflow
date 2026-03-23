@@ -744,14 +744,18 @@
           <div class="history-list-col" id="activityLogCol">
             <div class="history-list-header" id="activityLogToggle">
               <button class="activity-log-toggle-btn" aria-label="Toggle Activity Log">
-                <svg class="activity-log-chevron" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                <i class="ph ph-caret-down activity-log-chevron"></i>
                 <span class="history-list-title">Activity Log</span>
+                <span class="activity-log-count" id="activityLogCount"></span>
               </button>
               <div class="history-log-controls">
                 <select id="historyCategoryFilter" class="history-cat-select">
                   <option value="">All Categories</option>
                 </select>
-                <button id="historySortBtn" class="history-sort-btn">Newest ↕</button>
+                <button id="historySortBtn" class="history-sort-btn">
+                  Newest
+                  <i class="ph ph-arrows-vertical"></i>
+                </button>
               </div>
             </div>
             <div class="history-list" id="historyList"></div>
@@ -1229,8 +1233,8 @@
       </div>
       <div class="confirm-message" id="confirmMessage"></div>
       <div class="confirm-buttons">
-        <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
-        <button class="btn btn-danger" id="confirmOk">Confirm</button>
+        <button class="btn-secondary" id="confirmCancel">Cancel</button>
+        <button class="btn-danger" id="confirmOk"><i class="ph ph-trash"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -4376,10 +4380,10 @@
           <button class="detail-action primary" id="detail-edit-btn"><i class="ph ph-pencil"></i> Edit</button>
         </div>
         <div class="detail-confirm" id="detail-confirm">
-          <span class="detail-confirm-label">Remove this block?</span>
+          <span class="detail-confirm-label">Delete this block?</span>
           <div class="detail-confirm-btns">
             <button class="detail-action" id="detail-cancel-btn">Cancel</button>
-            <button class="detail-action destructive" id="detail-confirm-btn"><i class="ph ph-trash"></i> Remove</button>
+            <button class="detail-action destructive" id="detail-confirm-btn"><i class="ph ph-trash"></i> Delete</button>
           </div>
         </div>
       </div>

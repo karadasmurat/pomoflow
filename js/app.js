@@ -508,7 +508,7 @@ async function toggleFocusAreaComplete(id) {
 }
 
 function deleteFocusArea(id) {
-    confirmAction('Delete focus area?').then(async (conf) => {
+    confirmAction('Delete focus area?', 'delete').then(async (conf) => {
         if (conf) { 
             const success = await FocusService.deleteFocusArea(id);
             if (success) {
@@ -519,7 +519,7 @@ function deleteFocusArea(id) {
 }
 
 function deleteSession(id) {
-    confirmAction('Delete session record?').then(async (conf) => {
+    confirmAction('Delete session record?', 'delete').then(async (conf) => {
         if (conf) {
             state.sessions = state.sessions.filter(s => s.id !== id);
             if (dbManager.initialized) { console.log('[deleteSession]', id); await dbManager.deleteSession(id); }
@@ -929,7 +929,9 @@ function closeSettings() {
         soundVolume: parseInt(document.getElementById('soundVolume').value)
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');
-    saveData(); refreshUI();
+    saveData();
+    timer.applyMode(state.timerState.mode); // Re-apply timer mode with new durations
+    refreshUI();
     NotificationService.notifyAction('SETTINGS_SAVED');
 }
 
@@ -1027,7 +1029,7 @@ function saveCategoryFromModal() {
 }
 
 function deleteCategory(name) {
-    confirmAction(`Delete category "${name}"? Focus areas will be moved to Uncategorized.`).then(conf => {
+    confirmAction(`Delete category "${name}"? Focus areas will be moved to Uncategorized.`, 'delete').then(conf => {
         if (conf) {
             state.categories = state.categories.filter(c => c.name !== name);
             state.tasks.forEach(t => {
@@ -1088,19 +1090,31 @@ function notify(msg, type = '') {
         }, 5000);
     }
 }
-function confirmAction(msg) {
+function confirmAction(msg, actionType = 'confirm') {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirmModal');
         const messageEl = document.getElementById('confirmMessage');
         const okBtn = document.getElementById('confirmOk');
         const cancelBtn = document.getElementById('confirmCancel');
-        
+
         if (!modal || !messageEl || !okBtn || !cancelBtn) {
             resolve(confirm(msg));
             return;
         }
 
         messageEl.textContent = msg;
+        
+        // Update button text based on action type
+        if (actionType === 'delete') {
+            okBtn.innerHTML = '<i class="ph ph-trash"></i> Delete';
+            okBtn.classList.add('btn-danger');
+            okBtn.classList.remove('btn-primary');
+        } else {
+            okBtn.textContent = 'Confirm';
+            okBtn.classList.remove('btn-danger');
+            okBtn.classList.add('btn-primary');
+        }
+        
         modal.classList.add('open');
 
         const cleanup = (val) => {
@@ -1112,7 +1126,7 @@ function confirmAction(msg) {
 
         okBtn.onclick = () => cleanup(true);
         cancelBtn.onclick = () => cleanup(false);
-        
+
         modal.onclick = (e) => {
             if (e.target === modal) cleanup(false);
         };
@@ -1364,6 +1378,7 @@ function setupEventListeners() {
         'cancelCategoryEdit': () => document.getElementById('categoryEditModal').classList.remove('open'),
         'closeCategoryEdit': () => document.getElementById('categoryEditModal').classList.remove('open'),
         'saveSessionEdit': saveSessionFromModal, 'cancelSessionEdit': () => document.getElementById('sessionEditModal').classList.remove('open'),
+        'closeSessionEdit': () => document.getElementById('sessionEditModal').classList.remove('open'),
         'shareXBtn': () => SettingsService.handleShare('x', 'intent', {}, notify),
         'shareCopyBtn': () => SettingsService.handleShare('copy', 'intent', {}, notify),
         'shareFocusBtn': () => {

@@ -18,7 +18,13 @@ export class TimerView {
         if (timeEl) timeEl.textContent = timeStr;
         document.title = `${timeStr} - PomoFlow`;
         
-        if (modeEl) modeEl.textContent = state.timerState.mode === 'work' ? '🧠 Focus' : '🏖️ Break';
+        if (modeEl) {
+            if (state.timerState.mode === 'work') {
+                modeEl.innerHTML = '<i class="ph ph-pulse"></i> Focus';
+            } else {
+                modeEl.innerHTML = '<i class="ph ph-coffee"></i> Break';
+            }
+        }
         
         this._updateSessionDots();
         this._updateControls(startPauseText, playIcon);
