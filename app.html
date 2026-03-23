@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/planner.css">
   <link rel="stylesheet" href="css/sidenav.css">
+  <link rel="stylesheet" href="css/notifications.css">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="coi-serviceworker.js"></script>
 </head>
@@ -259,6 +260,13 @@
       <div class="sidenav-footer">
         <ul class="sidenav-menu-list">
           <li class="sidenav-menu-item">
+            <a href="#" id="sidenavNotificationsBtn" class="notification-btn-wrapper">
+              <i class="ph ph-bell"></i>
+              <span class="notification-badge" id="desktopNotificationBadge"></span>
+              <span class="sidenav-text">Notifications</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
             <a href="#" id="themeToggle">
               <i class="ph ph-sun" id="themeIcon"></i>
               <span class="sidenav-text">Toggle theme</span>
@@ -292,6 +300,10 @@
       <span id="mobileAvatar">🦉</span>
     </button>
     <div class="mobile-header-spacer"></div>
+    <button class="mobile-header-btn notification-btn-wrapper" id="mobileNotificationsBtn" aria-label="Notifications">
+      <i class="ph ph-bell"></i>
+      <span class="notification-badge" id="mobileNotificationBadge"></span>
+    </button>
     <button class="mobile-header-btn" id="mobileSettingsBtn" aria-label="Settings">
       <i class="ph ph-gear"></i>
     </button>
@@ -4510,6 +4522,29 @@
   </div>
 
   </div><!-- /.app-shell -->
+
+  <aside class="panel notification-panel" id="notificationPanel">
+    <div class="panel-header">
+      <span>Notifications</span>
+      <div class="panel-header-actions">
+          <button class="notification-clear-btn" id="clearNotifications">Clear All</button>
+          <button class="panel-header-btn" id="closeNotifications" aria-label="Close notifications">
+            <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path>
+            </svg>
+          </button>
+      </div>
+    </div>
+
+    <div class="notification-list" id="notificationList">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="notification-empty" id="notificationEmpty">
+      <div class="notification-empty-icon">🔕</div>
+      <div>No new notifications</div>
+    </div>
+  </aside>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {

@@ -114,6 +114,7 @@ export let state = {
         targetEndTime: null,
         activeTaskId: null
     },
+    notifications: [],
     notificationPermission: 'default',
     lastSessionId: null,
     lastTaskId: null,

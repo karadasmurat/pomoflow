@@ -69,6 +69,18 @@ CREATE TABLE IF NOT EXISTS planned_blocks (
     updated_at         TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id          TEXT PRIMARY KEY,
+    user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    message     TEXT NOT NULL,
+    type        TEXT DEFAULT 'info',
+    is_read     BOOLEAN DEFAULT false,
+    is_deleted  BOOLEAN DEFAULT false,
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    updated_at  TIMESTAMPTZ DEFAULT now(),
+    deleted_at  TIMESTAMPTZ
+);
+
 -- ── ROW LEVEL SECURITY ────────────────────────────────────────────────────────
 
 ALTER TABLE focus_areas    ENABLE ROW LEVEL SECURITY;
@@ -76,6 +88,7 @@ ALTER TABLE sessions       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE aims           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE paths          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planned_blocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications  ENABLE ROW LEVEL SECURITY;
 
 -- Full CRUD — users can only read/write their own rows
 CREATE POLICY "users manage own data" ON focus_areas
@@ -88,6 +101,8 @@ CREATE POLICY "users manage own data" ON paths
     USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 CREATE POLICY "users manage own data" ON planned_blocks
     USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users manage own data" ON notifications
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- ── INDEXES ───────────────────────────────────────────────────────────────────
 
@@ -96,3 +111,4 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user       ON sessions(user_id, updated_
 CREATE INDEX IF NOT EXISTS idx_aims_user           ON aims(user_id, updated_at);
 CREATE INDEX IF NOT EXISTS idx_paths_user          ON paths(user_id, updated_at);
 CREATE INDEX IF NOT EXISTS idx_planned_blocks_user ON planned_blocks(user_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_user  ON notifications(user_id, updated_at);

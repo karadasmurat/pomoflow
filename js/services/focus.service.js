@@ -1,8 +1,10 @@
 import { state, mutations } from '../state/store.js';
+import { dbManager } from '../db.js';
 import { uuidv7 } from '../utils/uuid.js';
+import { NotificationService } from './notification.service.js';
 
 export class FocusService {
-    static addFocusArea(name, category, color) {
+    static async addFocusArea(name, category, color) {
         if (!name) return null;
 
         const now = new Date().toISOString();
@@ -18,18 +20,59 @@ export class FocusService {
         };
         state.tasks.push(task);
         state.lastTaskId = task.id;
+
+        if (dbManager.initialized) {
+            await dbManager.insertFocusArea(task);
+        }
+
+        NotificationService.notifyAction('TASK_CREATED', { name });
         return task;
     }
 
-    static deleteFocusArea(id) {
+    static async updateFocusArea(id, updates) {
+        const task = state.tasks.find(t => t.id === id);
+        if (!task) return null;
+
+        Object.assign(task, updates);
+        task.updated_at = new Date().toISOString();
+
+        if (dbManager.initialized) {
+            await dbManager.insertFocusArea(task);
+        }
+
+        NotificationService.notifyAction('TASK_UPDATED', { name: task.name });
+        return task;
+    }
+
+    static async deleteFocusArea(id) {
         const index = state.tasks.findIndex(t => t.id === id);
         if (index !== -1) {
+            const name = state.tasks[index].name;
             state.tasks.splice(index, 1);
-            // Also clean up sessions or keep them? 
-            // Current app logic seems to keep sessions but they lose the link.
+            
+            if (dbManager.initialized) {
+                await dbManager.deleteFocusArea(id);
+            }
+
+            NotificationService.notifyAction('TASK_DELETED', { name });
             return true;
         }
         return false;
+    }
+
+    static async toggleComplete(id) {
+        const t = state.tasks.find(x => x.id === id);
+        if (!t) return false;
+
+        t.completed = !t.completed;
+        t.updated_at = new Date().toISOString();
+
+        if (dbManager.initialized) {
+            await dbManager.insertFocusArea(t);
+        }
+
+        NotificationService.notifyAction(t.completed ? 'TASK_COMPLETED' : 'TASK_REACTIVATED', { name: t.name });
+        return true;
     }
 
     static addXP(amt) {

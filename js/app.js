@@ -15,6 +15,8 @@ import { FocusView } from './ui/focus.view.js';
 import { TimerView } from './ui/timer.view.js';
 import { DashboardView } from './ui/dashboard.view.js';
 import { PlannerView } from './ui/planner.view.js';
+import { NotificationView } from './ui/notifications.view.js';
+import { NotificationService } from './services/notification.service.js';
 import { syncService } from './services/sync.service.js';
 import { supabase } from './services/supabase.js';
 
@@ -25,10 +27,19 @@ let historyPage = 0;
 const HISTORY_PAGE_SIZE = 20;
 let editingSessionId = null;
 let editingTaskId = null;
+let notificationView;
 
 // --- 1. INITIALIZATION ---
 
 async function init() {
+    // Initialize NotificationView early so UI is responsive
+    try {
+        notificationView = new NotificationView();
+        window.notificationView = notificationView;
+    } catch (e) {
+        console.error('Failed to init NotificationView:', e);
+    }
+
     // ── Auth gate ────────────────────────────────────────────────────────────
     // Handle magic link callback — only when code param is present
     if (new URLSearchParams(window.location.search).has('code')) {
@@ -73,6 +84,8 @@ async function init() {
                 state.activeCategoryIndex = p.activeCategoryIndex || 0;
             }
 
+            if (fullState.notifications) state.notifications = fullState.notifications;
+
             if (fullState.appState) {
                 if (fullState.appState.timer_state) state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
                 if (fullState.appState.categories) state.categories = fullState.appState.categories;
@@ -91,6 +104,8 @@ async function init() {
                 }
             }
         }
+        // Re-render notifications with loaded state
+        notificationView.render();
     }
 
     if (state.tasks.length === 0) {
@@ -188,6 +203,13 @@ function checkPathDeadlines() {
     dbManager.getAllPaths().then(paths => {
         const today = new Date().toISOString().split('T')[0];
         const soon = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        const lastNotifiedKey = 'pf_paths_last_notified';
+        let lastNotified = {};
+        try {
+            lastNotified = JSON.parse(localStorage.getItem(lastNotifiedKey) || '{}');
+        } catch(e) {}
+
         paths.forEach(p => {
             if (p.status !== 'active' || !p.deadline) return;
             if (p.deadline < today) {
@@ -195,9 +217,16 @@ function checkPathDeadlines() {
                 dbManager.archivePath(p.id).catch(() => {});
             } else if (p.deadline <= soon) {
                 const days = Math.ceil((new Date(p.deadline) - new Date(today)) / 86400000);
-                notify(`Path "${p.name}" deadline in ${days} day${days === 1 ? '' : 's'}!`);
+                const msg = `Path "${p.name}" deadline in ${days} day${days === 1 ? '' : 's'}!`;
+                
+                // Only notify once per day for this path
+                if (lastNotified[p.id] !== today) {
+                    notify(msg);
+                    lastNotified[p.id] = today;
+                }
             }
         });
+        localStorage.setItem(lastNotifiedKey, JSON.stringify(lastNotified));
     }).catch(() => {});
 }
 
@@ -272,7 +301,7 @@ function resetTimer() {
     timer.stop();
     timer.applyMode(state.timerState.mode);
     refreshUI();
-    notify('Timer reset 🔄');
+    NotificationService.notifyAction('TIMER_RESET');
 }
 
 function handleSessionComplete(isSkip = false) {
@@ -422,19 +451,10 @@ async function addFocusArea() {
             document.getElementById('selectedIconDisplay').textContent = '📁';
         }
         
-        let task;
         const isEdit = !!editingTaskId;
-        if (editingTaskId) {
-            task = state.tasks.find(t => t.id === editingTaskId);
-            if (task) {
-                task.name = name;
-                task.category = cat;
-                task.color = state.selectedTaskColor;
-                task.updated_at = new Date().toISOString();
-            }
-        } else {
-            task = FocusService.addFocusArea(name, cat, state.selectedTaskColor);
-        }
+        const task = isEdit 
+            ? await FocusService.updateFocusArea(editingTaskId, { name, category: cat, color: state.selectedTaskColor })
+            : await FocusService.addFocusArea(name, cat, state.selectedTaskColor);
         
         if (task) {
             input.value = '';
@@ -455,7 +475,6 @@ async function addFocusArea() {
 
             state.activeCategoryIndex = activeCats.indexOf(task.category || 'Uncategorized');
 
-            if (dbManager.initialized) await dbManager.insertFocusArea(task);
             await saveData();
             
             const wrapper = document.getElementById('focusAreaCreateWrapper');
@@ -467,7 +486,6 @@ async function addFocusArea() {
 
             renderFocusAreas();
             if (!isEdit && task.category) FocusView.drillInto(task.category);
-            notify(isEdit ? `Updated: ${name} ✅` : `Added: ${name} ✨`);
         }
     } catch (e) {
         console.error('Failed to add/update focus area:', e);
@@ -479,40 +497,33 @@ async function addFocusArea() {
     }
 }
 
-function toggleFocusAreaComplete(id) {
-    const t = state.tasks.find(x => x.id === id);
-    if (t) {
-        const isComp = (t.completed === true || t.completed === 1 || t.completed === 'true');
-        const now = new Date().toISOString();
-        t.completed = !isComp;
-        t.updated_at = now;
+async function toggleFocusAreaComplete(id) {
+    const success = await FocusService.toggleComplete(id);
+    if (success) {
+        const t = state.tasks.find(x => x.id === id);
         if (t.completed && state.timerState.activeTaskId === id) state.timerState.activeTaskId = null;
-        if (dbManager.initialized) dbManager.insertFocusArea(t);
         saveData(); renderFocusAreas();
-        notify(t.completed ? 'Focus area completed! ✅' : 'Focus area reactivated 🔄');
     }
 }
 
 function deleteFocusArea(id) {
-    confirmAction('Delete focus area?').then(conf => {
+    confirmAction('Delete focus area?').then(async (conf) => {
         if (conf) { 
-            const t = state.tasks.find(x => x.id === id);
-            const name = t ? t.name : '';
-            FocusService.deleteFocusArea(id);
-            if (dbManager.initialized) { console.log('[deleteFocusArea]', id); dbManager.deleteFocusArea(id); }
-            saveData(); renderFocusAreas(); 
-            notify(`Deleted: ${name} 🗑️`);
+            const success = await FocusService.deleteFocusArea(id);
+            if (success) {
+                saveData(); renderFocusAreas(); 
+            }
         }
     });
 }
 
 function deleteSession(id) {
-    confirmAction('Delete session record?').then(conf => {
+    confirmAction('Delete session record?').then(async (conf) => {
         if (conf) {
             state.sessions = state.sessions.filter(s => s.id !== id);
-            if (dbManager.initialized) { console.log('[deleteSession]', id); dbManager.deleteSession(id); }
+            if (dbManager.initialized) { console.log('[deleteSession]', id); await dbManager.deleteSession(id); }
             saveData(); refreshUI();
-            notify('Session deleted 🗑️');
+            NotificationService.notifyAction('SESSION_DELETED');
         }
     });
 }
@@ -521,10 +532,11 @@ function renderPlan() {
     FocusView.renderPlan({
         onEditAim: (id) => editAim(id),
         onGoAgain: (a) => goAgain(a),
-        onDeleteAim: (id) => { 
+        onDeleteAim: (id) => {
             state.aims = state.aims.filter(x => x.id !== id);
             if (dbManager.initialized) { console.log('[deleteAim]', id); dbManager.deleteAim(id); }
-            saveData(); renderPlan(); notify('Aim removed 🗑️'); 
+            saveData(); renderPlan(); 
+            NotificationService.notifyAction('AIM_REMOVED');
         },
         onShare: (name, mins) => SettingsService.handleShare('x', 'milestone', { focusArea: name, duration: mins }, notify)
     });
@@ -576,7 +588,9 @@ function addAim() {
         const btn = document.getElementById('togglePlanCreate');
         if (btn) btn.classList.remove('active');
     }
-    renderPlan(); renderFocusAreas(); notify('Aim added 🎯'); saveData();
+    renderPlan(); renderFocusAreas(); 
+    NotificationService.notifyAction('AIM_ADDED');
+    saveData();
 }
 
 function editAim(id) {
@@ -617,7 +631,7 @@ function goAgain(aim) {
     state.aims.push(newAim);
     saveData();
     renderPlan();
-    notify('Aim renewed! 🎯');
+    NotificationService.notifyAction('AIM_RENEWED');
 }
 
 function populateCustomFocusAreaSelect() {
@@ -736,7 +750,7 @@ function updatePersona(avatar, mood) {
     updateProfileUI();
     togglePersonaEdit(false);
     saveData();
-    notify(`Persona changed to ${mood} ${avatar} ✨`);
+    NotificationService.notifyAction('PERSONA_CHANGED', { avatar, mood });
 }
 
 function updateProfileUI() {
@@ -915,7 +929,7 @@ function closeSettings() {
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');
     saveData(); refreshUI();
-    notify('Settings saved ⚙️');
+    NotificationService.notifyAction('SETTINGS_SAVED');
 }
 
 function openSessionEditModal(s) {
@@ -930,7 +944,7 @@ function saveSessionFromModal() {
     const s = state.sessions.find(x => x.id === editingSessionId);
     if (s && mins > 0) {
         s.duration = mins * 60; saveData(); refreshUI();
-        notify('Session updated ✅');
+        NotificationService.notifyAction('SESSION_UPDATED');
     }
     document.getElementById('sessionEditModal').classList.remove('open');
 }
@@ -1006,7 +1020,7 @@ function saveCategoryFromModal() {
         saveData();
         refreshUI();
         FocusView.populateCategorySelects();
-        notify(`Category updated: ${newName} ✅`);
+        NotificationService.notifyAction('CATEGORY_UPDATED', { name: newName });
     }
     document.getElementById('categoryEditModal').classList.remove('open');
 }
@@ -1021,7 +1035,7 @@ function deleteCategory(name) {
             saveData();
             refreshUI();
             FocusView.populateCategorySelects();
-            notify(`Category "${name}" deleted 🗑️`);
+            NotificationService.notifyAction('CATEGORY_DELETED', { name });
         }
     });
 }
@@ -1034,7 +1048,7 @@ function moveTaskToCategory(taskId, newCat) {
         if (dbManager.initialized) dbManager.insertFocusArea(t);
         saveData();
         refreshUI();
-        notify(`Moved to ${newCat} 📦`);
+        NotificationService.notifyAction('MOVED_TO_CATEGORY', { name: newCat });
     }
 }
 
@@ -1042,10 +1056,11 @@ function moveTaskToCategory(taskId, newCat) {
 
 function saveData() {
     if (dbManager.initialized) {
-        console.log('[saveData] persisting full state');
+        // console.log('[saveData] persisting full state');
         dbManager.saveFullState(state).catch(e => console.error('Failed to save to DB:', e));
     }
 }
+window.saveData = saveData; // Expose for NotificationView
 
 function updateDateTime() {
     const el = document.getElementById('datetime'); if (!el) return;
@@ -1054,23 +1069,23 @@ function updateDateTime() {
 }
 
 function notify(msg, type = '') {
-    const toast = document.createElement('div');
-    toast.className = `toast show ${type}`;
-
-    toast.innerHTML = `
-        <div class="toast-content">${msg}</div>
-        <div class="toast-progress-container">
-            <div class="toast-progress"></div>
-        </div>
-    `;
-
-    document.body.appendChild(toast);
-
-    // Auto-remove after 5s (matching animation)
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+    if (notificationView) {
+        notificationView.add(msg, type);
+    } else {
+        const toast = document.createElement('div');
+        toast.className = `toast show ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">${msg}</div>
+            <div class="toast-progress-container">
+                <div class="toast-progress"></div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
 }
 function confirmAction(msg) {
     return new Promise((resolve) => {

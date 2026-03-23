@@ -43,12 +43,14 @@ class SyncService {
                 { data: plannedBlocks },
                 { data: sessions },
                 { data: aims },
+                { data: notifications },
             ] = await Promise.all([
-                filter(supabase.from('focus_areas').select('*')),
-                filter(supabase.from('paths').select('*')),
-                filter(supabase.from('planned_blocks').select('*')),
-                filter(supabase.from('sessions').select('*').order('timestamp', { ascending: false }).limit(500)),
-                filter(supabase.from('aims').select('*')),
+                filter(supabase.from('focus_areas').select('*').eq('is_deleted', false)),
+                filter(supabase.from('paths').select('*')), // paths don't have is_deleted yet? Checking schema...
+                filter(supabase.from('planned_blocks').select('*').eq('is_deleted', false)),
+                filter(supabase.from('sessions').select('*').eq('is_deleted', false).order('timestamp', { ascending: false }).limit(500)),
+                filter(supabase.from('aims').select('*').eq('is_deleted', false)),
+                filter(supabase.from('notifications').select('*').eq('is_deleted', false).limit(100)),
             ]);
 
             // Upsert in dependency order: paths before planned_blocks
@@ -58,6 +60,14 @@ class SyncService {
                     category: fa.category,
                     completed: fa.is_active === false,
                     created_at: fa.created_at, updated_at: fa.updated_at,
+                    skipSync: true,
+                });
+            }
+            for (const n of notifications || []) {
+                await dbManager.insertNotification({
+                    id: n.id, message: n.message, type: n.type,
+                    read: n.is_read, is_deleted: n.is_deleted,
+                    created_at: n.created_at, updated_at: n.updated_at,
                     skipSync: true,
                 });
             }
@@ -103,7 +113,7 @@ class SyncService {
                 });
             }
 
-            const total = (focusAreas?.length || 0) + (paths?.length || 0) + (plannedBlocks?.length || 0) + (sessions?.length || 0) + (aims?.length || 0);
+            const total = (focusAreas?.length || 0) + (paths?.length || 0) + (plannedBlocks?.length || 0) + (sessions?.length || 0) + (aims?.length || 0) + (notifications?.length || 0);
             if (total > 0) console.log(`[Sync] pulled ${total} record(s) from cloud ✓`);
 
             localStorage.setItem(LAST_PULLED_KEY, pullStart);
@@ -262,6 +272,37 @@ async function replayOperation(userId, operation, payload, changedAt) {
         case 'DELETE_PATH':
             await supabase.from('paths')
                 .delete().eq('id', payload.id).throwOnError();
+            break;
+
+        case 'UPSERT_NOTIFICATION':
+            await supabase.from('notifications').upsert({
+                id: payload.id, user_id: userId,
+                message: payload.message, type: payload.type,
+                is_read: payload.is_read ? true : false,
+                is_deleted: false,
+                updated_at: changedAt,
+            }, { onConflict: 'id' }).throwOnError();
+            break;
+
+        case 'DELETE_NOTIFICATION':
+            await supabase.from('notifications')
+                .update({ 
+                    is_deleted: true, 
+                    updated_at: changedAt,
+                    deleted_at: changedAt 
+                })
+                .eq('id', payload.id).throwOnError();
+            break;
+
+        case 'CLEAR_NOTIFICATIONS':
+            await supabase.from('notifications')
+                .update({ 
+                    is_deleted: true, 
+                    updated_at: changedAt,
+                    deleted_at: changedAt 
+                })
+                .eq('user_id', userId)
+                .eq('is_deleted', false).throwOnError();
             break;
 
         default:

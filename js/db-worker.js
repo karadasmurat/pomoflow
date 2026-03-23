@@ -23,7 +23,7 @@ let sqlite3 = null;
 //   4 → 5  Fix: transition detector was stamping CURRENT_SCHEMA_VERSION (4) directly,
 //           skipping sync_log creation. Re-create idempotently for affected databases.
 
-const CURRENT_SCHEMA_VERSION = 6;
+const CURRENT_SCHEMA_VERSION = 8;
 
 function migrate(db) {
     let version = db.exec("PRAGMA user_version", { returnValue: 'resultRows' })[0][0];
@@ -244,6 +244,36 @@ function migrate(db) {
         db.exec("ALTER TABLE planned_blocks ADD COLUMN reminder_sent INTEGER DEFAULT 0");
         db.exec("PRAGMA user_version = 6");
         console.log('Migration 5→6 complete');
+    }
+
+    // ── v6 → v7: relational notifications ────────────────────────────────────
+    if (version < 7) {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS notifications (
+                id TEXT PRIMARY KEY,
+                message TEXT NOT NULL,
+                type TEXT DEFAULT 'info',
+                is_read INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_deleted INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
+            CREATE TRIGGER IF NOT EXISTS trg_notifications_updated_at AFTER UPDATE ON notifications FOR EACH ROW BEGIN UPDATE notifications SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+            
+            -- Migrate existing blob data if possible (best effort)
+            -- Note: Since we are in the worker, we don't have easy access to app_state blob parsing without JSON support
+            -- But we can delete the blob key to clean up.
+            DELETE FROM app_state WHERE key = 'notifications';
+        `);
+        db.exec("PRAGMA user_version = 7");
+        console.log('Migration 6→7 complete');
+    }
+
+    if (version < 8) {
+        db.exec("ALTER TABLE notifications ADD COLUMN deleted_at DATETIME");
+        db.exec("PRAGMA user_version = 8");
+        console.log('Migration 7→8 complete');
     }
 }
 
@@ -502,6 +532,49 @@ self.onmessage = async (e) => {
                     db.exec("DELETE FROM planned_blocks WHERE id = ?", { bind: [payload.id] });
                     logSync('DELETE_PLANNED_BLOCK', { id: payload.id });
                 });
+                break;
+            case 'insert_notification':
+                withTransaction(() => {
+                    db.exec(`
+                        INSERT INTO notifications (id, message, type, is_read, created_at, updated_at, is_deleted)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            message = excluded.message,
+                            type = excluded.type,
+                            is_read = excluded.is_read,
+                            is_deleted = excluded.is_deleted,
+                            updated_at = excluded.updated_at
+                    `, {
+                        bind: [payload.id, payload.message, payload.type, payload.is_read ? 1 : 0, payload.created_at || new Date().toISOString(), payload.updated_at || new Date().toISOString(), payload.is_deleted ? 1 : 0]
+                    });
+                    if (!payload.skipSync) logSync('UPSERT_NOTIFICATION', {
+                        id: payload.id, message: payload.message, type: payload.type,
+                        is_read: payload.is_read ? 1 : 0, is_deleted: payload.is_deleted ? 1 : 0
+                    });
+                });
+                break;
+            case 'delete_notification':
+                withTransaction(() => {
+                    db.exec("UPDATE notifications SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?", {
+                        bind: [payload.id]
+                    });
+                    logSync('DELETE_NOTIFICATION', { id: payload.id });
+                });
+                break;
+            case 'mark_notifications_read':
+                // payload.ids can be passed to mark specific ones, or empty to mark all
+                withTransaction(() => {
+                    db.exec(`UPDATE notifications SET is_read = 1, updated_at = CURRENT_TIMESTAMP WHERE is_read = 0 AND is_deleted = 0`);
+                });
+                break;
+            case 'clear_all_notifications':
+                withTransaction(() => {
+                    db.exec("UPDATE notifications SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE is_deleted = 0");
+                    logSync('CLEAR_NOTIFICATIONS', {});
+                });
+                break;
+            case 'get_all_notifications':
+                result = db.exec("SELECT * FROM notifications WHERE is_deleted = 0 ORDER BY created_at DESC", { returnValue: 'resultRows', rowMode: 'object' });
                 break;
             case 'get_planned_blocks_for_week':
                 result = db.exec(`

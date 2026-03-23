@@ -282,14 +282,15 @@ class DatabaseManager {
     async getFullState() {
         if (this.disabled) return null;
         
-        const [tasks, sessions, aims, settings, profile, appState, paths] = await Promise.all([
+        const [tasks, sessions, aims, settings, profile, appState, paths, notifications] = await Promise.all([
             this.getAllFocusAreas(),
             this.getAllSessions(),
             this.getAllAims(),
             this.getAllSettings(),
             this.getUserProfile(),
             this.getAppState(),
-            this.getAllPaths()
+            this.getAllPaths(),
+            this.getAllNotifications()
         ]);
 
         return {
@@ -297,6 +298,7 @@ class DatabaseManager {
             sessions: sessions || [],
             aims: aims || [],
             paths: paths || [],
+            notifications: notifications || [],
             settings: Object.keys(settings).length > 0 ? settings : null,
             profile: Object.keys(profile).length > 0 ? profile : null,
             appState: Object.keys(appState).length > 0 ? appState : null
@@ -322,13 +324,50 @@ class DatabaseManager {
             activeCategoryIndex: state.activeCategoryIndex
         });
 
-        // Save App State (Theme, UI, Timer, Categories)
+        // Save App State (Theme, UI, Timer, Categories) - Notifications handled individually now
         await this.setAppState('timer_state', state.timerState);
         await this.setAppState('categories', state.categories);
         await this.setAppState('ui_state', {
             selectedTaskColor: state.selectedTaskColor,
             selectedFocusAreaIds: state.selectedFocusAreaIds
         });
+    }
+
+    async insertNotification(n) {
+        return this._send('insert_notification', {
+            id: n.id || uuidv7(),
+            message: n.msg || n.message,
+            type: n.type || 'info',
+            is_read: n.read ? 1 : 0,
+            is_deleted: n.is_deleted ? 1 : 0,
+            created_at: n.timestamp || n.created_at,
+            updated_at: n.updated_at || new Date().toISOString(),
+            skipSync: n.skipSync ?? false
+        });
+    }
+    
+    async deleteNotification(id) {
+        return this._send('delete_notification', { id });
+    }
+
+    async markNotificationsRead() {
+        return this._send('mark_notifications_read');
+    }
+
+    async clearAllNotifications() {
+        return this._send('clear_all_notifications');
+    }
+
+    async getAllNotifications() {
+        const rows = await this._send('get_all_notifications');
+        if (!rows) return [];
+        return rows.map(r => ({
+            id: r.id,
+            msg: r.message,
+            type: r.type,
+            read: r.is_read === 1,
+            timestamp: r.created_at
+        }));
     }
 }
 
