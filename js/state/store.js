@@ -113,7 +113,8 @@ export let state = {
         cycleStation: 1,
         startTime: null,
         targetEndTime: null,
-        activeTaskId: null
+        activeTaskId: null,
+        queuedTaskId: null
     },
     notifications: [],
     notificationPermission: 'default',

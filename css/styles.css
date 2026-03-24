@@ -1002,11 +1002,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 
 
 .timer-focus-area-display {
-    margin-top: 12px;
-    margin-bottom: 24px;
-    display: flex;
-    justify-content: center;
-    width: 100%;
+    /* replaced by .context-strip */
 }
 
 .timer-focus-area-container {
@@ -1174,14 +1170,14 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 }
 
 .focus-area-question {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-secondary);
-    font-weight: 600;
-    opacity: 0.6;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
+    font-weight: 400;
+    opacity: 0.75;
     white-space: nowrap;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (max-width: 480px) {
@@ -1309,40 +1305,38 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     color: var(--text-primary);
 }
 
-/* --- Upcoming Block Strip --- */
-.upcoming-block-strip {
+/* --- Context Strip (unified planned block + focus area bridge) --- */
+.context-strip {
     width: 100%;
     max-width: 320px;
-    margin: 0 auto 8px;
+    margin: 0 auto 16px;
     border-radius: var(--r-lg);
     background: var(--surface-elevated);
     border: 1px solid var(--border);
     overflow: hidden;
     transition: border-color 0.2s ease;
 }
-.upcoming-block-strip[data-state="active"] {
+.context-strip[data-block-state="active"] {
     border-color: var(--accent);
 }
-.upcoming-block-strip[data-state="empty"] {
-    background: transparent;
-    border-color: transparent;
-    text-align: center;
-}
-.ubs-collapsed {
+
+/* Block context row */
+.cs-block-collapsed {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
     user-select: none;
 }
-.ubs-dot {
+.cs-block-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
 }
-.ubs-label {
+.cs-block-label {
     flex: 1;
     font-size: 12px;
     color: var(--text-secondary);
@@ -1350,7 +1344,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.ubs-expand-btn {
+.cs-expand-btn {
     background: none;
     border: none;
     padding: 0;
@@ -1361,78 +1355,123 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     font-size: 12px;
     flex-shrink: 0;
 }
-.ubs-expand-btn:hover {
-    color: var(--text-secondary);
+.cs-expand-btn:hover { color: var(--text-secondary); }
+.cs-start-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-xs);
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
 }
-.ubs-expanded {
-    padding: 0 12px 12px;
-    border-top: 1px solid var(--border);
+.cs-start-btn:hover { opacity: 0.85; }
+.cs-conflict-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+.cs-switch-btn,
+.cs-after-btn {
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xs);
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.cs-switch-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+.cs-after-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.cs-queued-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.cs-block-expanded {
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
-.ubs-expanded[hidden] {
-    display: none;
-}
-.ubs-detail-row {
+.cs-block-expanded[hidden] { display: none; }
+.cs-block-expanded-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-top: 10px;
 }
-.ubs-area-dot {
-    width: 10px;
-    height: 10px;
+.cs-block-area-dot {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
 }
-.ubs-area-name {
+.cs-block-area-name {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
 }
-.ubs-meta {
-    font-size: 12px;
+.cs-block-meta {
+    font-size: 11px;
     color: var(--text-secondary);
     font-family: var(--font-mono);
 }
-.ubs-notes {
-    font-size: 12px;
+.cs-block-notes {
+    font-size: 11px;
     color: var(--text-muted);
     font-style: italic;
 }
-.ubs-start-btn {
-    margin-top: 4px;
-    align-self: flex-start;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--r-sm);
-    padding: 5px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s ease;
-}
-.ubs-start-btn:hover {
-    opacity: 0.85;
-}
-.ubs-empty {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-.ubs-plan-link {
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--text-muted);
-    font-size: 12px;
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-.ubs-plan-link:hover {
+.cs-block-desc {
+    font-size: 11px;
     color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Focus area row — always visible */
+.cs-focus-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    min-height: 44px;
+}
+
+/* Focus area link overrides inside the strip */
+.context-strip .timer-focus-area-link {
+    margin-left: auto;
+    background: var(--bg);
+    flex-shrink: 0;
+}
+.context-strip .timer-focus-area-link:hover {
+    background: var(--border);
+    border-color: var(--text-secondary);
+    transform: none;
+}
+.context-strip .timer-focus-area-link.is-empty {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+    box-shadow: 0 1px 4px rgba(88, 166, 255, 0.2);
+}
+.context-strip .timer-focus-area-link.is-empty:hover {
+    transform: scale(1.05);
 }
 
 .set-aim-cta {
@@ -2906,7 +2945,7 @@ sliding-card[active] .focus-area-play-btn {
     position: relative;
     width: 280px;
     height: 280px;
-    margin: 0 auto 12px;
+    margin: 0 auto 16px;
 }
 
 @keyframes timer-complete-pulse {
@@ -2931,7 +2970,7 @@ sliding-card[active] .focus-area-play-btn {
 
 .timer-ring-bg {
     fill: none;
-    stroke: var(--bg);
+    stroke: rgba(255, 255, 255, 0.07);
     stroke-width: 8;
 }
 
@@ -3020,23 +3059,29 @@ sliding-card[active] .focus-area-play-btn {
 .timer-time {
     font-family: var(--font-time);
     font-size: 64px;
-    font-weight: 300;
+    font-weight: 200;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1;
 }
 
 .timer-mode {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--danger);
+    margin-top: 6px;
+    letter-spacing: 0.02em;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    transition: color 0.4s ease;
+}
+
+.timer-mode.break-mode {
+    color: var(--success);
 }
 
 .timer-mode i.ph {
@@ -3059,15 +3104,15 @@ sliding-card[active] .focus-area-play-btn {
 
 .orbiter {
     position: absolute;
-    pointer-events: auto; /* Re-enable for buttons */
-    --distance: 128px; /* Pulled even closer to the ring */
-    --base-angle: 90deg; /* Initial trigger position (3 o'clock) */
-    
-    /* Default collapsed state (at trigger position) */
+    pointer-events: auto;
+    --distance: 128px;
+    --base-angle: 90deg;
+
+    /* Default collapsed state */
     transform: rotate(var(--base-angle)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--base-angle)));
     opacity: 0;
     scale: 0.8;
-    
+
     width: 34px;
     height: 34px;
     display: flex;
@@ -3075,66 +3120,71 @@ sliding-card[active] .focus-area-play-btn {
     justify-content: center;
     border-radius: 50%;
     padding: 0;
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 500;
     background: var(--surface-elevated);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border);
+    box-shadow: none;
     color: var(--text-secondary);
     transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 100;
 }
 
 .orbiter.trigger {
-    --distance: 172px; /* Positioned entirely outside the ring, barely touching the outer border */
+    --distance: 172px;
     opacity: 1;
     z-index: 101;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    width: 24px;
-    height: 24px;
-    /* Consolidate scale into transform for stability */
-    transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(0.85);
+    background: var(--surface);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg)));
     transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
-    color: var(--gold); /* Gold accent for the icon */
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: crown-intro 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) 1s both;
 }
 
 .orbiter.trigger:hover {
-    background: var(--surface-elevated); /* Keep stable background */
-    border-color: var(--gold); /* Highlight border in gold */
-    box-shadow: 0 0 15px var(--gold-glow);
+    border-color: var(--timer-accent);
+    box-shadow: 0 0 14px var(--timer-accent-glow);
+    color: var(--text-primary);
 }
 
 [data-theme="light"] .orbiter.trigger {
-    background: var(--border); /* Slightly darker gray for contrast */
+    background: var(--surface);
+    border-color: rgba(0, 0, 0, 0.15);
 }
 
-.orbiter.trigger svg {
-    opacity: 1; /* Maximum visibility */
-    filter: drop-shadow(0 0 2px var(--gold-glow));
+@keyframes crown-intro {
+    0%   { box-shadow: 0 0 0 0 transparent; border-color: rgba(255, 255, 255, 0.2); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1); }
+    40%  { box-shadow: 0 0 16px var(--timer-accent-glow); border-color: var(--timer-accent); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1.18); }
+    100% { box-shadow: 0 0 0 0 transparent; border-color: rgba(255, 255, 255, 0.2); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1); }
 }
 
-/* Connecting Stem - Refined as a subtle gray needle */
+/* Connecting stem */
 .orbiter.trigger::after {
     content: '';
     position: absolute;
-    top: 50%; 
-    right: 12px; /* Starts at crown center */
+    top: 50%;
+    right: 12px;
     transform: translateY(-50%);
-    width: 42px; /* Bridges the gap from the new outer position to the ring */
-    height: 2px; /* Thinner needle-like connection */
+    width: 42px;
+    height: 1px;
     background: var(--border);
     z-index: -1;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
-/* Interaction Sequence - Crown pulls out slightly but stays attached */
+/* Crown pulls out when orbit opens */
 .timer-container.orbit-open .orbiter.trigger {
     animation: crown-pull 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    border-color: var(--timer-accent);
 }
+
 
 @keyframes crown-pull {
     0% { transform: rotate(var(--angle)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle))) scale(0.85); }
@@ -3191,31 +3241,30 @@ sliding-card[active] .focus-area-play-btn {
 }
 
 .orbiter.adj-btn {
-    width: 26px !important; /* Enlarged to 26px */
+    width: 26px !important;
     height: 26px !important;
     min-width: 26px !important;
     min-height: 26px !important;
     font-size: 16px;
-    font-weight: 800;
-    color: var(--primary);
+    font-weight: 700;
+    color: var(--text-secondary);
     background: var(--surface-elevated) !important;
-    border: 1px solid var(--primary) !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
     --distance: 128px;
-    opacity: 0; /* Hidden by default */
-    pointer-events: none; /* Non-interactive by default */
+    opacity: 0;
+    pointer-events: none;
     z-index: 102;
 }
 
 .orbiter.adj-btn:hover {
-    background: var(--primary) !important;
-    color: white;
+    color: var(--timer-accent);
+    border-color: var(--timer-accent) !important;
     transform: rotate(var(--angle)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle))) scale(1.2);
 }
 
 .orbiter.adj-btn:active {
     scale: 0.9;
-    color: var(--primary-light, #88c0ff);
 }
 
 .orbit.open .orbiter.option {
@@ -3227,10 +3276,8 @@ sliding-card[active] .focus-area-play-btn {
 }
 
 .orbiter.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
+    color: var(--timer-accent);
+    border-color: var(--timer-accent);
     font-weight: 700;
 }
 
@@ -3284,8 +3331,8 @@ sliding-card[active] .focus-area-play-btn {
 .session-progress {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-top: 16px;
+    gap: 8px;
+    margin-top: 14px;
     align-items: center;
 }
 
@@ -3293,7 +3340,7 @@ sliding-card[active] .focus-area-play-btn {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    border: 1.5px solid var(--border);
+    border: 2px solid rgba(255, 255, 255, 0.25);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -3307,13 +3354,13 @@ sliding-card[active] .focus-area-play-btn {
 
 .progress-step.completed {
     border-color: var(--success);
-    background: transparent;
+    background: var(--success);
 }
 
 .timer-controls {
     display: flex;
     gap: 20px;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
     position: relative;
     z-index: 10;
     width: 100%;
@@ -3344,14 +3391,19 @@ sliding-card[active] .focus-area-play-btn {
     width: 72px !important;
     height: 72px !important;
     min-width: 72px !important;
-    background: var(--primary) !important;
+    background: var(--danger) !important;
     color: var(--text-on-accent) !important;
-    box-shadow: 0 8px 32px rgba(88, 166, 255, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px var(--danger-glow), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    transition: all 0.4s ease;
+}
+
+.btn-timer-primary.break-mode {
+    background: var(--success) !important;
+    box-shadow: 0 8px 32px var(--success-glow), inset 0 2px 4px rgba(255, 255, 255, 0.15);
 }
 
 .btn-timer-primary:hover {
     transform: scale(1.06) translateY(-2px);
-    box-shadow: 0 12px 40px rgba(88, 166, 255, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.2);
     filter: brightness(1.1);
 }
 
@@ -3359,18 +3411,17 @@ sliding-card[active] .focus-area-play-btn {
     width: 48px !important;
     height: 48px !important;
     min-width: 48px !important;
-    background: var(--surface-elevated) !important;
+    background: none !important;
     color: var(--text-secondary) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .btn-timer-secondary:hover {
-    background: var(--surface-elevated) !important;
+    background: none !important;
     color: var(--text-primary) !important;
-    transform: scale(1.08) translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    border-color: transparent !important;
+    transform: scale(1.12);
+    box-shadow: none !important;
 }
 
 /* Standard Rounded Rectangle Buttons */
@@ -5566,14 +5617,6 @@ sliding-card [slot="menu"] span {
     opacity: 1;
 }
 
-.fa-row-color {
-    width: 4px;
-    height: 20px;
-    border-radius: 2px;
-    flex-shrink: 0;
-    margin-right: 12px;
-}
-
 .fa-row-name {
     flex: 1;
     min-width: 0;
@@ -5588,31 +5631,25 @@ sliding-card [slot="menu"] span {
 .fa-row-play {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-elevated);
-    border: 1.5px solid var(--border);
-    color: var(--text-secondary);
-    font-size: 14px;
+    background: none;
+    border: none;
+    font-size: 22px;
     cursor: pointer;
     flex-shrink: 0;
-    opacity: 1; /* Permanently visible */
-    transition: all 0.2s ease;
-    margin-right: 12px; /* Spacing after play button */
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    margin-right: 8px;
+    opacity: 0.85;
 }
 
-.fa-row-play.active { 
-    color: var(--success); 
-    border-color: var(--success);
-    background: var(--success-muted);
+.fa-row-play.active {
+    opacity: 1;
 }
-.fa-row-play:hover { 
-    background: var(--success); 
-    color: white; 
-    border-color: var(--success);
-    transform: scale(1.1);
+.fa-row-play:hover {
+    transform: scale(1.15);
+    opacity: 1;
 }
 
 .fa-row-more { 
@@ -5641,12 +5678,7 @@ sliding-card [slot="menu"] span {
         opacity: 1 !important;
     }
 
-    .fa-row-play {
-        background: var(--surface-elevated);
-        border-color: var(--border);
-    }
-
-    .fa-cat-name, .fa-row-name {
+.fa-cat-name, .fa-row-name {
         font-size: 15px;
     }
 

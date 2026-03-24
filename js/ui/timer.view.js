@@ -21,8 +21,10 @@ export class TimerView {
         if (modeEl) {
             if (state.timerState.mode === 'work') {
                 modeEl.innerHTML = '<i class="ph ph-pulse"></i> Focus';
+                modeEl.classList.remove('break-mode');
             } else {
                 modeEl.innerHTML = '<i class="ph ph-coffee"></i> Break';
+                modeEl.classList.add('break-mode');
             }
         }
         
@@ -94,6 +96,9 @@ export class TimerView {
     }
 
     static _updateControls(startPauseText, playIcon) {
+        const btn = document.getElementById('startPauseBtn');
+        const isBreak = state.timerState.mode !== 'work';
+
         if (state.timerState.isRunning) {
             if (startPauseText) startPauseText.textContent = 'Pause';
             if (playIcon) playIcon.innerHTML = '<path d="M200,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h24A16,16,0,0,1,200,48ZM96,32H72A16,16,0,0,0,56,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"></path>';
@@ -103,6 +108,8 @@ export class TimerView {
             if (playIcon) playIcon.innerHTML = '<path d="M228.44,112.64l-144-88A16,16,0,0,0,60,38.62V217.38a16,16,0,0,0,24.44,13.34l144-88A16,16,0,0,0,228.44,112.64Z"></path>';
             document.body.classList.remove('timer-running');
         }
+
+        if (btn) btn.classList.toggle('break-mode', isBreak);
     }
 
     static _updateOrbiters() {
@@ -144,7 +151,7 @@ export class TimerView {
             }
             if (questionEl) questionEl.textContent = 'What are you focusing on?';
             if (textEl) {
-                const addIcon = '<span class="focus-area-add-icon"><svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg></span>';
+                const addIcon = '<span class="focus-area-add-icon"><svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path></svg></span>';
                 if (textEl.innerHTML !== addIcon) textEl.innerHTML = addIcon;
                 textEl.style.color = '';
                 textEl.title = '';

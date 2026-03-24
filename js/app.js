@@ -265,9 +265,16 @@ function _fmtDuration(minutes) {
 }
 
 async function renderUpcomingBlockStrip() {
-    const el = document.getElementById('upcomingBlockStrip');
-    if (!el) return;
-    if (!dbManager.initialized) { el.style.display = 'none'; return; }
+    const blockRow = document.getElementById('blockContextRow');
+    const strip = document.getElementById('contextStrip');
+    if (!blockRow || !strip) return;
+
+    const hideBlock = () => {
+        blockRow.style.display = 'none';
+        delete strip.dataset.blockState;
+    };
+
+    if (!dbManager.initialized) { hideBlock(); return; }
 
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -277,54 +284,39 @@ async function renderUpcomingBlockStrip() {
     try {
         blocks = await dbManager.getUpcomingBlocksForToday(today, tomorrow);
     } catch (e) {
-        el.style.display = 'none';
-        return;
+        hideBlock(); return;
     }
 
     const cur = now.getHours() * 60 + now.getMinutes();
     const todayBlocks = blocks.filter(b => b.planned_date === today);
     const tomorrowBlocks = blocks.filter(b => b.planned_date === tomorrow);
 
-    // Active: time window covers now
     const activeBlock = todayBlocks.find(b => b.start_minutes <= cur && (b.start_minutes + b.duration_minutes) > cur);
-    // Grace: block ended in past but within its own duration window (started but not yet over by duration)
     const graceBlock = !activeBlock && todayBlocks.find(b => b.start_minutes <= cur && cur < (b.start_minutes + b.duration_minutes * 2));
-    // Upcoming: starts in future today
     const upcomingBlock = todayBlocks.find(b => b.start_minutes > cur);
-    // Tomorrow fallback
     const tomorrowBlock = tomorrowBlocks[0] || null;
 
     const block = activeBlock || graceBlock || upcomingBlock || tomorrowBlock;
 
-    if (!block) {
-        if (blocks.length === 0) {
-            el.style.display = '';
-            el.dataset.state = 'empty';
-            el.innerHTML = `<span class="ubs-empty">Nothing planned today · <button class="ubs-plan-link">Plan your day →</button></span>`;
-            el.querySelector('.ubs-plan-link').addEventListener('click', () => PlannerView.open());
-        } else {
-            el.style.display = 'none';
-        }
-        return;
-    }
+    if (!block) { hideBlock(); return; }
 
     const isTomorrow = block.planned_date === tomorrow;
-
     const activeTaskId = state.timerState.activeTaskId;
     const isRunning = state.timerState.isRunning;
     const color = block.area_color || '#58a6ff';
     const name = block.area_name || 'Focus';
-    const wasExpanded = el.dataset.expanded === 'true';
+    const wasExpanded = blockRow.dataset.expanded === 'true';
+
+    // Hide block context if user is already focused on this area and timer is running
+    if ((activeBlock || graceBlock) && activeTaskId === block.focus_area_id && isRunning) {
+        hideBlock(); return;
+    }
 
     let stateKey, label, showStart;
     if (activeBlock || graceBlock) {
-        if (activeTaskId === block.focus_area_id && isRunning) {
-            el.style.display = 'none';
-            return;
-        }
         if (isRunning && activeTaskId !== block.focus_area_id) {
             stateKey = 'conflict';
-            label = `${name} · in progress`;
+            label = `📅 ${name} · ${_fmtBlockTime(block.start_minutes)}`;
             showStart = false;
         } else {
             stateKey = 'active';
@@ -342,40 +334,87 @@ async function renderUpcomingBlockStrip() {
         showStart = false;
     }
 
-    el.style.display = '';
-    el.dataset.state = stateKey;
+    strip.dataset.blockState = stateKey;
+    blockRow.style.display = '';
 
-    el.innerHTML = `
-        <div class="ubs-collapsed">
-            <span class="ubs-dot" style="background:${color}"></span>
-            <span class="ubs-label">${label}</span>
-            <button class="ubs-expand-btn" aria-label="${wasExpanded ? 'Collapse' : 'Expand'}">
-                <i class="ph ph-caret-${wasExpanded ? 'up' : 'down'}"></i>
-            </button>
+    const isQueued = state.timerState.queuedTaskId === block.focus_area_id;
+    const hasExpand = stateKey === 'conflict' || stateKey === 'active' || block.notes;
+    const autoExpand = stateKey === 'conflict' && !isQueued;
+    const expanded = wasExpanded || autoExpand;
+
+    const conflictButtons = stateKey === 'conflict'
+        ? isQueued
+            ? `<div class="cs-conflict-actions"><span class="cs-queued-label">After this →</span></div>`
+            : `<div class="cs-conflict-actions">
+                <button class="cs-switch-btn">Switch now</button>
+                <button class="cs-after-btn">After this →</button>
+               </div>`
+        : '';
+
+    blockRow.dataset.expanded = expanded ? 'true' : 'false';
+    blockRow.innerHTML = `
+        <div class="cs-block-collapsed">
+            <span class="cs-block-dot" style="background:${color}"></span>
+            <span class="cs-block-label">${label}</span>
+            ${showStart
+                ? `<button class="cs-start-btn" data-focus-id="${block.focus_area_id}">Start</button>`
+                : `<button class="cs-expand-btn" aria-label="${expanded ? 'Collapse' : 'Expand'}"><i class="ph ph-caret-${expanded ? 'up' : 'down'}"></i></button>`
+            }
         </div>
-        <div class="ubs-expanded"${wasExpanded ? '' : ' hidden'}>
-            <div class="ubs-detail-row">
-                <span class="ubs-area-dot" style="background:${color}"></span>
-                <span class="ubs-area-name">${name}</span>
-            </div>
-            <div class="ubs-meta">${isTomorrow ? 'Tomorrow · ' : ''}${_fmtBlockTime(block.start_minutes)} · ${_fmtDuration(block.duration_minutes)}</div>
-            ${block.notes ? `<div class="ubs-notes">${block.notes}</div>` : ''}
-            ${showStart ? `<button class="ubs-start-btn" data-focus-id="${block.focus_area_id}">Start</button>` : ''}
+        <div class="cs-block-expanded"${expanded ? '' : ' hidden'}>
+            ${stateKey === 'conflict'
+                ? (() => {
+                    const endTime = _fmtBlockTime(block.start_minutes + block.duration_minutes);
+                    const sessionMins = state.settings.workDuration || 25;
+                    const sessionCount = Math.ceil(block.duration_minutes / sessionMins);
+                    const sessionLabel = sessionCount === 1 ? '1 session' : `${sessionCount} sessions`;
+                    const desc = isQueued
+                        ? `Queued for after this session — ${_fmtBlockTime(block.start_minutes)} – ${endTime} · ${sessionLabel}.`
+                        : `Planned ${_fmtBlockTime(block.start_minutes)} – ${endTime} · ${sessionLabel}. Switch to it now, or queue it for after this session.`;
+                    return `<div class="cs-block-desc">${desc}</div>`;
+                })()
+                : `<div class="cs-block-expanded-row">
+                    <span class="cs-block-area-dot" style="background:${color}"></span>
+                    <span class="cs-block-area-name">${name}</span>
+                   </div>
+                   <div class="cs-block-meta">${isTomorrow ? 'Tomorrow · ' : ''}${_fmtBlockTime(block.start_minutes)} · ${_fmtDuration(block.duration_minutes)}</div>`
+            }
+            ${block.notes ? `<div class="cs-block-notes">${block.notes}</div>` : ''}
+            ${conflictButtons}
         </div>
     `;
 
-    el.querySelector('.ubs-collapsed').addEventListener('click', (e) => {
-        if (e.target.closest('.ubs-expand-btn')) return;
-        el.dataset.expanded = wasExpanded ? 'false' : 'true';
+    blockRow.querySelector('.cs-block-collapsed').addEventListener('click', (e) => {
+        if (e.target.closest('.cs-expand-btn') || e.target.closest('.cs-start-btn') ||
+            e.target.closest('.cs-switch-btn') || e.target.closest('.cs-after-btn')) return;
+        blockRow.dataset.expanded = expanded ? 'false' : 'true';
         renderUpcomingBlockStrip();
     });
-    el.querySelector('.ubs-expand-btn').addEventListener('click', () => {
-        el.dataset.expanded = wasExpanded ? 'false' : 'true';
+    blockRow.querySelector('.cs-expand-btn')?.addEventListener('click', () => {
+        blockRow.dataset.expanded = expanded ? 'false' : 'true';
         renderUpcomingBlockStrip();
     });
-    el.querySelector('.ubs-start-btn')?.addEventListener('click', () => {
+    blockRow.querySelector('.cs-start-btn')?.addEventListener('click', () => {
         state.timerState.activeTaskId = block.focus_area_id;
         refreshUI();
+    });
+    blockRow.querySelector('.cs-switch-btn')?.addEventListener('click', () => {
+        // Save elapsed effort from current work session before switching
+        if (state.timerState.mode === 'work' && state.timerState.isRunning) {
+            saveSession();
+            checkAchievements();
+        }
+        timer.stop();
+        state.timerState.activeTaskId = block.focus_area_id;
+        state.timerState.queuedTaskId = null;
+        timer.applyMode('work');
+        timer.start();
+        refreshUI();
+    });
+    blockRow.querySelector('.cs-after-btn')?.addEventListener('click', () => {
+        state.timerState.queuedTaskId = block.focus_area_id;
+        saveData();
+        renderUpcomingBlockStrip();
     });
 }
 
@@ -483,6 +522,12 @@ function handleSessionComplete(isSkip = false) {
         const title = wasWork ? 'Focus Session Finished!' : 'Break Finished!';
         const body = wasWork ? 'Time for a break!' : 'Ready to focus?';
         SettingsService.sendNotification(title, body);
+
+        // Apply queued focus area after a work session completes
+        if (wasWork && state.timerState.queuedTaskId) {
+            state.timerState.activeTaskId = state.timerState.queuedTaskId;
+            state.timerState.queuedTaskId = null;
+        }
 
         const shouldAutoStart = wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork;
         if (shouldAutoStart) {

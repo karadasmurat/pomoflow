@@ -1007,17 +1007,19 @@ export const PlannerView = {
 
             const handle = document.createElement('i');
             handle.className = 'ph ph-dots-six-vertical area-card-drag-handle';
-            handle.setAttribute('draggable', 'true');
-            handle.addEventListener('dragstart', e => {
-                e.stopPropagation();
-                this.startDrag(e, area.id, area.name, area.color);
-            });
 
             card.innerHTML = `<div class="area-card-header"><div class="area-card-name">${area.name}</div></div>`;
             card.querySelector('.area-card-header').prepend(handle);
 
+            card.addEventListener('mousedown', () => { card.draggable = true; });
+            card.addEventListener('dragstart', e => {
+                this.startDrag(e, area.id, area.name, area.color);
+            });
+            card.addEventListener('dragend', () => { card.draggable = false; });
+
             // On mobile: tap area → pre-select it and open session creation
             if (window.innerWidth <= 480) {
+                card.draggable = false;
                 card.style.cursor = 'pointer';
                 card.addEventListener('click', () => {
                     this.pendingAreaId = area.id;

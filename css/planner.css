@@ -428,12 +428,10 @@
 
 /* ── DRAG HANDLE on area cards ── */
 #focusPlannerOverlay .area-card-drag-handle {
-  cursor: grab;
-  -webkit-user-drag: element;
   color: var(--ink-mid);
-  opacity: 0.55;
+  opacity: 0.4;
   transition: opacity 0.15s, color 0.15s;
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
   margin-left: 0;
   margin-right: 2px;
@@ -442,15 +440,11 @@
   align-self: center;
   user-select: none;
   -webkit-user-select: none;
+  pointer-events: none;
 }
 
-#focusPlannerOverlay .area-card-drag-handle:hover {
-  color: var(--ink);
-  opacity: 1;
-}
-
-#focusPlannerOverlay .area-card-drag-handle:active {
-  cursor: grabbing;
+#focusPlannerOverlay .area-card:hover .area-card-drag-handle {
+  opacity: 0.8;
 }
 
 #focusPlannerOverlay .sidebar-areas {
@@ -474,8 +468,8 @@
   padding: 0 8px 0 8px;
   display: flex;
   align-items: center;
-  cursor: default;
-  transition: background 0.12s;
+  cursor: grab;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
   position: relative;
   user-select: none;
   -webkit-user-select: none;
@@ -491,12 +485,22 @@
   height: 16px;
   border-radius: 0 2px 2px 0;
   background: transparent;
+  transition: height 0.15s ease;
+}
+
+#focusPlannerOverlay .area-card:hover::before {
+  height: 24px;
 }
 
 #focusPlannerOverlay .area-card:hover {
-  background: var(--surface-elevated);
-  box-shadow: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 2;
 }
+
+#focusPlannerOverlay .area-card.green:hover  { background: var(--green-bg); }
+#focusPlannerOverlay .area-card.amber:hover  { background: var(--amber-bg); }
+#focusPlannerOverlay .area-card.violet:hover { background: var(--violet-bg); }
+#focusPlannerOverlay .area-card.blue:hover   { background: var(--blue-bg); }
 
 #focusPlannerOverlay .area-card.green::before  { background: var(--green-bar); }
 #focusPlannerOverlay .area-card.amber::before  { background: var(--amber-bar); }
@@ -1079,6 +1083,7 @@
 #focusPlannerOverlay .day-col.drop-target {
   background: var(--accent-dim);
 }
+
 
 #focusPlannerOverlay .hour-line {
   position: absolute;

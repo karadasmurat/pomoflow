@@ -422,10 +422,9 @@ export class FocusView {
 
         item.innerHTML = `
             <button class="fa-row-play ${isCurrent ? 'active' : ''}" title="Start focus" tabindex="-1">
-                <i class="ph ${isCurrent ? 'ph-pause' : 'ph-play'}"></i>
+                <i class="ph ph-fill ${isCurrent ? 'ph-pause-circle' : 'ph-play-circle'}" style="color:${task.color || 'var(--text-secondary)'}"></i>
             </button>
-            <span class="fa-row-color" style="background:${task.color || 'var(--border)'}"></span>
-            <span class="fa-row-name">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</span>
+<span class="fa-row-name">${this._highlight(task.name, this.taskSearchQuery || this.unifiedSearchQuery)}</span>
             <button class="fa-more-btn fa-row-more" title="More Actions">
                 <i class="ph ph-dots-three-vertical"></i>
             </button>
