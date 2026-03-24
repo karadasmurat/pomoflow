@@ -98,6 +98,7 @@ export const PlannerView = {
         document.getElementById('focusPlannerOverlay').style.display = 'none';
         this.closePopover();
         this._setMobileTab('timer');
+        window.renderUpcomingBlockStrip?.();
     },
 
     _setActiveMobileTab(tab) {
@@ -244,6 +245,7 @@ export const PlannerView = {
         await dbManager.insertPlannedBlock(dbBlock);
         if (!block.id) block.id = dbBlock.id;
         console.log('[saveBlock] saved with id:', dbBlock.id);
+        window.renderUpcomingBlockStrip?.();
     },
 
     async deleteBlock(blockId) {
@@ -252,6 +254,7 @@ export const PlannerView = {
             await dbManager.deletePlannedBlock(blockId);
         }
         this.blocks = this.blocks.filter(b => b.id !== blockId);
+        window.renderUpcomingBlockStrip?.();
         this.closeDetail();
         this.render();
     },

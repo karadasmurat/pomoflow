@@ -587,6 +587,16 @@ self.onmessage = async (e) => {
                     ORDER BY pb.planned_date, pb.start_minutes
                 `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.startDate, payload.endDate] });
                 break;
+            case 'get_upcoming_blocks_for_today':
+                result = db.exec(`
+                    SELECT pb.*, f.name as area_name, f.color as area_color
+                    FROM planned_blocks pb
+                    LEFT JOIN focus_areas f ON pb.focus_area_id = f.id
+                    WHERE pb.planned_date IN (?, ?)
+                      AND pb.walked_session_id IS NULL
+                    ORDER BY pb.planned_date ASC, pb.start_minutes ASC
+                `, { returnValue: 'resultRows', rowMode: 'object', bind: [payload.date, payload.tomorrow] });
+                break;
             case 'walk_planned_block':
                 withTransaction(() => {
                     db.exec(`UPDATE planned_blocks SET walked_session_id = ? WHERE id = ?`, {

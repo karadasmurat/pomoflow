@@ -136,6 +136,10 @@ class DatabaseManager {
         const rows = await this._send('get_planned_blocks_for_week', { startDate, endDate });
         return rows || [];
     }
+    async getUpcomingBlocksForToday(date, tomorrow) {
+        const rows = await this._send('get_upcoming_blocks_for_today', { date, tomorrow });
+        return rows || [];
+    }
     async getSessionsForWeek(startDate, endDate) {
         const rows = await this._send('get_sessions_for_week', { startDate, endDate });
         return rows || [];

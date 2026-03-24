@@ -36,6 +36,7 @@ async function init() {
     try {
         notificationView = new NotificationView();
         window.notificationView = notificationView;
+        window.renderUpcomingBlockStrip = renderUpcomingBlockStrip;
     } catch (e) {
         console.error('Failed to init NotificationView:', e);
     }
@@ -128,6 +129,16 @@ async function init() {
 
     if (dbManager.initialized) syncService.startPolling();
 
+    // If app opened via notification tap, pre-select the planned focus area
+    const pendingFocusAreaId = sessionStorage.getItem('pendingFocusAreaId');
+    if (pendingFocusAreaId) {
+        sessionStorage.removeItem('pendingFocusAreaId');
+        const pendingTask = state.tasks.find(t => t.id === pendingFocusAreaId);
+        if (pendingTask && !state.timerState.isRunning) {
+            state.timerState.activeTaskId = pendingTask.id;
+        }
+    }
+
     // Show auth user email in sidenav
     supabase.auth.getSession().then(({ data: { session } }) => {
         const email = session?.user?.email;
@@ -188,7 +199,12 @@ async function init() {
     updateDateTime();
     state.lastRefreshTime = Date.now();
     setInterval(updateDateTime, 1000);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateDateTime(); });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            updateDateTime();
+            renderUpcomingBlockStrip();
+        }
+    });
 
     restoreTimerState();
     checkAchievements();
@@ -231,6 +247,138 @@ function checkPathDeadlines() {
     }).catch(() => {});
 }
 
+// --- UPCOMING BLOCK STRIP ---
+
+function _fmtBlockTime(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function _fmtDuration(minutes) {
+    if (minutes < 60) return `${minutes}m`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+async function renderUpcomingBlockStrip() {
+    const el = document.getElementById('upcomingBlockStrip');
+    if (!el) return;
+    if (!dbManager.initialized) { el.style.display = 'none'; return; }
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const tomorrowDate = new Date(now); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrow = `${tomorrowDate.getFullYear()}-${String(tomorrowDate.getMonth() + 1).padStart(2, '0')}-${String(tomorrowDate.getDate()).padStart(2, '0')}`;
+    let blocks;
+    try {
+        blocks = await dbManager.getUpcomingBlocksForToday(today, tomorrow);
+    } catch (e) {
+        el.style.display = 'none';
+        return;
+    }
+
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const todayBlocks = blocks.filter(b => b.planned_date === today);
+    const tomorrowBlocks = blocks.filter(b => b.planned_date === tomorrow);
+
+    // Active: time window covers now
+    const activeBlock = todayBlocks.find(b => b.start_minutes <= cur && (b.start_minutes + b.duration_minutes) > cur);
+    // Grace: block ended in past but within its own duration window (started but not yet over by duration)
+    const graceBlock = !activeBlock && todayBlocks.find(b => b.start_minutes <= cur && cur < (b.start_minutes + b.duration_minutes * 2));
+    // Upcoming: starts in future today
+    const upcomingBlock = todayBlocks.find(b => b.start_minutes > cur);
+    // Tomorrow fallback
+    const tomorrowBlock = tomorrowBlocks[0] || null;
+
+    const block = activeBlock || graceBlock || upcomingBlock || tomorrowBlock;
+
+    if (!block) {
+        if (blocks.length === 0) {
+            el.style.display = '';
+            el.dataset.state = 'empty';
+            el.innerHTML = `<span class="ubs-empty">Nothing planned today · <button class="ubs-plan-link">Plan your day →</button></span>`;
+            el.querySelector('.ubs-plan-link').addEventListener('click', () => PlannerView.open());
+        } else {
+            el.style.display = 'none';
+        }
+        return;
+    }
+
+    const isTomorrow = block.planned_date === tomorrow;
+
+    const activeTaskId = state.timerState.activeTaskId;
+    const isRunning = state.timerState.isRunning;
+    const color = block.area_color || '#58a6ff';
+    const name = block.area_name || 'Focus';
+    const wasExpanded = el.dataset.expanded === 'true';
+
+    let stateKey, label, showStart;
+    if (activeBlock || graceBlock) {
+        if (activeTaskId === block.focus_area_id && isRunning) {
+            el.style.display = 'none';
+            return;
+        }
+        if (isRunning && activeTaskId !== block.focus_area_id) {
+            stateKey = 'conflict';
+            label = `${name} · in progress`;
+            showStart = false;
+        } else {
+            stateKey = 'active';
+            label = `${name} · now`;
+            showStart = true;
+        }
+    } else if (isTomorrow) {
+        stateKey = 'upcoming';
+        label = `${name} · tomorrow ${_fmtBlockTime(block.start_minutes)}`;
+        showStart = false;
+    } else {
+        const delta = block.start_minutes - cur;
+        stateKey = 'upcoming';
+        label = `${name} · starts in ${_fmtDuration(delta)}`;
+        showStart = false;
+    }
+
+    el.style.display = '';
+    el.dataset.state = stateKey;
+
+    el.innerHTML = `
+        <div class="ubs-collapsed">
+            <span class="ubs-dot" style="background:${color}"></span>
+            <span class="ubs-label">${label}</span>
+            <button class="ubs-expand-btn" aria-label="${wasExpanded ? 'Collapse' : 'Expand'}">
+                <i class="ph ph-caret-${wasExpanded ? 'up' : 'down'}"></i>
+            </button>
+        </div>
+        <div class="ubs-expanded"${wasExpanded ? '' : ' hidden'}>
+            <div class="ubs-detail-row">
+                <span class="ubs-area-dot" style="background:${color}"></span>
+                <span class="ubs-area-name">${name}</span>
+            </div>
+            <div class="ubs-meta">${isTomorrow ? 'Tomorrow · ' : ''}${_fmtBlockTime(block.start_minutes)} · ${_fmtDuration(block.duration_minutes)}</div>
+            ${block.notes ? `<div class="ubs-notes">${block.notes}</div>` : ''}
+            ${showStart ? `<button class="ubs-start-btn" data-focus-id="${block.focus_area_id}">Start</button>` : ''}
+        </div>
+    `;
+
+    el.querySelector('.ubs-collapsed').addEventListener('click', (e) => {
+        if (e.target.closest('.ubs-expand-btn')) return;
+        el.dataset.expanded = wasExpanded ? 'false' : 'true';
+        renderUpcomingBlockStrip();
+    });
+    el.querySelector('.ubs-expand-btn').addEventListener('click', () => {
+        el.dataset.expanded = wasExpanded ? 'false' : 'true';
+        renderUpcomingBlockStrip();
+    });
+    el.querySelector('.ubs-start-btn')?.addEventListener('click', () => {
+        state.timerState.activeTaskId = block.focus_area_id;
+        refreshUI();
+    });
+}
+
 async function checkBlockReminders() {
     if (!dbManager.initialized) return;
 
@@ -264,15 +412,16 @@ async function checkBlockReminders() {
                 const title = `Upcoming: ${b.area_name || 'Session'}`;
                 const body = `${timeStr} until your planned session${b.notes ? ': ' + b.notes : ''}.`;
                 
-                // 1. System Notification
+                // 1. System Notification — store focus area so clicking notification pre-selects it
+                sessionStorage.setItem('pendingFocusAreaId', b.focus_area_id);
                 await SettingsService.sendNotification(title, body);
-                
+
                 // 2. Sound
                 timer.playNotificationSound();
-                
+
                 // 3. In-app Toast
                 notify(`Reminder: ${title} in ${timeStr}`, 'milestone');
-                
+
                 // 4. Mark as sent in DB
                 await dbManager.setPlannedBlockReminderSent(b.id);
             }
@@ -280,6 +429,7 @@ async function checkBlockReminders() {
     } catch (e) {
         console.error('[Reminder] Error checking reminders:', e);
     }
+    renderUpcomingBlockStrip();
 }
 
 // --- 2. TIMER LOGIC ---
@@ -384,6 +534,7 @@ function saveSession() {
                     if (block.pathName) {
                         notify(`Path "${block.pathName}" — block walked!`);
                     }
+                    renderUpcomingBlockStrip();
                 }
             })
             .catch(e => console.error('Failed to save session:', e));
@@ -1543,6 +1694,7 @@ function refreshUI() {
     TimerView.updateDisplay();
     FocusView.updateLevelUI();
     updateProfileUI();
+    renderUpcomingBlockStrip();
 }
 
 // ── Auth UI ───────────────────────────────────────────────────────────────────
