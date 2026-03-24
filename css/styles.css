@@ -39,7 +39,7 @@
     --radius: var(--r-lg); /* legacy alias */
     --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
     --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-time: 'JetBrains Mono', ui-monospace, monospace;
+    --font-time: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 
     --shadow-main:        0 8px 24px rgba(0, 0, 0, 0.4);
     --shadow-modal:       0 4px 12px rgba(0, 0, 0, 0.3);

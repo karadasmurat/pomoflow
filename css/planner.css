@@ -1293,16 +1293,17 @@
 
 #focusPlannerOverlay .popover-overlay.visible {
   display: block;
+  background: rgba(0, 0, 0, 0.45);
 }
 
 #focusPlannerOverlay .popover {
   position: fixed;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-main);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 24px 64px rgba(0,0,0,0.7);
   padding: 20px;
-  width: 264px;
+  width: 284px;
   z-index: 201;
   display: none;
   flex-direction: column;
@@ -1328,37 +1329,45 @@
 }
 
 #focusPlannerOverlay .popover-title {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
 }
 
 #focusPlannerOverlay .popover-close {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
   color: var(--ink-soft);
   cursor: pointer;
-  line-height: 1;
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s;
   background: none;
   border: none;
-  font-family: var(--font-sans);
-  padding: 0;
+  border-radius: var(--r);
+  flex-shrink: 0;
 }
 
 #focusPlannerOverlay .popover-close:hover {
   color: var(--ink);
+  background: var(--surface);
 }
 
 #focusPlannerOverlay .popover-area-pill {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--bg);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r);
   padding: 6px 10px;
   font-size: 12px;
@@ -1431,9 +1440,9 @@
 #focusPlannerOverlay .popover-field input[type="text"],
 #focusPlannerOverlay .popover-select {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r);
-  background: var(--surface);
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 13px;
@@ -1457,10 +1466,10 @@
   display: flex;
   align-items: center;
   gap: 0;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r);
   overflow: hidden;
-  background: var(--surface);
+  background: var(--bg);
 }
 
 #focusPlannerOverlay .stepper-btn {

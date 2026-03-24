@@ -91,6 +91,7 @@ export let state = {
         autoStartBreaks: false,
         autoStartWork: false,
         soundVolume: 70,
+        blockReminderMinutes: 10,
         use12Hour: false,
         activeHoursStart: 8,
         activeHoursEnd: 22,

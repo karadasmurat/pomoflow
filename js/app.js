@@ -395,11 +395,10 @@ async function checkBlockReminders() {
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
+        const reminderMins = state.settings.blockReminderMinutes ?? 10;
+        if (!reminderMins || reminderMins <= 0) return;
+
         for (const b of blocks) {
-            const rawReminder = b.reminder_minutes;
-            const reminderMins = rawReminder ? parseInt(rawReminder) : 0;
-            
-            if (isNaN(reminderMins) || reminderMins <= 0) continue;
             if (b.reminder_sent) continue;
 
             const triggerTime = b.start_minutes - reminderMins;
@@ -985,6 +984,9 @@ function openSettings() {
         volInput.oninput = () => { volLabel.textContent = `${volInput.value}%`; };
     }
 
+    const reminderSelect = document.getElementById('blockReminderMinutes');
+    if (reminderSelect) reminderSelect.value = String(state.settings.blockReminderMinutes ?? 10);
+
     const variant = state.settings.cardVariant || 'glass';
     document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.variant === variant);
@@ -1077,7 +1079,8 @@ function closeSettings() {
         activeHoursStart: parseInt(document.getElementById('activeHoursStart').value),
         activeHoursEnd: parseInt(document.getElementById('activeHoursEnd').value),
         cardVariant: activeVariantBtn ? activeVariantBtn.dataset.variant : 'glass',
-        soundVolume: parseInt(document.getElementById('soundVolume').value)
+        soundVolume: parseInt(document.getElementById('soundVolume').value),
+        blockReminderMinutes: parseInt(document.getElementById('blockReminderMinutes')?.value ?? 10)
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');
     saveData();

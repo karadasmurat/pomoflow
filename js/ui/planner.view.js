@@ -53,7 +53,6 @@ export const PlannerView = {
     activePathSet: null,   // null=show all ☑ | Set (non-empty)=filter ⊟ | Set (empty)=dim all ☐
     _pathsFromAll: true,   // origin when entering filter: true=came from ☑, false=came from ☐
     pendingPathId: null,
-    pendingReminder: 0,
     selectedPathColor: '#3D8F5A',
     selectedAreaColor: '#58a6ff',
 
@@ -1817,10 +1816,17 @@ export const PlannerView = {
     },
 
     handleDrop(day, h, m, anchorEl) {
-        this.pendingDay = day;
-        this.pendingHour = h;
-        this.pendingMinutes = m;
+        const { areaId, areaName, color } = this.dragging;
         this.openPopover(day, h, m, undefined, anchorEl);
+        // Pre-select the dragged focus area (openPopover resets it, so re-apply after)
+        if (areaId) {
+            this.pendingAreaId = areaId;
+            this.pendingColor = color;
+            document.getElementById('popover-area-name').textContent = areaName || '';
+            const dot = document.getElementById('popover-area-dot');
+            if (dot) { dot.className = `popover-area-dot ${color}`; dot.style.display = ''; }
+            document.getElementById('popover-area-pill')?.classList.remove('is-empty');
+        }
     },
 
     // ── POPOVER ──
@@ -2238,10 +2244,7 @@ export const PlannerView = {
         const [h, m] = timeVal ? timeVal.split(':').map(Number) : [this.pendingHour, this.pendingMinutes];
         const label = document.getElementById('popover-label')?.value.trim() || null;
 
-        const remSelect = document.getElementById('popover-reminder');
-        const reminderMinutes = remSelect ? parseInt(remSelect.value) : 0;
-
-        if (reminderMinutes > 0 && "Notification" in window && Notification.permission === "default") {
+        if ("Notification" in window && Notification.permission === "default") {
             Notification.requestPermission();
         }
 
@@ -2263,7 +2266,6 @@ export const PlannerView = {
                 block.pathId = this.pendingPathId || null;
                 block.pathName = path?.name || null;
                 block.pathColor = path?.color || null;
-                block.reminderMinutes = reminderMinutes;
                 block.reminderSent = 0; // Reset reminder on edit
                 this.saveBlock(block);
                 // Update path progress count
@@ -2286,7 +2288,6 @@ export const PlannerView = {
                 pathId: this.pendingPathId || null,
                 pathName: path?.name || null,
                 pathColor: path?.color || null,
-                reminderMinutes,
                 reminderSent: 0,
                 walked: false
             };
