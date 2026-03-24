@@ -3689,7 +3689,7 @@
         display: none;
       }
 
-      #focusPlannerOverlay .drag-ghost.active {
+      .drag-ghost.active {
         display: block;
       }
 
@@ -4276,11 +4276,6 @@
       </div>
     </div>
 
-    <!-- ── DRAG GHOST ── -->
-    <div class="drag-ghost" id="drag-ghost">
-      <div class="drag-ghost-inner" id="drag-ghost-inner">Deep Work · 2 sessions</div>
-    </div>
-
     <!-- ── DROP POPOVER ── -->
     <div class="popover-overlay" id="popover-overlay" onclick="closePopover()"></div>
     <div class="popover" id="popover">
@@ -4650,5 +4645,11 @@
 
     });
   </script>
+
+  <!-- ── DRAG GHOST (outside planner overlay to avoid overflow:hidden clipping) ── -->
+  <div class="drag-ghost" id="drag-ghost">
+    <div class="drag-ghost-inner" id="drag-ghost-inner">Deep Work · 2 sessions</div>
+  </div>
+
 </body>
 </html>
