@@ -88,7 +88,11 @@ async function init() {
             if (fullState.notifications) state.notifications = fullState.notifications;
 
             if (fullState.appState) {
-                if (fullState.appState.timer_state) state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
+                if (fullState.appState.timer_state) {
+                    state.timerState = { ...state.timerState, ...fullState.appState.timer_state };
+                    // Queue only makes sense with an active session — clear it on fresh load
+                    if (!state.timerState.isRunning) state.timerState.queuedTaskId = null;
+                }
                 if (fullState.appState.categories) state.categories = fullState.appState.categories;
                 if (fullState.appState.theme) {
                     const t = fullState.appState.theme;
@@ -334,6 +338,7 @@ async function renderUpcomingBlockStrip() {
     blockRow.style.display = '';
 
     const isQueued = state.timerState.queuedTaskId === block.focus_area_id;
+    if (isQueued) label = `Coming next: ${name}`;
     const userCollapsed = blockRow.dataset.expanded === 'false';
     const autoExpand = !userCollapsed && ((stateKey === 'conflict' && !isQueued) || stateKey === 'active' || (stateKey === 'upcoming' && !isTomorrow));
     const expanded = wasExpanded || autoExpand;
@@ -426,6 +431,7 @@ async function renderUpcomingBlockStrip() {
     });
     blockRow.querySelector('.cs-after-btn')?.addEventListener('click', () => {
         state.timerState.queuedTaskId = block.focus_area_id;
+        blockRow.dataset.expanded = 'false';
         saveData();
         renderUpcomingBlockStrip();
     });
@@ -547,10 +553,16 @@ function handleSessionComplete(isSkip = false) {
             hadQueue = true;
         }
 
-        const shouldAutoStart = hadQueue || (wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork);
-        if (shouldAutoStart) {
-            timer.applyMode(nextMode);
+        if (hadQueue) {
+            // User explicitly queued this — skip break, start work immediately
+            timer.applyMode('work');
             timer.start();
+        } else {
+            const shouldAutoStart = wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork;
+            if (shouldAutoStart) {
+                timer.applyMode(nextMode);
+                timer.start();
+            }
         }
     }
 
