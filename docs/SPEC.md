@@ -278,3 +278,19 @@ Sessions before 4:00 AM count toward the previous calendar day.
 | `1` | Focus mode |
 | `2` | Short Break mode |
 | `3` | Long Break mode |
+
+---
+
+## 16. Key Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| **Red = Focus, Green = Break** | Ring colors are reserved, never repurposed for other UI states |
+| **4 AM rollover** | Late-night sessions shouldn't inflate next day's count |
+| **No bundler** | ES modules work directly; dev server required only for COOP/COEP headers |
+| **SQLite over localStorage** | Relational queries, soft deletes, sync-ready schema |
+| **Web Worker timer** | Accurate countdown even when tab is backgrounded |
+| **fetch→blob audio** | `<audio src="supabase-url">` is blocked by COEP; fetch→blob bypasses it |
+| **Supabase is optional** | App works fully offline; auth is a sync mechanism, not a gate |
+| **Soft deletes everywhere** | Enables conflict-free sync across devices |
+| **Sounds table in DB** | New tracks added without code changes — insert row + upload MP3 |
