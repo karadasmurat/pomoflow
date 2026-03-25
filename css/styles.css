@@ -567,6 +567,27 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     width: 100%;
 }
 
+/* ── Desktop two-column layout ──────────────────────────────── */
+@media (min-width: 900px) {
+    .main-content {
+        flex-direction: row;
+        align-items: flex-start;
+        max-width: none;
+        gap: 24px;
+    }
+
+    .timer-panel {
+        flex: 0 0 420px;
+        position: sticky;
+        top: 16px;
+    }
+
+    .history-panel {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 .panel {
     background: var(--surface);
     border-radius: var(--r-lg);
