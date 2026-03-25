@@ -1985,6 +1985,31 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 #activityLogCol.collapsed .history-pagination {
     display: none !important;
 }
+#activityLogCol.collapsed .history-delete-row {
+    display: none;
+}
+
+.activity-log-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.activity-log-description {
+    font-size: 11px;
+    color: var(--ink-soft, var(--text-secondary));
+    font-weight: 400;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease, max-height 0.2s ease;
+}
+
+#activityLogCol.collapsed .activity-log-description {
+    opacity: 1;
+    max-height: 20px;
+}
 
 /* Activity Log controls */
 .history-log-controls {

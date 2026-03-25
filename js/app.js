@@ -1817,6 +1817,11 @@ function setupEventListeners() {
         document.querySelectorAll('#historyDeleteRange .filter-btn').forEach(b => b.classList.toggle('active', b === btn));
     });
 
+    // Activity Log collapse toggle
+    document.getElementById('activityLogToggle')?.addEventListener('click', () => {
+        document.getElementById('activityLogCol')?.classList.toggle('collapsed');
+    });
+
     // Category filter dropdown
     document.getElementById('historyCategoryFilter')?.addEventListener('change', e => {
         historyCategory = e.target.value || null;
