@@ -410,6 +410,7 @@ export const PlannerView = {
         block.reminderSent = 0; // Reset reminder on move
         await this.saveBlock(block);
         this.renderBody();
+        if (window.renderUpcomingBlockStrip) window.renderUpcomingBlockStrip();
     },
 
     // ── HELPERS ──
@@ -1329,6 +1330,7 @@ export const PlannerView = {
             el.draggable = true;
             el.addEventListener('dragstart', e => {
                 this.draggingBlock = b;
+                this.draggingBlockOffsetY = e.clientY - el.getBoundingClientRect().top;
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', b.id);
 
@@ -1364,6 +1366,7 @@ export const PlannerView = {
             });
             el.addEventListener('dragend', () => {
                 this.draggingBlock = null;
+                this.draggingBlockOffsetY = 0;
                 el.classList.remove('block-drag-ready');
             });
         }
@@ -1414,7 +1417,8 @@ export const PlannerView = {
 
         const getSnapPos = (e) => {
             const rect = col.getBoundingClientRect();
-            const y = e.clientY - rect.top;
+            const offsetY = this.draggingBlock ? (this.draggingBlockOffsetY || 0) : 0;
+            const y = e.clientY - rect.top - offsetY;
             const totalMins = (y / this.ROW_HEIGHT) * 60;
             const snappedMins = Math.round(totalMins / 30) * 30;
             const hours = this.getHours();
@@ -2407,6 +2411,12 @@ export const PlannerView = {
             if (e.target === document.getElementById('modal-overlay')) this.closePathModal();
         };
         window.openPopover = () => this.openPopover();
+        window.openPlannerToReschedule = async (blockId) => {
+            this.open();
+            await this.loadData();
+            const b = this.blocks.find(b => b.id === blockId);
+            if (b) this.openPopoverForEdit(b);
+        };
         window.setActivePath = (id) => id === null ? this.clearPathFilter() : this.togglePath(id);
         window.togglePath = (id) => this.togglePath(id);
         window.toggleMasterPaths = () => this.toggleMasterPaths();

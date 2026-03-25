@@ -523,38 +523,35 @@
       </aside>
 
       <section class="panel timer-panel">
-        <div class="timer-share-wrapper">
-          <div class="expand-group expand-down expand-vertical liquid-fab-container">
-            <button class="expand-trigger share-btn liquid-fab-trigger" id="shareFocusBtn" title="Share your focus">
-              <svg width="24" height="24" viewBox="0 0 256 256" fill="currentColor">
-                <path
-                  d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z">
-                </path>
-              </svg>
-            </button>
-            <div class="expand-content share-card liquid-fab-content" id="shareMenu">
-              <button class="action-icon-btn platform-x liquid-fab-item" id="shareXBtn" title="Post to X">
-                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
-                  <path
-                    d="M214.75,211.71l-62.6-84.55,66.23-74.67a8,8,0,0,0-12-10.58L145.45,110.8,92.67,39.54A8,8,0,0,0,86.25,36H40a8,8,0,0,0-6.41,12.79l61.5,83.06L29.3,206.51a8,8,0,1,0,12,10.58l60.11-67.76,53.48,72.23A8,8,0,0,0,161.3,225h53.45a8,8,0,0,0,6.41-12.79ZM164.39,209l-49-66.24L51.34,52h24l40.3,54.46,63.15,85.34Z">
-                  </path>
-                </svg>
-              </button>
-              <button class="action-icon-btn liquid-fab-item" id="shareCopyBtn" title="Copy status">
-                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
-                  <path
-                    d="M216,32H88a16,16,0,0,0-16,16V72H48A16,16,0,0,0,32,88V208a16,16,0,0,0,16,16H168a16,16,0,0,0,16-16V184h24a16,16,0,0,0,16-16V48A16,16,0,0,0,216,32ZM168,208H48V88H168V208Zm48-40H184V88a16,16,0,0,0-16-16H88V48H216V168Z">
-                  </path>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
 
         <div id="notificationPrompt" class="notification-prompt" style="display: none;">
           <span class="notification-prompt-text">Enable notifications to get alerted when sessions end</span>
           <button class="notification-prompt-btn enable" id="enableNotifications">Enable</button>
           <button class="notification-prompt-btn deny" id="denyNotifications">Later</button>
+        </div>
+
+        <div id="contextStrip" class="context-strip">
+          <!-- Block context: shown when a planned block is relevant, hidden otherwise -->
+          <div id="blockContextRow" class="cs-block-row" style="display:none"></div>
+          <!-- Focus area: always shown -->
+          <div class="cs-focus-row">
+            <span class="focus-area-question" id="focusAreaQuestion">What are you focusing on?</span>
+            <button class="timer-focus-area-link" id="focusAreaLink">
+              <span id="focusAreaText">
+                <span class="focus-area-add-icon">
+                  <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path>
+                  </svg>
+                </span>
+              </span>
+              <span class="focus-area-clear-icon" id="clearFocusArea" style="display:none">
+                <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path>
+                </svg>
+              </span>
+            </button>
+          </div>
+          <div id="focusAreaProgressHUD" class="focus-area-progress-hud"></div>
         </div>
 
         <div class="timer-container" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
@@ -584,7 +581,7 @@
             <!-- Main Toggle at 3 o'clock - Styled as Watch Crown -->
             <button class="duration-btn orbiter trigger" id="durationToggle" style="--angle: 90deg"
               aria-label="Quick timer settings">
-              <i class="ph ph-fill ph-timer"></i>
+              <i class="ph ph-fill ph-sliders-horizontal" style="color: var(--text-secondary)"></i>
             </button>
 
             <!-- Options that fan out from the right side -->
@@ -601,30 +598,6 @@
           </div>
         </div>
         <div aria-live="polite" id="timerAnnouncer"></div>
-
-        <div id="contextStrip" class="context-strip">
-          <!-- Block context: shown when a planned block is relevant, hidden otherwise -->
-          <div id="blockContextRow" class="cs-block-row" style="display:none"></div>
-          <!-- Focus area: always shown -->
-          <div class="cs-focus-row">
-            <span class="focus-area-question" id="focusAreaQuestion">What are you focusing on?</span>
-            <button class="timer-focus-area-link" id="focusAreaLink">
-              <span id="focusAreaText">
-                <span class="focus-area-add-icon">
-                  <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
-                    <path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"></path>
-                  </svg>
-                </span>
-              </span>
-              <span class="focus-area-clear-icon" id="clearFocusArea" style="display:none">
-                <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
-                  <path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.51a12,12,0,0,1,17,17L145,128Z"></path>
-                </svg>
-              </span>
-            </button>
-          </div>
-          <div id="focusAreaProgressHUD" class="focus-area-progress-hud"></div>
-        </div>
 
         <div class="timer-controls">
           <button type="button" class="btn btn-timer-secondary" id="resetBtn" title="Reset Timer">
@@ -651,10 +624,7 @@
           </button>
         </div>
 
-        <div class="keyboard-hint">
-          <kbd>Space</kbd> Start/Pause &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>N</kbd> Skip &nbsp; <kbd>G</kbd>
-          Focus Areas &nbsp; <kbd>P</kbd> Plan &nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes
-        </div>
+
       </section>
 
       <section class="panel history-panel">
@@ -674,6 +644,25 @@
               </svg>
               <span>Clear All</span>
             </button>
+            <div class="expand-group expand-down expand-vertical liquid-fab-container">
+              <button class="expand-trigger share-btn liquid-fab-trigger" id="shareFocusBtn" title="Share your focus">
+                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z"></path>
+                </svg>
+              </button>
+              <div class="expand-content share-card liquid-fab-content" id="shareMenu">
+                <button class="action-icon-btn platform-x liquid-fab-item" id="shareXBtn" title="Post to X">
+                  <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M214.75,211.71l-62.6-84.55,66.23-74.67a8,8,0,0,0-12-10.58L145.45,110.8,92.67,39.54A8,8,0,0,0,86.25,36H40a8,8,0,0,0-6.41,12.79l61.5,83.06L29.3,206.51a8,8,0,1,0,12,10.58l60.11-67.76,53.48,72.23A8,8,0,0,0,161.3,225h53.45a8,8,0,0,0,6.41-12.79ZM164.39,209l-49-66.24L51.34,52h24l40.3,54.46,63.15,85.34Z"></path>
+                  </svg>
+                </button>
+                <button class="action-icon-btn liquid-fab-item" id="shareCopyBtn" title="Copy status">
+                  <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M216,32H88a16,16,0,0,0-16,16V72H48A16,16,0,0,0,32,88V208a16,16,0,0,0,16,16H168a16,16,0,0,0,16-16V184h24a16,16,0,0,0,16-16V48A16,16,0,0,0,216,32ZM168,208H48V88H168V208Zm48-40H184V88a16,16,0,0,0-16-16H88V48H216V168Z"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

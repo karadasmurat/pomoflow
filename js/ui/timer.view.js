@@ -135,7 +135,7 @@ export class TimerView {
                     linkEl.classList.remove('is-empty');
                     linkEl.style.pointerEvents = 'auto';
                 }
-                if (questionEl) questionEl.textContent = 'Focusing on:';
+                if (questionEl) questionEl.textContent = 'Now:';
                 if (textEl) { 
                     textEl.textContent = task.name; 
                     textEl.style.color = task.color; 

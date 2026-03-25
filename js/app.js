@@ -307,80 +307,85 @@ async function renderUpcomingBlockStrip() {
     const name = block.area_name || 'Focus';
     const wasExpanded = blockRow.dataset.expanded === 'true';
 
-    // Hide block context if user is already focused on this area and timer is running
-    if ((activeBlock || graceBlock) && activeTaskId === block.focus_area_id && isRunning) {
+    // Hide block context if user is already focused on this area
+    if (activeTaskId === block.focus_area_id) {
         hideBlock(); return;
     }
 
-    let stateKey, label, showStart;
+    let stateKey, label;
     if (activeBlock || graceBlock) {
-        if (isRunning && activeTaskId !== block.focus_area_id) {
+        if (activeTaskId && activeTaskId !== block.focus_area_id) {
             stateKey = 'conflict';
             label = `📅 ${name} · ${_fmtBlockTime(block.start_minutes)}`;
-            showStart = false;
         } else {
             stateKey = 'active';
-            label = `${name} · now`;
-            showStart = true;
+            label = `📅 ${name} · ${_fmtBlockTime(block.start_minutes)}`;
         }
     } else if (isTomorrow) {
         stateKey = 'upcoming';
         label = `${name} · tomorrow ${_fmtBlockTime(block.start_minutes)}`;
-        showStart = false;
     } else {
         const delta = block.start_minutes - cur;
         stateKey = 'upcoming';
         label = `${name} · starts in ${_fmtDuration(delta)}`;
-        showStart = false;
     }
 
     strip.dataset.blockState = stateKey;
     blockRow.style.display = '';
 
     const isQueued = state.timerState.queuedTaskId === block.focus_area_id;
-    const hasExpand = stateKey === 'conflict' || stateKey === 'active' || block.notes;
-    const autoExpand = stateKey === 'conflict' && !isQueued;
+    const userCollapsed = blockRow.dataset.expanded === 'false';
+    const autoExpand = !userCollapsed && ((stateKey === 'conflict' && !isQueued) || stateKey === 'active' || (stateKey === 'upcoming' && !isTomorrow));
     const expanded = wasExpanded || autoExpand;
 
-    const conflictButtons = stateKey === 'conflict'
-        ? isQueued
+    const endTime = _fmtBlockTime(block.start_minutes + block.duration_minutes);
+    const durH = Math.floor(block.duration_minutes / 60);
+    const durM = block.duration_minutes % 60;
+    const durationLabel = durH > 0 && durM > 0 ? `${durH}h ${durM}m` : durH > 0 ? `${durH}h` : `${durM}m`;
+    const metaLine = `${_fmtBlockTime(block.start_minutes)} – ${endTime} · ${durationLabel}`;
+
+    let expandedBody, actionButtons;
+    if (stateKey === 'conflict') {
+        const desc = isQueued
+            ? `Queued for after this session — ${metaLine}.`
+            : `Planned ${metaLine}. Switch to it now${isRunning ? ', queue it,' : ''} or re-schedule.`;
+        expandedBody = `<div class="cs-block-desc">${desc}</div>`;
+        actionButtons = isQueued
             ? `<div class="cs-conflict-actions"><span class="cs-queued-label">After this →</span></div>`
             : `<div class="cs-conflict-actions">
-                <button class="cs-switch-btn">Switch now</button>
-                <button class="cs-after-btn">After this →</button>
-               </div>`
-        : '';
+                <button class="cs-switch-btn">Switch</button>
+                ${isRunning ? '<button class="cs-after-btn">After this →</button>' : ''}
+                <button class="cs-reschedule-btn">Re-schedule</button>
+               </div>`;
+    } else {
+        const desc = isTomorrow
+            ? `Planned tomorrow · ${metaLine}.`
+            : isQueued
+                ? `Queued for after this session — ${metaLine}.`
+                : `Planned ${metaLine}. Start it${isRunning ? ', queue it,' : ''} or re-schedule.`;
+        expandedBody = `<div class="cs-block-desc">${desc}</div>`;
+        actionButtons = isTomorrow
+            ? ''
+            : isQueued
+                ? `<div class="cs-conflict-actions"><span class="cs-queued-label">After this →</span></div>`
+                : `<div class="cs-conflict-actions">
+                    <button class="cs-start-btn" data-focus-id="${block.focus_area_id}">${isRunning ? 'Switch' : 'Start'}</button>
+                    ${isRunning ? '<button class="cs-after-btn">After this →</button>' : ''}
+                    <button class="cs-reschedule-btn">Re-schedule</button>
+                   </div>`;
+    }
 
     blockRow.dataset.expanded = expanded ? 'true' : 'false';
     blockRow.innerHTML = `
         <div class="cs-block-collapsed">
             <span class="cs-block-dot" style="background:${color}"></span>
             <span class="cs-block-label">${label}</span>
-            ${showStart
-                ? `<button class="cs-start-btn" data-focus-id="${block.focus_area_id}">Start</button>`
-                : `<button class="cs-expand-btn" aria-label="${expanded ? 'Collapse' : 'Expand'}"><i class="ph ph-caret-${expanded ? 'up' : 'down'}"></i></button>`
-            }
+            <button class="cs-expand-btn" aria-label="${expanded ? 'Collapse' : 'Expand'}"><i class="ph ph-caret-${expanded ? 'up' : 'down'}"></i></button>
         </div>
         <div class="cs-block-expanded"${expanded ? '' : ' hidden'}>
-            ${stateKey === 'conflict'
-                ? (() => {
-                    const endTime = _fmtBlockTime(block.start_minutes + block.duration_minutes);
-                    const sessionMins = state.settings.workDuration || 25;
-                    const sessionCount = Math.ceil(block.duration_minutes / sessionMins);
-                    const sessionLabel = sessionCount === 1 ? '1 session' : `${sessionCount} sessions`;
-                    const desc = isQueued
-                        ? `Queued for after this session — ${_fmtBlockTime(block.start_minutes)} – ${endTime} · ${sessionLabel}.`
-                        : `Planned ${_fmtBlockTime(block.start_minutes)} – ${endTime} · ${sessionLabel}. Switch to it now, or queue it for after this session.`;
-                    return `<div class="cs-block-desc">${desc}</div>`;
-                })()
-                : `<div class="cs-block-expanded-row">
-                    <span class="cs-block-area-dot" style="background:${color}"></span>
-                    <span class="cs-block-area-name">${name}</span>
-                   </div>
-                   <div class="cs-block-meta">${isTomorrow ? 'Tomorrow · ' : ''}${_fmtBlockTime(block.start_minutes)} · ${_fmtDuration(block.duration_minutes)}</div>`
-            }
+            ${expandedBody}
             ${block.notes ? `<div class="cs-block-notes">${block.notes}</div>` : ''}
-            ${conflictButtons}
+            ${actionButtons}
         </div>
     `;
 
@@ -395,7 +400,15 @@ async function renderUpcomingBlockStrip() {
         renderUpcomingBlockStrip();
     });
     blockRow.querySelector('.cs-start-btn')?.addEventListener('click', () => {
+        if (state.timerState.mode === 'work' && state.timerState.isRunning) {
+            saveSession();
+            checkAchievements();
+        }
+        timer.stop();
         state.timerState.activeTaskId = block.focus_area_id;
+        state.timerState.queuedTaskId = null;
+        timer.applyMode('work');
+        timer.start();
         refreshUI();
     });
     blockRow.querySelector('.cs-switch-btn')?.addEventListener('click', () => {
@@ -415,6 +428,9 @@ async function renderUpcomingBlockStrip() {
         state.timerState.queuedTaskId = block.focus_area_id;
         saveData();
         renderUpcomingBlockStrip();
+    });
+    blockRow.querySelector('.cs-reschedule-btn')?.addEventListener('click', () => {
+        window.openPlannerToReschedule?.(block.id);
     });
 }
 
@@ -524,12 +540,14 @@ function handleSessionComplete(isSkip = false) {
         SettingsService.sendNotification(title, body);
 
         // Apply queued focus area after a work session completes
+        let hadQueue = false;
         if (wasWork && state.timerState.queuedTaskId) {
             state.timerState.activeTaskId = state.timerState.queuedTaskId;
             state.timerState.queuedTaskId = null;
+            hadQueue = true;
         }
 
-        const shouldAutoStart = wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork;
+        const shouldAutoStart = hadQueue || (wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork);
         if (shouldAutoStart) {
             timer.applyMode(nextMode);
             timer.start();
@@ -1586,7 +1604,7 @@ function setupEventListeners() {
         'durationToggle': toggleOrbit,
         'incDuration': () => adjustDuration(1),
         'decDuration': () => adjustDuration(-1),
-        'focusAreaLink': openFocusAreas, 
+        'focusAreaLink': openFocusAreas,
         'clearFocusArea': (e) => { e.stopPropagation(); mutations.updateTimer({ activeTaskId: null }); refreshUI(); saveData(); },
         'focusAreaOverlay': closeFocusAreas, 'planOverlay': closePlan,
         'historyPrevPage': () => { if (historyPage > 0) { historyPage--; refreshUI(); } },

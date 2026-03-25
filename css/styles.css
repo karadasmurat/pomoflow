@@ -355,6 +355,38 @@ header {
         padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     }
 
+    .panel {
+        padding: 10px 12px;
+    }
+
+    .timer-panel {
+        padding-top: 0;
+    }
+
+    .context-strip {
+        margin: 10px auto 10px;
+    }
+
+    .timer-container {
+        width: 240px;
+        height: 240px;
+        margin-bottom: 8px;
+    }
+
+    .timer-duration-shortcuts.orbit {
+        width: 276px;
+        height: 276px;
+    }
+
+    .timer-ripples {
+        width: 240px;
+        height: 240px;
+    }
+
+    .focus-area-input-container {
+        margin-bottom: 4px;
+    }
+
     /* Focus Areas panel: full-page tab on mobile, not a side drawer */
     .focus-area-panel {
         width: 100% !important;
@@ -1305,19 +1337,39 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     color: var(--text-primary);
 }
 
-/* --- Context Strip (unified planned block + focus area bridge) --- */
+/* --- Context Strip (Dynamic Island-inspired) --- */
 .context-strip {
     width: 100%;
-    max-width: 320px;
-    margin: 0 auto 16px;
-    border-radius: var(--r-lg);
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
+    max-width: 340px;
+    margin: 10px auto 14px;
+    border-radius: 999px;
+    background: #141414;
+    border: none;
     overflow: hidden;
-    transition: border-color 0.2s ease;
+    transition: border-radius 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.25s ease;
+    box-shadow:
+        0 6px 28px rgba(0,0,0,0.55),
+        0 2px 8px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.13);
+}
+/* Expand to rounded rect when a block row is shown */
+.context-strip[data-block-state] {
+    border-radius: 22px;
 }
 .context-strip[data-block-state="active"] {
-    border-color: var(--accent);
+    box-shadow:
+        0 6px 28px rgba(0,0,0,0.55),
+        0 2px 8px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.13),
+        0 0 0 1.5px var(--danger);
+}
+.context-strip[data-block-state="conflict"] {
+    box-shadow:
+        0 6px 28px rgba(0,0,0,0.55),
+        0 2px 8px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.13),
+        0 0 0 1.5px var(--danger);
 }
 
 /* Block context row */
@@ -1325,76 +1377,93 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
     cursor: pointer;
     user-select: none;
 }
 .cs-block-dot {
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 .cs-block-label {
     flex: 1;
     font-size: 12px;
-    color: var(--text-secondary);
+    color: rgba(255,255,255,0.72);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .cs-expand-btn {
-    background: none;
+    background: rgba(255,255,255,0.1);
     border: none;
+    border-radius: 999px;
+    width: 22px;
+    height: 22px;
+    min-height: unset;
     padding: 0;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.55);
     cursor: pointer;
     display: flex;
     align-items: center;
-    font-size: 12px;
+    justify-content: center;
+    font-size: 10px;
     flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
 }
-.cs-expand-btn:hover { color: var(--text-secondary); }
+.cs-expand-btn:hover {
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.9);
+}
 .cs-start-btn {
     background: var(--accent);
     color: #fff;
     border: none;
-    border-radius: var(--r-xs);
-    padding: 3px 10px;
+    border-radius: 999px;
+    padding: 4px 13px;
+    min-height: unset;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition: opacity 0.15s, transform 0.1s;
     flex-shrink: 0;
 }
-.cs-start-btn:hover { opacity: 0.85; }
+.cs-start-btn:hover { opacity: 0.88; transform: scale(1.03); }
 .cs-conflict-actions {
     display: flex;
-    gap: 6px;
+    gap: 5px;
     margin-top: 6px;
+    flex-wrap: wrap;
 }
 .cs-switch-btn,
-.cs-after-btn {
-    background: var(--surface);
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--r-xs);
-    padding: 3px 8px;
+.cs-after-btn,
+.cs-reschedule-btn {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.72);
+    border: none;
+    border-radius: 999px;
+    padding: 4px 11px;
+    min-height: unset;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 0.15s, color 0.15s;
     flex-shrink: 0;
     white-space: nowrap;
 }
 .cs-switch-btn:hover {
-    border-color: var(--text-secondary);
-    color: var(--text-primary);
+    background: rgba(255,255,255,0.18);
+    color: #fff;
 }
 .cs-after-btn:hover {
-    border-color: var(--accent);
+    background: rgba(46, 160, 67, 0.22);
     color: var(--accent);
+}
+.cs-reschedule-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
 }
 .cs-queued-label {
     font-size: 11px;
@@ -1402,10 +1471,13 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     color: var(--accent);
     flex-shrink: 0;
     white-space: nowrap;
+    background: rgba(46, 160, 67, 0.15);
+    padding: 3px 11px;
+    border-radius: 999px;
 }
 .cs-block-expanded {
-    padding: 8px 12px 10px;
-    border-bottom: 1px solid var(--border);
+    padding: 8px 14px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -1425,21 +1497,21 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 .cs-block-area-name {
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: rgba(255,255,255,0.9);
 }
 .cs-block-meta {
     font-size: 11px;
-    color: var(--text-secondary);
+    color: rgba(255,255,255,0.45);
     font-family: var(--font-mono);
 }
 .cs-block-notes {
     font-size: 11px;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.38);
     font-style: italic;
 }
 .cs-block-desc {
     font-size: 11px;
-    color: var(--text-secondary);
+    color: rgba(255,255,255,0.55);
     line-height: 1.5;
 }
 
@@ -1448,30 +1520,53 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 12px;
-    min-height: 44px;
+    padding: 9px 14px;
+    min-height: 42px;
+}
+/* Text color in the dark pill context */
+.context-strip .focus-area-question {
+    color: rgba(255,255,255,0.42);
+}
+.context-strip .focus-area-progress-hud {
+    color: rgba(255,255,255,0.4);
 }
 
 /* Focus area link overrides inside the strip */
 .context-strip .timer-focus-area-link {
     margin-left: auto;
-    background: var(--bg);
+    background: rgba(255,255,255,0.09);
+    border-color: transparent;
+    border-radius: 999px;
+    color: rgba(255,255,255,0.72);
     flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .context-strip .timer-focus-area-link:hover {
-    background: var(--border);
-    border-color: var(--text-secondary);
+    background: rgba(255,255,255,0.16);
+    border-color: transparent;
+    color: rgba(255,255,255,0.95);
     transform: none;
+}
+.context-strip .timer-focus-area-link.has-focus-area {
+    background: rgba(255,255,255,0.09);
+    border-color: transparent;
+}
+.context-strip .timer-focus-area-link.has-focus-area:hover {
+    background: rgba(255,255,255,0.16);
+    border-color: transparent;
 }
 .context-strip .timer-focus-area-link.is-empty {
     width: 26px;
     height: 26px;
     min-width: 26px;
     min-height: 26px;
-    box-shadow: 0 1px 4px rgba(88, 166, 255, 0.2);
+    background: var(--primary);
+    border-color: transparent;
+    box-shadow: 0 1px 6px rgba(88, 166, 255, 0.35);
 }
 .context-strip .timer-focus-area-link.is-empty:hover {
     transform: scale(1.05);
+    background: var(--primary);
 }
 
 .set-aim-cta {
@@ -1608,6 +1703,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     align-items: center;
     position: relative;
     overflow: visible;
+    padding-top: 0;
 }
 
 .timer-share-wrapper {
@@ -1616,7 +1712,6 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     right: 16px;
     z-index: 100;
 }
-
 .history-panel {
     width: 100%;
 }
@@ -3135,34 +3230,34 @@ sliding-card[active] .focus-area-play-btn {
     opacity: 1;
     z-index: 101;
     background: var(--surface);
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border: none;
     width: 40px;
     height: 40px;
     font-size: 20px;
     transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg)));
-    transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 200ms ease;
     color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     animation: crown-intro 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) 1s both;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.13);
 }
 
 .orbiter.trigger:hover {
-    border-color: var(--timer-accent);
-    box-shadow: 0 0 14px var(--timer-accent-glow);
+    filter: brightness(1.7) drop-shadow(0 0 6px var(--timer-accent-glow));
     color: var(--text-primary);
 }
 
 [data-theme="light"] .orbiter.trigger {
     background: var(--surface);
-    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 @keyframes crown-intro {
-    0%   { box-shadow: 0 0 0 0 transparent; border-color: rgba(255, 255, 255, 0.2); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1); }
-    40%  { box-shadow: 0 0 16px var(--timer-accent-glow); border-color: var(--timer-accent); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1.18); }
-    100% { box-shadow: 0 0 0 0 transparent; border-color: rgba(255, 255, 255, 0.2); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1); }
+    0%   { box-shadow: 0 4px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.13); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1); }
+    40%  { box-shadow: 0 0 16px var(--timer-accent-glow), inset 0 1px 0 rgba(255,255,255,0.13); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1.18); }
+    100% { box-shadow: 0 4px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.13); transform: rotate(var(--angle, 90deg)) translateY(calc(-1 * var(--distance))) rotate(calc(-1 * var(--angle, 90deg))) scale(1); }
 }
 
 /* Connecting stem */
@@ -5232,21 +5327,6 @@ button {
     animation: toast-glow 2s infinite;
 }
 
-.keyboard-hint {
-    font-size: 11px;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-top: 16px;
-    opacity: 0.7;
-}
-
-.keyboard-hint kbd {
-    background: var(--bg);
-    padding: 2px 6px;
-    border-radius: var(--r-xs);
-    font-family: var(--font-time);
-    margin: 0 2px;
-}
 
 /* MOBILE REFINEMENTS (< 600px) */
 @media (max-width: 600px) {
