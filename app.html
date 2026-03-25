@@ -624,6 +624,36 @@
           </button>
         </div>
 
+        <!-- Music bar -->
+        <div class="music-bar">
+          <button class="music-toggle-btn" id="musicToggleBtn">
+            <i class="ph ph-music-note"></i>
+            <span id="musicToggleLabel">Sounds</span>
+          </button>
+        </div>
+
+        <!-- Music popover -->
+        <div class="music-popover" id="musicPopover" hidden>
+          <div class="music-tracks" id="musicTracks">
+            <button class="music-track-btn active" data-track="off">Off</button>
+            <button class="music-track-btn" data-track="white">White noise</button>
+            <button class="music-track-btn" data-track="brown">Brown noise</button>
+            <button class="music-track-btn" data-track="rain">Rain</button>
+            <button class="music-track-btn" data-track="binaural">
+              Binaural <i class="ph ph-headphones" title="Best with headphones"></i>
+            </button>
+            <button class="music-track-btn music-track-btn--branded" data-track="shwn">
+              shwn. <i class="ph ph-music-note"></i>
+            </button>
+          </div>
+
+          <div class="music-divider"></div>
+
+          <div class="music-footer-row">
+            <span class="music-footer-label">Pause on break</span>
+            <div class="setting-toggle" id="musicPauseOnBreak" role="switch" aria-checked="true"></div>
+          </div>
+        </div>
 
       </section>
 
@@ -1005,13 +1035,9 @@
     </div>
 
     <div class="settings-tabs" id="settingsTabs">
-      <button class="settings-tab active" data-tab="timer" title="Timer Settings">
-        <i class="ph ph-timer"></i>
-        <span>Timer</span>
-      </button>
-      <button class="settings-tab" data-tab="calendar" title="Calendar Settings">
-        <i class="ph ph-calendar"></i>
-        <span>Calendar</span>
+      <button class="settings-tab active" data-tab="timer" title="Time Settings">
+        <i class="ph ph-fill ph-clock"></i>
+        <span>Time</span>
       </button>
       <button class="settings-tab" data-tab="notifications" title="Notification Settings">
         <i class="ph ph-bell"></i>
@@ -1032,7 +1058,7 @@
         <div class="setting-group">
           <div class="setting-label">
             <div class="setting-label-row">
-              <span>Work Duration</span>
+              <span>Focus Duration</span>
               <span class="setting-value" id="workDurationValue">25 min</span>
             </div>
           </div>
@@ -1060,10 +1086,19 @@
         </div>
 
         <div class="setting-group">
-          <label class="setting-label">
-            <span>Sessions Before Long Break</span>
-            <input type="number" class="setting-input" id="sessionsBeforeLongBreak" min="1" max="10" value="4">
-          </label>
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Long break after</span>
+              <span class="setting-hint">Sessions before a long break</span>
+            </div>
+            <select id="sessionsBeforeLongBreak" class="setting-select">
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
         </div>
 
         <div class="setting-group">
@@ -1075,23 +1110,12 @@
 
         <div class="setting-group">
           <div class="setting-row">
-            <label class="setting-label">Auto-start Work Sessions</label>
+            <label class="setting-label">Auto-start Focus Sessions</label>
             <div class="setting-toggle" id="autoStartWork" role="switch" aria-checked="false"></div>
           </div>
         </div>
 
-        <div class="setting-group">
-          <label class="setting-label">Card Style</label>
-          <div class="filter-group" id="cardVariantSelect">
-            <button class="filter-btn active" data-variant="glass">Glass</button>
-            <button class="filter-btn" data-variant="bento">Bento</button>
-            <button class="filter-btn" data-variant="skeuo">Skeuo</button>
-            <button class="filter-btn" data-variant="flat">Flat</button>
-          </div>
-        </div>
-      </div>
 
-      <div class="settings-section" id="tab-calendar">
         <div class="setting-group">
           <div class="setting-row">
             <label class="setting-label">12h Time Format</label>
@@ -1100,112 +1124,140 @@
         </div>
 
         <div class="setting-group">
-          <div class="setting-label">
-            <div class="setting-label-row">
-              <span>Active Hours</span>
-              <span class="setting-hint">Calendar default range</span>
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Planner Hours</span>
+              <span class="setting-hint">Default visible range in the calendar</span>
             </div>
-          </div>
-          <div class="setting-row setting-row--gap">
-            <select id="activeHoursStart" class="setting-select"></select>
-            <span class="setting-sep">to</span>
-            <select id="activeHoursEnd" class="setting-select"></select>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <select id="activeHoursStart" class="setting-select"></select>
+              <span class="setting-sep">–</span>
+              <select id="activeHoursEnd" class="setting-select"></select>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="settings-section" id="tab-notifications">
         <div class="setting-group">
-          <label class="setting-label">Notifications</label>
-          <div class="setting-row setting-row--gap">
-            <button class="filter-btn" id="requestNotifyManual">
-              <i class="ph ph-bell-ringing" style="font-size:14px"></i>
-              Enable Push
-            </button>
-            <button class="filter-btn" id="testNotify">
-              <i class="ph ph-bell" style="font-size:14px"></i>
-              Test Notify
-            </button>
-            <button class="filter-btn" id="testSound">
-              <i class="ph ph-speaker-high" style="font-size:14px"></i>
-              Test Sound
-            </button>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-label">Planned block reminders</div>
-          <select id="blockReminderMinutes" class="popover-select" style="width:100%">
-            <option value="0">Off</option>
-            <option value="5">5 minutes before</option>
-            <option value="10">10 minutes before</option>
-            <option value="15">15 minutes before</option>
-            <option value="30">30 minutes before</option>
-            <option value="60">1 hour before</option>
-          </select>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-label">
-            <div class="setting-label-row">
-              <span>Sound Volume</span>
-              <span class="setting-value" id="soundVolumeValue">70%</span>
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Push Notifications</span>
+              <span class="setting-hint">Alerts when sessions end</span>
             </div>
+            <button class="setting-action-btn" id="requestNotifyManual">
+              <i class="ph ph-bell-ringing"></i> Enable
+            </button>
           </div>
-          <input type="range" class="setting-slider" id="soundVolume" min="0" max="100" value="70">
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Block reminders</span>
+              <span class="setting-hint">Notify before a block starts</span>
+            </div>
+            <select id="blockReminderMinutes" class="setting-select">
+              <option value="0">Off</option>
+              <option value="10">10 min</option>
+              <option value="30">30 min</option>
+              <option value="60">1 hour</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Test Notification</span>
+              <span class="setting-hint">Send a sample push alert</span>
+            </div>
+            <button class="setting-action-btn" id="testNotify">
+              <i class="ph ph-bell"></i> Send
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Test Sound</span>
+              <span class="setting-hint">Play the session end chime</span>
+            </div>
+            <button class="setting-action-btn" id="testSound">
+              <i class="ph ph-speaker-high"></i> Play
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="settings-section" id="tab-sharing">
-        <div class="setting-group">
-          <div class="setting-label">Sharing Templates</div>
-          <div class="template-help">Placeholders: {focusArea}, {duration}, {time}, {xp}</div>
-
-          <div class="template-field">
-            <label>Setting Intent</label>
-            <textarea id="templateIntent" class="setting-textarea" rows="2"
-              placeholder="Focusing on: {focusArea}..."></textarea>
-          </div>
-
-          <div class="template-field">
-            <label>Session Complete</label>
-            <textarea id="templateSession" class="setting-textarea" rows="2"
-              placeholder="Session complete: {focusArea}..."></textarea>
-          </div>
-
-          <div class="template-field">
-            <label>Focus Area Reached</label>
-            <textarea id="templateMilestone" class="setting-textarea" rows="2"
-              placeholder="Focus area target reached: {focusArea}..."></textarea>
-          </div>
-
-          <div class="template-field">
-            <label>Current Mood</label>
-            <textarea id="templateMood" class="setting-textarea" rows="4"
-              placeholder="Current Mood: {avatar} {mood}..."></textarea>
-          </div>
+        <div class="template-tokens">
+          <span class="template-tokens-label">Available tokens:</span>
+          <code>{focusArea}</code><code>{duration}</code><code>{time}</code><code>{xp}</code>
         </div>
 
+        <div class="template-field">
+          <label class="template-field-label">Setting Intent</label>
+          <textarea id="templateIntent" class="setting-textarea" rows="2"
+            placeholder="Focusing on: {focusArea}..."></textarea>
+        </div>
+
+        <div class="template-field">
+          <label class="template-field-label">Session Complete</label>
+          <textarea id="templateSession" class="setting-textarea" rows="2"
+            placeholder="Session complete: {focusArea}..."></textarea>
+        </div>
+
+        <div class="template-field">
+          <label class="template-field-label">Focus Area Reached</label>
+          <textarea id="templateMilestone" class="setting-textarea" rows="2"
+            placeholder="Focus area target reached: {focusArea}..."></textarea>
+        </div>
+
+        <div class="template-field">
+          <label class="template-field-label">Current Mood</label>
+          <textarea id="templateMood" class="setting-textarea" rows="3"
+            placeholder="Current Mood: {avatar} {mood}..."></textarea>
+        </div>
       </div>
 
       <div class="settings-section" id="tab-data">
         <div class="setting-group">
-          <label class="setting-label">Data Management</label>
-          <div class="data-buttons">
-            <button class="btn btn-secondary" id="exportData">Export Data</button>
-            <div class="import-wrapper">
-              <input type="file" id="importFile" accept=".json" style="display: none;">
-              <button class="btn btn-secondary" id="importData">Import Data</button>
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Export Data</span>
+              <span class="setting-hint">Download all sessions and focus areas</span>
             </div>
+            <button class="setting-action-btn" id="exportData">
+              <i class="ph ph-download-simple"></i> Export
+            </button>
           </div>
-          <button class="btn btn-secondary" id="restoreDefaults">
-            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-              <path
-                d="M240,128a112,112,0,1,1-212.52-56,12,12,0,0,1,21,11.48A88,88,0,1,0,128,40V64a12,12,0,0,1-24,0V16a12,12,0,0,1,12-12h48a12,12,0,0,1,0,24H148.29A111.6,111.16,0,0,1,240,128Z">
-              </path>
-            </svg>
-            Restore Default Areas
-          </button>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Import Data</span>
+              <span class="setting-hint">Restore from a previous export</span>
+            </div>
+            <button class="setting-action-btn" id="importData">
+              <i class="ph ph-upload-simple"></i> Import
+            </button>
+          </div>
+          <input type="file" id="importFile" accept=".json" style="display: none;">
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Restore Default Areas</span>
+              <span class="setting-hint">Reset focus areas to factory defaults</span>
+            </div>
+            <button class="setting-action-btn setting-action-btn--danger" id="restoreDefaults">
+              <i class="ph ph-arrow-counter-clockwise"></i> Reset
+            </button>
+          </div>
         </div>
       </div>
     </div>

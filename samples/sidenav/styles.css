@@ -1,0 +1,418 @@
+:root {
+    --bg-body: #f3f4f6;
+    --bg-sidebar: #111827; /* Dark charcoal/slate */
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --hover-bg: #1f2937;
+    --active-bg: #1f2937;
+    --border-color: #374151;
+    --sidebar-width: 280px;
+    --sidebar-width-collapsed: 80px;
+    --transition-speed: 0.3s;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-body);
+    color: #1f2937;
+    height: 100vh;
+    overflow: hidden; /* Prevent body scroll, handle in main/sidebar */
+}
+
+.container {
+    display: flex;
+    height: 100%;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-sidebar);
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: width var(--transition-speed) ease;
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.sidebar.collapsed {
+    width: var(--sidebar-width-collapsed);
+}
+
+/* Header */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    height: 72px;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: opacity var(--transition-speed);
+}
+
+.sidebar.collapsed .logo-wrapper {
+    /* In collapsed mode, we might want to hide the text or adjust */
+    /* For this design, let's keep the icon visible */
+}
+
+.sidebar.collapsed .logo-text {
+    opacity: 0;
+    width: 0;
+    display: none; /* simple hide */
+}
+
+.logo-icon {
+    min-width: 32px;
+    height: 32px;
+    background-color: var(--text-primary);
+    color: var(--bg-sidebar);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.logo-text {
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--hover-bg);
+}
+
+.sidebar.collapsed .toggle-btn {
+    transform: rotate(180deg);
+    position: absolute;
+    top: 24px;
+    right: 50%; /* Center horizontally in collapsed state? Or keep at right? */
+    transform-origin: center;
+    /* Actually, often the toggle button disappears or moves in collapsed state. 
+       Let's keep it accessible. */
+    right: 10px; /* Adjust as needed */
+    margin-right: -14px; /* Pull it out slightly or keep inside? */
+    /* Let's center it in the header area for collapsed state */
+    right: auto;
+    left: 50%;
+    margin-left: -14px; /* Half of width approx */
+    top: 70px; /* Move it down below logo? Or maybe logo becomes the toggle? */
+    /* Let's stick to a simple placement */
+    position: static;
+    margin: 0 auto;
+    margin-top: 10px; 
+    transform: rotate(180deg);
+}
+
+.sidebar.collapsed .sidebar-header {
+    flex-direction: column;
+    padding: 20px 10px;
+    gap: 10px;
+    height: auto;
+}
+
+/* Search */
+.search-wrapper {
+    padding: 0 16px;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.search-wrapper i {
+    position: absolute;
+    left: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.search-wrapper input {
+    width: 100%;
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 10px 10px 36px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.search-wrapper input:focus {
+    border-color: var(--text-primary);
+}
+
+.sidebar.collapsed .search-wrapper {
+    padding: 0 10px;
+    display: flex;
+    justify-content: center;
+}
+
+.sidebar.collapsed .search-wrapper input {
+    padding: 10px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer; /* Maybe clicking expands sidebar? */
+}
+.sidebar.collapsed .search-wrapper i {
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+.sidebar.collapsed .search-wrapper input::placeholder {
+    color: transparent;
+}
+
+
+/* Menu */
+.sidebar-menu {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px;
+}
+
+.sidebar.collapsed .sidebar-menu {
+    padding: 0 10px;
+}
+
+.menu-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.menu-item a {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.menu-item a:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.menu-item.active > a {
+    background-color: var(--active-bg);
+    color: var(--text-primary);
+}
+
+.menu-item i {
+    font-size: 20px;
+    min-width: 24px;
+    display: flex;
+    justify-content: center;
+}
+
+.menu-item .text {
+    margin-left: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+.sidebar.collapsed .menu-item .text {
+    opacity: 0;
+    width: 0;
+    display: none;
+}
+
+.sidebar.collapsed .menu-item a {
+    justify-content: center;
+    padding: 10px;
+}
+
+.sidebar.collapsed .menu-item i {
+    margin: 0;
+}
+
+/* Submenu */
+.submenu {
+    list-style: none;
+    padding-left: 48px; /* Indent submenu */
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.submenu li a {
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.menu-item.open .submenu {
+    max-height: 500px; /* Arbitrary large number */
+}
+
+.menu-item .submenu-icon {
+    margin-left: auto;
+    font-size: 16px;
+    transition: transform 0.2s;
+    min-width: auto;
+}
+
+.menu-item.open .submenu-icon {
+    transform: rotate(180deg);
+}
+
+.sidebar.collapsed .submenu {
+    display: none; /* Hide submenus completely in collapsed state for now */
+}
+.sidebar.collapsed .submenu-icon {
+    display: none;
+}
+
+.menu-link-content {
+    display: flex;
+    align-items: center;
+}
+
+/* Footer */
+.sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+}
+.sidebar.collapsed .sidebar-footer {
+    padding: 16px 10px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    overflow: hidden;
+}
+
+.user-profile:hover {
+    background-color: var(--hover-bg);
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.user-info {
+    margin-left: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.user-name {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.user-email {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: none; /* Show on hover? Or always? Image shows logout icon */
+}
+
+.user-profile:hover .logout-btn {
+    display: block;
+}
+
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .logout-btn {
+    display: none;
+}
+
+.sidebar.collapsed .user-profile {
+    justify-content: center;
+    padding: 8px;
+}
+
+.sidebar.collapsed .avatar {
+    margin: 0;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    padding: 32px;
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        z-index: 100;
+        height: 100%;
+        /* If we want it to be a drawer that slides in */
+        /* For "collapsed" default on mobile: */
+        width: var(--sidebar-width-collapsed);
+    }
+    
+    .sidebar.expanded-mobile {
+        width: var(--sidebar-width);
+    }
+
+    /* Adjust main content margin if sidebar is fixed */
+    .main-content {
+        margin-left: var(--sidebar-width-collapsed);
+    }
+}

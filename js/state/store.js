@@ -90,12 +90,16 @@ export let state = {
         sessionsBeforeLongBreak: 4,
         autoStartBreaks: false,
         autoStartWork: false,
-        soundVolume: 70,
+        soundVolume: 100,
         blockReminderMinutes: 10,
         use12Hour: false,
         activeHoursStart: 8,
         activeHoursEnd: 22,
         cardVariant: 'glass',
+        music: {
+            track: 'off',
+            pauseOnBreak: true
+        },
         shareTemplates: {
             intent: "🧠 Focusing on {focusArea} for {duration} mins. Back at {time}! 🚀 #PomoFlow #DeepWork",
             session: "🎯 Session complete! Focused on {focusArea} for {duration} mins. Earned {xp} XP! 📈 #PomoFlow",

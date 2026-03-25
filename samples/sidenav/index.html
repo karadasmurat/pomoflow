@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Side Navigation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-wrapper">
+                    <div class="logo-icon">
+                        <i class="ph-fill ph-paw-print"></i>
+                    </div>
+                    <span class="logo-text">Untitled UI</span>
+                </div>
+                <button class="toggle-btn" id="toggle-btn">
+                    <i class="ph ph-caret-left"></i>
+                </button>
+            </div>
+
+            <div class="search-wrapper">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" placeholder="Search">
+            </div>
+
+            <div class="sidebar-menu">
+                <ul class="menu-list">
+                    <li class="menu-item active">
+                        <a href="#">
+                            <i class="ph ph-house"></i>
+                            <span class="text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-chart-bar"></i>
+                            <span class="text">Orders</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-users"></i>
+                            <span class="text">Customers</span>
+                        </a>
+                    </li>
+                    <li class="menu-item has-submenu">
+                        <a href="#" class="submenu-toggle">
+                            <div class="menu-link-content">
+                                <i class="ph ph-bank"></i>
+                                <span class="text">Bank accounts</span>
+                            </div>
+                            <i class="ph ph-caret-down submenu-icon"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="#"><span class="text">Local currency</span></a></li>
+                            <li><a href="#"><span class="text">Foreign currency</span></a></li>
+                            <li><a href="#"><span class="text">Beneficiaries</span></a></li>
+                            <li><a href="#"><span class="text">Transactions</span></a></li>
+                        </ul>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-wallet"></i>
+                            <span class="text">Wallet</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-arrows-left-right"></i>
+                            <span class="text">Transfers</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-credit-card"></i>
+                            <span class="text">Cards</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-user"></i>
+                            <span class="text">Account</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <ul class="menu-list">
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-life-buoy"></i>
+                            <span class="text">Support</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#">
+                            <i class="ph ph-gear"></i>
+                            <span class="text">Settings</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="user-profile">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Avatar" class="avatar">
+                    <div class="user-info">
+                        <span class="user-name">Caitlyn King</span>
+                        <span class="user-email">caitlyn@untitledui.com</span>
+                    </div>
+                    <button class="logout-btn">
+                        <i class="ph ph-sign-out"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        
+        <main class="main-content">
+            <h1>Dashboard Content</h1>
+            <p>This is where your main content would go.</p>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -18,6 +18,7 @@ import { PlannerView } from './ui/planner.view.js';
 import { NotificationView } from './ui/notifications.view.js';
 import { NotificationService } from './services/notification.service.js';
 import { syncService } from './services/sync.service.js';
+import { musicEngine } from './engine/music.js';
 import { supabase } from './services/supabase.js';
 
 let currentFilter = 'today';
@@ -217,6 +218,90 @@ async function init() {
     // Check reminders immediately and then every minute
     checkBlockReminders();
     setInterval(checkBlockReminders, 60000);
+
+    initMusicUI();
+}
+
+// ── Music helpers ─────────────────────────────────────────────────────────────
+
+function musicPlay() {
+    const m = state.settings.music;
+    if (!m || m.track === 'off') return;
+    musicEngine.play(m.track);
+}
+
+function musicPause() {
+    if (musicEngine.isPlaying) musicEngine.pause();
+}
+
+function initMusicUI() {
+    const m = state.settings.music ?? {};
+    const toggleBtn = document.getElementById('musicToggleBtn');
+    const popover   = document.getElementById('musicPopover');
+    const tracks    = document.getElementById('musicTracks');
+    const pauseToggle = document.getElementById('musicPauseOnBreak');
+
+    if (!toggleBtn) return;
+
+    // Restore saved state
+    if (pauseToggle) {
+        const val = m.pauseOnBreak !== false;
+        pauseToggle.classList.toggle('active', val);
+        pauseToggle.setAttribute('aria-checked', val);
+    }
+    _setActiveTrack(tracks, m.track ?? 'off');
+
+    // Toggle popover
+    toggleBtn.addEventListener('click', () => {
+        const isOpen = !popover.hidden;
+        popover.hidden = isOpen;
+        toggleBtn.classList.toggle('active', !isOpen);
+    });
+
+    // Close popover on outside click
+    document.addEventListener('click', e => {
+        if (!popover.hidden && !popover.contains(e.target) && e.target !== toggleBtn && !toggleBtn.contains(e.target)) {
+            popover.hidden = true;
+            toggleBtn.classList.remove('active');
+        }
+    });
+
+    // Track selection
+    tracks?.addEventListener('click', e => {
+        const btn = e.target.closest('.music-track-btn');
+        if (!btn) return;
+        const track = btn.dataset.track;
+        _setActiveTrack(tracks, track);
+        mutations.updateSettings({ music: { ...state.settings.music, track } });
+        if (track === 'off') {
+            musicEngine.stop();
+            _updateToggleLabel('Sounds');
+        } else {
+            musicEngine.play(track);
+            _updateToggleLabel(btn.textContent.trim());
+        }
+        saveData();
+    });
+
+    // Pause on break toggle
+    pauseToggle?.addEventListener('click', () => {
+        const next = !pauseToggle.classList.contains('active');
+        pauseToggle.classList.toggle('active', next);
+        pauseToggle.setAttribute('aria-checked', next);
+        mutations.updateSettings({ music: { ...state.settings.music, pauseOnBreak: next } });
+        saveData();
+    });
+}
+
+function _setActiveTrack(container, track) {
+    container?.querySelectorAll('.music-track-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.track === track);
+    });
+}
+
+function _updateToggleLabel(text) {
+    const label = document.getElementById('musicToggleLabel');
+    if (label) label.textContent = text;
 }
 
 function checkPathDeadlines() {
@@ -497,13 +582,15 @@ async function checkBlockReminders() {
 function toggleTimer() {
     if (state.timerState.isRunning) {
         timer.stop();
+        musicPause();
     } else {
-        // If timer is at 0:00, it means a session just finished. 
+        // If timer is at 0:00, it means a session just finished.
         // Reset to the current mode's duration before starting.
         if (state.timerState.remainingTime <= 0) {
             timer.applyMode(state.timerState.mode);
         }
         timer.start();
+        if (state.timerState.mode === 'work') musicPlay();
     }
     refreshUI();
 }
@@ -557,11 +644,16 @@ function handleSessionComplete(isSkip = false) {
             // User explicitly queued this — skip break, start work immediately
             timer.applyMode('work');
             timer.start();
+            musicPlay();
         } else {
             const shouldAutoStart = wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork;
             if (shouldAutoStart) {
                 timer.applyMode(nextMode);
                 timer.start();
+                if (nextMode === 'work') musicPlay();
+                else if (wasWork && state.settings.music?.pauseOnBreak) musicPause();
+            } else {
+                if (wasWork && state.settings.music?.pauseOnBreak) musicPause();
             }
         }
     }
@@ -1027,6 +1119,7 @@ function openSettings() {
     document.getElementById('workDurationValue').textContent = `${state.settings.workDuration} min`;
     document.getElementById('shortBreakDuration').value = state.settings.shortBreakDuration;
     document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
+    document.getElementById('sessionsBeforeLongBreak').value = String(state.settings.sessionsBeforeLongBreak ?? 4);
 
     // Initialize toggles
     const toggles = {
@@ -1053,19 +1146,13 @@ function openSettings() {
             input.oninput = () => { label.textContent = `${input.value} min`; };
         }
     });
-    const volInput = document.getElementById('soundVolume');
-    const volLabel = document.getElementById('soundVolumeValue');
-    if (volInput && volLabel) {
-        volInput.oninput = () => { volLabel.textContent = `${volInput.value}%`; };
+    const reminderSelect = document.getElementById('blockReminderMinutes');
+    if (reminderSelect) {
+        const validValues = ['0', '10', '30', '60'];
+        const saved = String(state.settings.blockReminderMinutes ?? 10);
+        reminderSelect.value = validValues.includes(saved) ? saved : '10';
     }
 
-    const reminderSelect = document.getElementById('blockReminderMinutes');
-    if (reminderSelect) reminderSelect.value = String(state.settings.blockReminderMinutes ?? 10);
-
-    const variant = state.settings.cardVariant || 'glass';
-    document.querySelectorAll('#cardVariantSelect .filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.variant === variant);
-    });
 }
 
 function toggleOrbit() {
@@ -1142,7 +1229,6 @@ function adjustDuration(delta) {
 }
 
 function closeSettings() {
-    const activeVariantBtn = document.querySelector('#cardVariantSelect .filter-btn.active');
     SettingsService.updateSettings({
         workDuration: parseInt(document.getElementById('workDuration').value),
         shortBreakDuration: parseInt(document.getElementById('shortBreakDuration').value),
@@ -1153,9 +1239,7 @@ function closeSettings() {
         use12Hour: document.getElementById('timeFormat')?.classList.contains('active'),
         activeHoursStart: parseInt(document.getElementById('activeHoursStart').value),
         activeHoursEnd: parseInt(document.getElementById('activeHoursEnd').value),
-        cardVariant: activeVariantBtn ? activeVariantBtn.dataset.variant : 'glass',
-        soundVolume: parseInt(document.getElementById('soundVolume').value),
-        blockReminderMinutes: parseInt(document.getElementById('blockReminderMinutes')?.value ?? 10)
+        blockReminderMinutes: parseInt(document.getElementById('blockReminderMinutes')?.value ?? 15)
     });
     document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open');
     saveData();
