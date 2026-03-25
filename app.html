@@ -1251,45 +1251,49 @@
           <input type="file" id="importFile" accept=".json" style="display: none;">
         </div>
 
-        <div class="setting-group">
-          <div class="setting-row">
-            <div class="setting-label-col">
-              <span class="setting-label">Restore Default Areas</span>
-              <span class="setting-hint">Reset focus areas to factory defaults</span>
-            </div>
-            <button class="setting-action-btn setting-action-btn--danger" id="restoreDefaults">
-              <i class="ph ph-arrow-counter-clockwise"></i> Reset
-            </button>
+        <div class="setting-danger-zone">
+          <div class="setting-danger-zone-label">
+            <i class="ph ph-warning"></i> Danger Zone
           </div>
-        </div>
 
-        <div class="setting-group">
-          <div class="setting-row">
-            <div class="setting-label-col">
-              <span class="setting-label">Reset Stats</span>
-              <span class="setting-hint">Clear XP, level, and achievements</span>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label">Restore Default Areas</span>
+                <span class="setting-hint">Reset focus areas to factory defaults</span>
+              </div>
+              <button class="setting-action-btn setting-action-btn--danger" id="restoreDefaults">
+                <i class="ph ph-arrow-counter-clockwise"></i> Reset
+              </button>
             </div>
-            <button class="setting-action-btn setting-action-btn--danger" id="resetStatsBtn">
-              <i class="ph ph-chart-bar"></i> Reset
-            </button>
           </div>
-        </div>
 
-        <div class="setting-group">
-          <div class="setting-row">
-            <div class="setting-label-col">
-              <span class="setting-label">Delete History</span>
-              <span class="setting-hint">Permanently remove focus sessions</span>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label">Reset Stats</span>
+                <span class="setting-hint">Clear XP, level, and achievements</span>
+              </div>
+              <button class="setting-action-btn setting-action-btn--danger" id="resetStatsBtn">
+                <i class="ph ph-chart-bar"></i> Reset
+              </button>
             </div>
-            <div class="setting-action-col">
-              <div class="history-delete-range" id="historyDeleteRange">
-                <button class="filter-btn" data-range="7">Last 7 days</button>
-                <button class="filter-btn" data-range="30">Last 30 days</button>
-                <button class="filter-btn active" data-range="all">All time</button>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <span class="setting-label">Delete History</span>
+                <span class="setting-hint">Permanently remove focus sessions</span>
               </div>
               <button class="setting-action-btn setting-action-btn--danger" id="deleteHistoryBtn">
                 <i class="ph ph-trash"></i> Delete
               </button>
+            </div>
+            <div class="history-delete-range" id="historyDeleteRange">
+              <button class="filter-btn" data-range="7">Last 7 days</button>
+              <button class="filter-btn" data-range="30">Last 30 days</button>
+              <button class="filter-btn active" data-range="all">All time</button>
             </div>
           </div>
         </div>
@@ -1297,7 +1301,7 @@
     </div>
 
     <div class="panel-footer">
-      <button class="btn-save" id="saveSettings">Save & Close</button>
+      <button class="btn-save" id="saveSettings">Close</button>
     </div>
   </aside>
 

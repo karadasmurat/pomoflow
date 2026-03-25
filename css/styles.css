@@ -652,6 +652,8 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     border-right: 1px solid var(--border);
     border-radius: 0;
     background: var(--surface);
+    display: flex;
+    flex-direction: column;
 }
 
 .settings-panel.open {
@@ -931,6 +933,12 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     padding: 0 16px 0 12px;
     flex-direction: row;
     gap: 6px;
+    outline: none;
+}
+
+.settings-tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .settings-section {
@@ -945,6 +953,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
 .settings-content {
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
 }
 
 
@@ -2114,6 +2123,16 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+}
+
+.setting-group .history-delete-range {
+    margin-top: 10px;
+}
+
+.setting-group .history-delete-range .filter-btn {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 #historyPageLabel {
@@ -4506,21 +4525,28 @@ sliding-card[active] .focus-area-play-btn {
     line-height: 1 !important;
 }
 
+.panel-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
 .btn-save {
     width: 100%;
-    background: var(--primary);
-    color: var(--text-on-accent);
-    border: none;
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
     padding: 10px 20px;
     border-radius: var(--r-md);
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: opacity 150ms;
+    transition: background 150ms, border-color 150ms;
 }
 
 .btn-save:hover {
-    opacity: 0.9;
+    background: var(--border);
+    border-color: transparent;
 }
 
 .data-buttons {
@@ -4578,6 +4604,8 @@ sliding-card[active] .focus-area-play-btn {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1;
+    min-width: 0;
 }
 
 .setting-label-col .setting-label {
@@ -4591,6 +4619,31 @@ sliding-card[active] .focus-area-play-btn {
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.setting-danger-zone {
+    margin-top: 8px;
+    border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    background: color-mix(in srgb, var(--danger) 4%, transparent);
+}
+
+.setting-danger-zone-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--danger);
+    opacity: 0.7;
+    margin-bottom: 16px;
+}
+
+.setting-danger-zone .setting-group:last-child {
+    margin-bottom: 0;
 }
 
 .setting-action-btn {
