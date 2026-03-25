@@ -738,15 +738,6 @@
             </div>
           </div>
         </div>
-        <div class="stats-refresh-row">
-          <span id="lastUpdatedLabel">Updated just now</span>
-          <button id="manualRefreshBtn" class="refresh-btn" aria-label="Refresh metrics">
-            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
-              <path d="M240,128a112,112,0,1,1-212.52-56,12,12,0,0,1,21,11.48A88,88,0,1,0,128,40V64a12,12,0,0,1-24,0V16a12,12,0,0,1,12-12h48a12,12,0,0,1,0,24H148.29A111.6,111.16,0,0,1,240,128Z"></path>
-            </svg>
-          </button>
-        </div>
-
         <div class="history-content-grid">
           <div class="history-analytics-col">
             <div class="history-list-header">
@@ -766,15 +757,15 @@
                 </div>
                 <span class="activity-log-count" id="activityLogCount"></span>
               </button>
-              <div class="history-log-controls">
-                <select id="historyCategoryFilter" class="history-cat-select">
-                  <option value="">All Categories</option>
-                </select>
-                <button id="historySortBtn" class="history-sort-btn">
-                  Newest
-                  <i class="ph ph-arrows-vertical"></i>
-                </button>
-              </div>
+            </div>
+            <div class="history-log-controls">
+              <select id="historyCategoryFilter" class="history-cat-select">
+                <option value="">All Categories</option>
+              </select>
+              <button id="historySortBtn" class="history-sort-btn">
+                Newest
+                <i class="ph ph-arrows-vertical"></i>
+              </button>
             </div>
             <div class="history-list" id="historyList"></div>
             <div class="history-pagination" id="historyPagination" style="display:none">
@@ -783,16 +774,6 @@
               <button id="historyNextPage" class="page-btn">→</button>
             </div>
 
-            <div class="history-delete-row">
-              <div class="history-delete-range" id="historyDeleteRange">
-                <button class="filter-btn" data-range="7">Last 7 days</button>
-                <button class="filter-btn" data-range="30">Last 30 days</button>
-                <button class="filter-btn active" data-range="all">All time</button>
-              </div>
-              <button class="setting-action-btn setting-action-btn--danger" id="deleteHistoryBtn">
-                <i class="ph ph-trash"></i> Delete history
-              </button>
-            </div>
           </div>
         </div>
       </section>
@@ -1291,6 +1272,25 @@
             <button class="setting-action-btn setting-action-btn--danger" id="resetStatsBtn">
               <i class="ph ph-chart-bar"></i> Reset
             </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Delete History</span>
+              <span class="setting-hint">Permanently remove focus sessions</span>
+            </div>
+            <div class="setting-action-col">
+              <div class="history-delete-range" id="historyDeleteRange">
+                <button class="filter-btn" data-range="7">Last 7 days</button>
+                <button class="filter-btn" data-range="30">Last 30 days</button>
+                <button class="filter-btn active" data-range="all">All time</button>
+              </div>
+              <button class="setting-action-btn setting-action-btn--danger" id="deleteHistoryBtn">
+                <i class="ph ph-trash"></i> Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>

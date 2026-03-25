@@ -1643,7 +1643,6 @@ function setupEventListeners() {
         'inlineColorBtn': () => document.getElementById('inlineColorDropdown')?.classList.toggle('open'),
         'inlineIconBtn': () => document.getElementById('inlineIconDropdown')?.classList.toggle('open'),
         'selectTrigger': () => document.getElementById('selectDropdown')?.classList.toggle('open'),
-        'manualRefreshBtn': () => { state.lastRefreshTime = Date.now(); refreshUI(); },
         'sidenav-logout-btn': async (e) => {
             e.stopPropagation();
             await supabase.auth.signOut();

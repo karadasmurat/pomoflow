@@ -1863,7 +1863,6 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
-    min-height: 200px;
 }
 
 
@@ -1929,6 +1928,12 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     color: inherit;
     flex: 1;
     min-width: 0;
+    outline: none;
+}
+.activity-log-toggle-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .activity-log-chevron {
@@ -1980,7 +1985,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: none;
 }
 #activityLogCol.collapsed .history-log-controls {
-    display: none;
+    display: none !important;
 }
 #activityLogCol.collapsed .history-pagination {
     display: none !important;
@@ -2016,7 +2021,8 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 16px 16px 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
 }
 
 .history-cat-select,
@@ -4014,8 +4020,8 @@ sliding-card[active] .focus-area-play-btn {
 }
 
 /* Trend pills */
-.trend-up   { background: rgba(34,197,94,0.15);  color: #22c55e; border-radius: 4px; padding: 2px 6px; }
-.trend-down { background: rgba(239,68,68,0.15);  color: #ef4444; border-radius: 4px; padding: 2px 6px; }
+.trend-up   { background: rgba(34,197,94,0.12);  color: #22c55e; border-radius: 4px; padding: 2px 6px; }
+.trend-down { background: rgba(148,163,184,0.12); color: var(--text-secondary); border-radius: 4px; padding: 2px 6px; }
 .trend-neutral { color: var(--text-secondary); opacity: 0.7; font-size: 11px; }
 
 .hero-badge {
@@ -4577,6 +4583,14 @@ sliding-card[active] .focus-area-play-btn {
 .setting-label-col .setting-label {
     margin: 0;
     font-size: 14px;
+}
+
+.setting-action-col {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .setting-action-btn {
