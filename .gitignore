@@ -33,7 +33,6 @@ temp/
 .parcel-cache/
 
 # Documentation
-docs/
 GEMINI.md
 
 # SQLite Vendor
