@@ -224,10 +224,37 @@ async function init() {
 
 // ── Music helpers ─────────────────────────────────────────────────────────────
 
+const SOUNDS_CACHE_KEY = 'pf_sounds_cache';
+let _soundsList = []; // [{ id, title, url }] loaded from Supabase
+
+async function loadSoundsList() {
+    // Load cache immediately
+    try {
+        const cached = localStorage.getItem(SOUNDS_CACHE_KEY);
+        if (cached) _soundsList = JSON.parse(cached);
+    } catch (e) {}
+
+    // Fetch fresh list from Supabase (public, no auth needed)
+    try {
+        const res = await fetch(
+            'https://ejnkxrogljlbyxmxeasw.supabase.co/rest/v1/sounds?select=id,title,url,position&active=eq.true&order=position.asc',
+            { headers: { apikey: 'sb_publishable_egcVfsvz8irDIYPAWcbAdA_NBYHeAIC', 'Content-Type': 'application/json' } }
+        );
+        if (res.ok) {
+            _soundsList = await res.json();
+            localStorage.setItem(SOUNDS_CACHE_KEY, JSON.stringify(_soundsList));
+        }
+    } catch (e) {
+        console.warn('[music] could not fetch sounds list', e);
+    }
+}
+
+
 function musicPlay() {
     const m = state.settings.music;
     if (!m || m.track === 'off') return;
-    musicEngine.play(m.track);
+    const sound = _soundsList.find(s => s.id === m.track);
+    if (sound) musicEngine.play(sound.url);
 }
 
 function musicPause() {
@@ -236,72 +263,98 @@ function musicPause() {
 
 function initMusicUI() {
     const m = state.settings.music ?? {};
-    const toggleBtn = document.getElementById('musicToggleBtn');
-    const popover   = document.getElementById('musicPopover');
-    const tracks    = document.getElementById('musicTracks');
+    musicEngine.onPlayStateChange = _updatePlayBtn;
+
+    const playBtn     = document.getElementById('musicPlayBtn');
+    const prevBtn     = document.getElementById('musicPrev');
+    const nextBtn     = document.getElementById('musicNext');
     const pauseToggle = document.getElementById('musicPauseOnBreak');
 
-    if (!toggleBtn) return;
+    if (!playBtn) return;
 
-    // Restore saved state
+    // Restore pause-on-break toggle
     if (pauseToggle) {
         const val = m.pauseOnBreak !== false;
         pauseToggle.classList.toggle('active', val);
         pauseToggle.setAttribute('aria-checked', val);
+        pauseToggle.addEventListener('click', () => {
+            const next = !pauseToggle.classList.contains('active');
+            pauseToggle.classList.toggle('active', next);
+            pauseToggle.setAttribute('aria-checked', next);
+            mutations.updateSettings({ music: { ...state.settings.music, pauseOnBreak: next } });
+            saveData();
+        });
     }
-    _setActiveTrack(tracks, m.track ?? 'off');
 
-    // Toggle popover
-    toggleBtn.addEventListener('click', () => {
-        const isOpen = !popover.hidden;
-        popover.hidden = isOpen;
-        toggleBtn.classList.toggle('active', !isOpen);
+    _updateWidgetTrack(m.track ?? 'off');
+    loadSoundsList().then(() => _updateWidgetTrack(m.track ?? 'off'));
+
+    // Play / pause
+    playBtn.addEventListener('click', () => {
+        if (musicEngine.isLoading) return;
+        if (state.settings.music?.track === 'off') return;
+        if (musicEngine.isPlaying) musicEngine.pause();
+        else musicEngine.resume();
     });
 
-    // Close popover on outside click
-    document.addEventListener('click', e => {
-        if (!popover.hidden && !popover.contains(e.target) && e.target !== toggleBtn && !toggleBtn.contains(e.target)) {
-            popover.hidden = true;
-            toggleBtn.classList.remove('active');
-        }
-    });
+    // Prev / next
+    prevBtn?.addEventListener('click', () => { if (!musicEngine.isLoading) _stepTrack(-1); });
+    nextBtn?.addEventListener('click', () => { if (!musicEngine.isLoading) _stepTrack(1); });
+}
 
-    // Track selection
-    tracks?.addEventListener('click', e => {
-        const btn = e.target.closest('.music-track-btn');
-        if (!btn) return;
-        const track = btn.dataset.track;
-        _setActiveTrack(tracks, track);
-        mutations.updateSettings({ music: { ...state.settings.music, track } });
-        if (track === 'off') {
-            musicEngine.stop();
-            _updateToggleLabel('Sounds');
-        } else {
-            musicEngine.play(track);
-            _updateToggleLabel(btn.textContent.trim());
-        }
-        saveData();
-    });
+function _stepTrack(dir) {
+    const ids = ['off', ..._soundsList.map(s => s.id)];
+    const current = state.settings.music?.track ?? 'off';
+    const idx = ids.indexOf(current);
+    const nextId = ids[(idx + dir + ids.length) % ids.length];
+    const sound = _soundsList.find(s => s.id === nextId);
+    _selectTrack(nextId, sound?.url);
+}
 
-    // Pause on break toggle
-    pauseToggle?.addEventListener('click', () => {
-        const next = !pauseToggle.classList.contains('active');
-        pauseToggle.classList.toggle('active', next);
-        pauseToggle.setAttribute('aria-checked', next);
-        mutations.updateSettings({ music: { ...state.settings.music, pauseOnBreak: next } });
-        saveData();
+function _selectTrack(id, url) {
+    mutations.updateSettings({ music: { ...state.settings.music, track: id } });
+    _setActiveTrack(id);
+    _updateWidgetTrack(id);
+    if (id === 'off') {
+        musicEngine.stop();
+    } else if (url) {
+        musicEngine.play(url);
+    }
+    saveData();
+}
+
+function _setActiveTrack(id) {
+    document.getElementById('musicTracks')?.querySelectorAll('.music-track-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.track === id);
     });
 }
 
-function _setActiveTrack(container, track) {
-    container?.querySelectorAll('.music-track-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.track === track);
-    });
+function _updateWidgetTrack(id) {
+    const label = document.getElementById('musicWidgetTrack');
+    const disc  = document.getElementById('musicDisc');
+    const title = id === 'off' ? 'Off' : (_soundsList.find(s => s.id === id)?.title ?? id);
+    if (label) {
+        label.textContent = title;
+        label.classList.toggle('active', id !== 'off');
+    }
+    disc?.classList.toggle('playing', id !== 'off' && musicEngine.isPlaying);
 }
 
-function _updateToggleLabel(text) {
-    const label = document.getElementById('musicToggleLabel');
-    if (label) label.textContent = text;
+function _updatePlayBtn() {
+    const icon    = document.getElementById('musicPlayIcon');
+    const playBtn = document.getElementById('musicPlayBtn');
+    const disc    = document.getElementById('musicDisc');
+    if (!icon) return;
+    if (musicEngine.isLoading) {
+        icon.className = 'ph ph-circle-notch music-spin';
+        playBtn?.setAttribute('disabled', '');
+    } else {
+        icon.className = musicEngine.isPlaying ? 'ph ph-pause' : 'ph ph-play';
+        playBtn?.removeAttribute('disabled');
+    }
+    disc?.classList.toggle('loading', musicEngine.isLoading);
+    disc?.classList.toggle('playing', musicEngine.isPlaying);
+    _updateWidgetTrack(state.settings.music?.track ?? 'off');
 }
 
 function checkPathDeadlines() {
@@ -839,10 +892,37 @@ function deleteSession(id) {
     confirmAction('Delete session record?', 'delete').then(async (conf) => {
         if (conf) {
             state.sessions = state.sessions.filter(s => s.id !== id);
-            if (dbManager.initialized) { console.log('[deleteSession]', id); await dbManager.deleteSession(id); }
+            if (dbManager.initialized) { await dbManager.deleteSession(id); }
             saveData(); refreshUI();
             NotificationService.notifyAction('SESSION_DELETED');
         }
+    });
+}
+
+function deleteHistory() {
+    const activeBtn = document.querySelector('#historyDeleteRange .filter-btn.active');
+    const range = activeBtn?.dataset.range ?? 'all';
+    const rangeLabel = activeBtn?.textContent?.trim() ?? 'all time';
+    confirmAction(`Delete session history (${rangeLabel})?`, 'delete').then(async (conf) => {
+        if (!conf) return;
+        if (range === 'all') {
+            state.sessions = [];
+            if (dbManager.initialized) await dbManager.deleteSessionsBefore(Date.now() + 1);
+        } else {
+            // "Last N days" = delete sessions from the past N days, keep older ones
+            const cutoff = Date.now() - parseInt(range) * 24 * 60 * 60 * 1000;
+            state.sessions = state.sessions.filter(s => s.timestamp < cutoff);
+            if (dbManager.initialized) await dbManager.deleteSessionsFrom(cutoff);
+        }
+        saveData(); refreshUI();
+    });
+}
+
+function resetStats() {
+    confirmAction('Reset XP, level, and all achievements? This cannot be undone.', 'delete').then(async (conf) => {
+        if (!conf) return;
+        mutations.updateState({ xp: 0, totalXp: 0, level: 1, unlockedAchievements: [] });
+        saveData(); refreshUI();
     });
 }
 
@@ -1581,6 +1661,9 @@ function setupEventListeners() {
             SettingsService.handleShare('x', 'mood', { avatar, mood }, notify);
         },
         'focusAreasNavBtn': () => openFocusAreas(),
+        'sidenavActivityBtn': () => {
+            document.getElementById('activityPanel')?.scrollIntoView({ behavior: 'smooth' });
+        },
         'sidenavFocusAreasBtn': () => openFocusAreas(),
         'closeFocusAreaPanel': closeFocusAreas,
         'focusPlannerNavBtn': () => PlannerView.open(),
@@ -1706,6 +1789,8 @@ function setupEventListeners() {
         'historyPrevPage': () => { if (historyPage > 0) { historyPage--; refreshUI(); } },
         'historyNextPage': () => { historyPage++; refreshUI(); },
         'historySortBtn':  () => { historySort = historySort === 'newest' ? 'oldest' : 'newest'; historyPage = 0; refreshUI(); },
+        'deleteHistoryBtn': deleteHistory,
+        'resetStatsBtn': resetStats,
     };
 
     Object.entries(clickMap).forEach(([id, fn]) => {
@@ -1723,6 +1808,13 @@ function setupEventListeners() {
                 .forEach(b => b.classList.toggle('active', b === btn));
             refreshUI();
         };
+    });
+
+    // Delete history range selector
+    document.getElementById('historyDeleteRange')?.addEventListener('click', e => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('#historyDeleteRange .filter-btn').forEach(b => b.classList.toggle('active', b === btn));
     });
 
     // Category filter dropdown

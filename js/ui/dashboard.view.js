@@ -15,6 +15,13 @@ export class DashboardView {
         const todaySessEl = document.getElementById('todaySessions');
         if (todaySessEl) todaySessEl.textContent = data.todaySessions.length;
 
+        // Update inline timer strip
+        const timeLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
+        const stripTime = document.getElementById('timerStatTime');
+        const stripSess = document.getElementById('timerStatSessions');
+        if (stripTime) stripTime.textContent = timeLabel;
+        if (stripSess) stripSess.textContent = data.todaySessions.length;
+
         // Update Streak
         const streakEl = document.getElementById('currentStreak');
         if (streakEl) streakEl.textContent = data.streak > 0 ? `${data.streak} days` : '--';

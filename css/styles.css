@@ -2048,6 +2048,22 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     cursor: default;
 }
 
+.history-delete-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.history-delete-range {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 #historyPageLabel {
     font-size: 12px;
     color: var(--text-secondary);
@@ -3465,53 +3481,145 @@ sliding-card[active] .focus-area-play-btn {
     background: var(--success);
 }
 
-/* ── Music ────────────────────────────────────────────────────────────────── */
-.music-bar {
+/* ── Music widget ─────────────────────────────────────────────────────────── */
+.music-widget-wrap {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     margin-bottom: 16px;
+    gap: 8px;
+    position: relative;
 }
 
-.music-toggle-btn {
+.music-widget {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
+    background: #161618;
     border-radius: 999px;
-    color: var(--text-secondary);
+    height: 52px;
+    padding: 0 20px 0 0;
+    position: relative;
+    margin-left: 22px; /* offset for disc overflow */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+/* The oversized disc overflows the left edge */
+.music-disc {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #0a0a0b;
+    border: 3px solid #2a2a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: -22px; /* pull left to overflow */
+    transition: border-color 0.2s;
+    position: relative;
+    z-index: 1;
+}
+
+
+.music-disc i {
+    font-size: 22px;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.music-disc.playing i {
+    color: var(--accent);
+    animation: disc-pulse 2s ease-in-out infinite;
+}
+
+@keyframes disc-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.music-disc.loading i { color: #555; }
+
+.music-spin {
+    animation: music-spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+@keyframes music-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.music-widget-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-left: 14px;
+    flex: 1;
+}
+
+.music-widget-track {
     font-family: var(--font-sans);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
-    padding: 5px 14px;
+    color: #666;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    min-width: 50px;
+}
+
+.music-widget-track.active {
+    color: var(--text-primary);
+}
+
+.music-widget-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.music-ctrl-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: color 0.15s, background 0.15s;
+    font-size: 15px;
 }
 
-.music-toggle-btn i { font-size: 14px; }
+.music-ctrl-btn:hover { color: var(--text-primary); }
 
-.music-toggle-btn:hover,
-.music-toggle-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
+.music-ctrl-btn--play {
+    width: 36px;
+    height: 36px;
+    background: #2a2a2e;
+    color: var(--text-primary);
+    font-size: 16px;
 }
 
-.music-popover {
+.music-ctrl-btn--play:hover { background: #3a3a3e; }
+
+/* Track picker popover */
+.music-picker {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-    padding: 14px;
+    padding: 12px 14px;
     width: 100%;
-    max-width: 340px;
-    margin: 0 auto 16px;
+    max-width: 320px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.music-tracks {
+.music-picker-tracks {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -3534,10 +3642,7 @@ sliding-card[active] .focus-area-play-btn {
     white-space: nowrap;
 }
 
-.music-track-btn:hover {
-    background: var(--surface-elevated);
-    color: var(--text-primary);
-}
+.music-track-btn:hover { color: var(--text-primary); }
 
 .music-track-btn.active {
     background: var(--accent);
@@ -3555,19 +3660,14 @@ sliding-card[active] .focus-area-play-btn {
     border-color: var(--primary);
 }
 
-.music-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 2px 0;
-}
-
-
-.music-footer-row {
+.music-picker-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 12px;
     color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
 }
 
 /* ── Timer controls ───────────────────────────────────────────────────────── */
@@ -6505,11 +6605,65 @@ sliding-card [slot="menu"] span {
 }
 
 .icon-dim { opacity: 0.6; }
- }
-il-dot {
-    width: 8px;
-    height: 8px;
+
+/* ── Timer inline stats strip ──────────────────────────────── */
+.timer-stats-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    margin-top: 8px;
+    background: var(--surface-elevated);
+    border-radius: 10px;
+    font-size: 13px;
+    width: 100%;
+    max-width: 260px;
 }
 
-.icon-dim { opacity: 0.6; }
- }
+.timer-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.timer-stat-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+}
+
+.timer-stat-label {
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.timer-stat-sep {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    opacity: 0.5;
+}
+
+/* ── Activity panel mobile switching ───────────────────────── */
+@media (max-width: 480px) {
+    .main-content .history-panel {
+        display: none;
+    }
+    .main-content[data-mobile-view="activity"] .timer-panel {
+        display: none;
+    }
+    .main-content[data-mobile-view="activity"] .history-panel {
+        display: block;
+    }
+}
+
+/* ── Sidenav activity button active state ──────────────────── */
+#sidenavActivityBtn.active {
+    color: var(--accent);
+    background: var(--surface-elevated);
+}

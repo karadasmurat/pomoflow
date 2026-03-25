@@ -2341,16 +2341,25 @@ export const PlannerView = {
         if (tab === 'timer') {
             this.close();
             if (typeof closeFocusAreas === 'function') closeFocusAreas();
+            document.querySelector('main.main-content')?.removeAttribute('data-mobile-view');
+            return;
+        }
+        if (tab === 'activity') {
+            this.close();
+            if (typeof closeFocusAreas === 'function') closeFocusAreas();
+            document.querySelector('main.main-content')?.setAttribute('data-mobile-view', 'activity');
+            this._setActiveMobileTab('activity');
             return;
         }
         if (tab === 'areas') {
-            // Reuse the existing Focus Areas panel — no duplication
+            document.querySelector('main.main-content')?.removeAttribute('data-mobile-view');
             const overlay = document.getElementById('focusPlannerOverlay');
             if (overlay && overlay.style.display !== 'none') overlay.style.display = 'none';
             this._setActiveMobileTab('areas');
             if (typeof openFocusAreas === 'function') openFocusAreas();
             return;
         }
+        document.querySelector('main.main-content')?.removeAttribute('data-mobile-view');
         const overlay = document.getElementById('focusPlannerOverlay');
         const isOpen = overlay && overlay.style.display !== 'none';
         if (!isOpen) this.open();

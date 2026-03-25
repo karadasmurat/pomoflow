@@ -198,6 +198,12 @@
             </a>
           </li>
           <li class="sidenav-menu-item">
+            <a href="#" id="sidenavActivityBtn">
+              <i class="ph ph-chart-bar"></i>
+              <span class="sidenav-text">Activity</span>
+            </a>
+          </li>
+          <li class="sidenav-menu-item">
             <a href="#" id="sidenavFocusAreasBtn">
               <i class="ph ph-bookmarks"></i>
               <span class="sidenav-text">Focus Areas</span>
@@ -624,56 +630,54 @@
           </button>
         </div>
 
-        <!-- Music bar -->
-        <div class="music-bar">
-          <button class="music-toggle-btn" id="musicToggleBtn">
-            <i class="ph ph-music-note"></i>
-            <span id="musicToggleLabel">Sounds</span>
-          </button>
-        </div>
-
-        <!-- Music popover -->
-        <div class="music-popover" id="musicPopover" hidden>
-          <div class="music-tracks" id="musicTracks">
-            <button class="music-track-btn active" data-track="off">Off</button>
-            <button class="music-track-btn" data-track="white">White noise</button>
-            <button class="music-track-btn" data-track="brown">Brown noise</button>
-            <button class="music-track-btn" data-track="rain">Rain</button>
-            <button class="music-track-btn" data-track="binaural">
-              Binaural <i class="ph ph-headphones" title="Best with headphones"></i>
-            </button>
-            <button class="music-track-btn music-track-btn--branded" data-track="shwn">
-              shwn. <i class="ph ph-music-note"></i>
-            </button>
+        <!-- Music widget -->
+        <div class="music-widget-wrap">
+          <div class="music-widget" id="musicWidget">
+            <div class="music-disc" id="musicDisc">
+              <i class="ph ph-music-note" id="musicDiscIcon"></i>
+            </div>
+            <div class="music-widget-body">
+              <span class="music-widget-track" id="musicWidgetTrack">Off</span>
+              <div class="music-widget-controls">
+                <button class="music-ctrl-btn" id="musicPrev" aria-label="Previous">
+                  <i class="ph ph-skip-back"></i>
+                </button>
+                <button class="music-ctrl-btn music-ctrl-btn--play" id="musicPlayBtn" aria-label="Play / Pause">
+                  <i class="ph ph-play" id="musicPlayIcon"></i>
+                </button>
+                <button class="music-ctrl-btn" id="musicNext" aria-label="Next">
+                  <i class="ph ph-skip-forward"></i>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div class="music-divider"></div>
+        </div>
 
-          <div class="music-footer-row">
-            <span class="music-footer-label">Pause on break</span>
-            <div class="setting-toggle" id="musicPauseOnBreak" role="switch" aria-checked="true"></div>
+        <!-- Inline today stats -->
+        <div class="timer-stats-strip">
+          <div class="timer-stat">
+            <span class="timer-stat-value" id="timerStatTime">0m</span>
+            <span class="timer-stat-label">focus today</span>
+          </div>
+          <div class="timer-stat-sep"></div>
+          <div class="timer-stat">
+            <span class="timer-stat-value" id="timerStatSessions">0</span>
+            <span class="timer-stat-label">sessions</span>
           </div>
         </div>
 
       </section>
 
-      <section class="panel history-panel">
+      <section class="panel history-panel" id="activityPanel">
         <div class="panel-header">
-          <span>Activity Dashboard</span>
+          <span>Activity</span>
           <div class="panel-header-actions">
             <div class="history-filters">
               <button class="filter-btn active" data-filter="today">Today</button>
               <button class="filter-btn" data-filter="week">Week</button>
               <button class="filter-btn" data-filter="all">All</button>
             </div>
-            <button id="clearHistoryBtn" class="clear-all-btn" aria-label="Clear history">
-              <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
-                <path
-                  d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z">
-                </path>
-              </svg>
-              <span>Clear All</span>
-            </button>
             <div class="expand-group expand-down expand-vertical liquid-fab-container">
               <button class="expand-trigger share-btn liquid-fab-trigger" id="shareFocusBtn" title="Share your focus">
                 <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
@@ -774,6 +778,17 @@
               <button id="historyPrevPage" class="page-btn">←</button>
               <span id="historyPageLabel">Page 1 of 1</span>
               <button id="historyNextPage" class="page-btn">→</button>
+            </div>
+
+            <div class="history-delete-row">
+              <div class="history-delete-range" id="historyDeleteRange">
+                <button class="filter-btn" data-range="7">Last 7 days</button>
+                <button class="filter-btn" data-range="30">Last 30 days</button>
+                <button class="filter-btn active" data-range="all">All time</button>
+              </div>
+              <button class="setting-action-btn setting-action-btn--danger" id="deleteHistoryBtn">
+                <i class="ph ph-trash"></i> Delete history
+              </button>
             </div>
           </div>
         </div>
@@ -1106,6 +1121,10 @@
             <label class="setting-label">Auto-start Breaks</label>
             <div class="setting-toggle" id="autoStartBreaks" role="switch" aria-checked="false"></div>
           </div>
+          <div class="setting-row">
+            <label class="setting-label">Pause music on break</label>
+            <div class="setting-toggle" id="musicPauseOnBreak" role="switch" aria-checked="true"></div>
+          </div>
         </div>
 
         <div class="setting-group">
@@ -1256,6 +1275,18 @@
             </div>
             <button class="setting-action-btn setting-action-btn--danger" id="restoreDefaults">
               <i class="ph ph-arrow-counter-clockwise"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-label-col">
+              <span class="setting-label">Reset Stats</span>
+              <span class="setting-hint">Clear XP, level, and achievements</span>
+            </div>
+            <button class="setting-action-btn setting-action-btn--danger" id="resetStatsBtn">
+              <i class="ph ph-chart-bar"></i> Reset
             </button>
           </div>
         </div>
@@ -4547,7 +4578,11 @@
     </button>
     <button class="mobile-tab" id="mobile-tab-calendar" onclick="mobileTab('calendar')">
       <i class="ph-fill ph-calendar-dots"></i>
-      <span>Calendar</span>
+      <span>Planner</span>
+    </button>
+    <button class="mobile-tab" id="mobile-tab-activity" onclick="mobileTab('activity')">
+      <i class="ph ph-chart-bar"></i>
+      <span>Activity</span>
     </button>
     <button class="mobile-tab" id="mobile-tab-paths" onclick="mobileTab('paths')">
       <i class="ph ph-map-trifold"></i>

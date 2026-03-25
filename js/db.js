@@ -99,6 +99,8 @@ class DatabaseManager {
         });
     }
     async deleteSession(id) { return this._send('delete_session', { id }); }
+    async deleteSessionsBefore(before) { return this._send('delete_sessions_before', { before }); }
+    async deleteSessionsFrom(after)    { return this._send('delete_sessions_from',   { after });  }
 
     async insertAim(aim) {
         return this._send('insert_aim', {

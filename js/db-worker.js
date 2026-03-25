@@ -406,6 +406,20 @@ self.onmessage = async (e) => {
                     logSync('DELETE_SESSION', { id: payload.id });
                 });
                 break;
+            case 'delete_sessions_before':
+                withTransaction(() => {
+                    db.exec("UPDATE sessions SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE timestamp <= ? AND is_deleted = 0", {
+                        bind: [payload.before]
+                    });
+                });
+                break;
+            case 'delete_sessions_from':
+                withTransaction(() => {
+                    db.exec("UPDATE sessions SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE timestamp >= ? AND is_deleted = 0", {
+                        bind: [payload.after]
+                    });
+                });
+                break;
             case 'insert_aim':
                 withTransaction(() => {
                     db.exec(`
