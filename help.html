@@ -239,9 +239,10 @@
         <a href="#timer"><span class="nav-num">02</span> The timer</a>
         <a href="#focus-areas"><span class="nav-num">03</span> Focus Areas</a>
         <a href="#planner"><span class="nav-num">04</span> The Focus Planner</a>
-        <a href="#progress"><span class="nav-num">05</span> Seeing your progress</a>
-        <a href="#profile"><span class="nav-num">06</span> Your profile</a>
-        <a href="#customization"><span class="nav-num">07</span> Customization</a>
+        <a href="#music"><span class="nav-num">05</span> Ambient music</a>
+        <a href="#progress"><span class="nav-num">06</span> Seeing your progress</a>
+        <a href="#profile"><span class="nav-num">07</span> Your profile</a>
+        <a href="#customization"><span class="nav-num">08</span> Customization</a>
         <a href="#reference"><span class="nav-num">—</span> Reference</a>
       </nav>
     </aside>
@@ -425,8 +426,20 @@
           in being able to see it clearly.</div>
       </section>
 
-      <section class="doc-section" id="progress">
+      <section class="doc-section" id="music">
         <div class="section-header"><span class="section-num">05</span>
+          <h2>Ambient music</h2>
+        </div>
+        <p class="section-intro">PomoFlow includes a built-in ambient music player that streams audio in the background while you work.</p>
+        <p>The music widget sits below the timer controls. Use the <strong>prev</strong> and <strong>next</strong> buttons to cycle through tracks, or tap the play button to start. The disc animates while music is playing and shows a loading indicator while the track is fetching.</p>
+        <h3>Pause on break</h3>
+        <p>Enable <strong>Pause on break</strong> in Settings → Time to automatically stop music when a break starts and resume it when your next focus session begins.</p>
+        <h3>Track selection</h3>
+        <p>Your last selected track is remembered across sessions. Choosing "Off" disables music entirely.</p>
+      </section>
+
+      <section class="doc-section" id="progress">
+        <div class="section-header"><span class="section-num">06</span>
           <h2>Seeing your progress</h2>
         </div>
         <h3>The Dashboard</h3>
@@ -463,21 +476,42 @@
             <div class="ach-icon">📐</div>
             <div class="ach-body">
               <div class="ach-name">Architect</div>
-              <div class="ach-condition">Reach 10 unique focus targets</div>
+              <div class="ach-condition">Reach 10 unique focus area targets</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">📤</div>
+            <div class="ach-body">
+              <div class="ach-name">Socialite</div>
+              <div class="ach-condition">Share your progress</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">👑</div>
+            <div class="ach-body">
+              <div class="ach-name">Unstoppable</div>
+              <div class="ach-condition">Reach 100 total hours of focus</div>
             </div>
           </div>
           <div class="achievement">
             <div class="ach-icon">🦉</div>
             <div class="ach-body">
-              <div class="ach-name">Night Owl</div>
+              <div class="ach-name">Night Owl <em>(hidden)</em></div>
               <div class="ach-condition">Complete a session between midnight and 4 AM</div>
+            </div>
+          </div>
+          <div class="achievement">
+            <div class="ach-icon">🌅</div>
+            <div class="ach-body">
+              <div class="ach-name">Early Bird <em>(hidden)</em></div>
+              <div class="ach-condition">Start a session before 6 AM</div>
             </div>
           </div>
         </div>
       </section>
 
       <section class="doc-section" id="profile">
-        <div class="section-header"><span class="section-num">06</span>
+        <div class="section-header"><span class="section-num">07</span>
           <h2>Your profile</h2>
         </div>
         <h3>Persona</h3>
@@ -491,19 +525,14 @@
       </section>
 
       <section class="doc-section" id="customization">
-        <div class="section-header"><span class="section-num">07</span>
+        <div class="section-header"><span class="section-num">08</span>
           <h2>Customization</h2>
         </div>
         <h3>Session durations</h3>
         <p>Adjust focus, short break, and long break durations in Settings. Toggle auto-start if you prefer the timer to
           advance automatically between phases.</p>
-        <h3>Visual styles</h3>
-        <p>PomoFlow ships with several UI variants selectable in Settings.</p>
-        <div class="badge-row">
-          <span class="badge">Glass</span>
-          <span class="badge">Bento</span>
-          <span class="badge">Skeuo</span>
-        </div>
+        <h3>Theme</h3>
+        <p>Switch between light and dark themes using the toggle in the sidenav. Your preference is saved automatically.</p>
         <h3>Sharing</h3>
         <p>Customize templates for posting your focus status to X or other platforms. Find these in Settings under
           Sharing.</p>
@@ -559,10 +588,9 @@
           </table>
         </div>
         <h3>Privacy and data</h3>
-        <p>All data is stored locally in your browser — nothing is sent to a server. Use the Export and Import tools in
-          Settings → Data to back up or migrate your history.</p>
-        <div class="note">Clearing your browser's site data will reset your PomoFlow history. Export regularly if your
-          history matters to you.</div>
+        <p>All data is stored locally in your browser first. If you sign in, your sessions, focus areas, planned blocks, and paths sync to the cloud for cross-device access — settings and profile always stay local.</p>
+        <p>Use the Export and Import tools in Settings → Data to manually back up or migrate your history.</p>
+        <div class="note">Clearing your browser's site data will reset your local PomoFlow history. Sign in or export regularly if your history matters to you.</div>
         <h3>Technical requirements</h3>
         <p><strong>Browser:</strong> Chrome, Firefox, Safari, or Edge (current versions).</p>
         <p><strong>Notifications:</strong> Enable browser notifications in Settings to receive alerts when sessions end.
