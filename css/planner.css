@@ -1656,7 +1656,7 @@
 }
 
 /* ── DEADLINE MODAL ── */
-.modal-overlay {
+#focusPlannerOverlay .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(26, 25, 23, 0.3);

@@ -100,8 +100,8 @@
     --warning:   #9a6700;
     --danger:    #cf222e;
 
-    --shadow-main:        0 8px 24px rgba(0, 0, 0, 0.1);
-    --shadow-modal:       0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-main:        0 1px 3px rgba(0,0,0,0.07), 0 8px 24px rgba(0,0,0,0.09);
+    --shadow-modal:       0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.09);
     --overlay-bg:         rgba(0, 0, 0, 0.4);
     --glow-primary:       0 0 16px rgba(9, 105, 218, 0.3);
     --active-dot-border:  #000000;
@@ -1746,7 +1746,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     align-items: center;
     position: relative;
     overflow: visible;
-    padding-top: 0;
+    padding-top: 14px;
 }
 
 .timer-share-wrapper {
@@ -2007,6 +2007,7 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1;
     min-width: 0;
 }
 
@@ -2032,6 +2033,99 @@ html[data-theme="light"] .theme-toggle .moon-icon {
     gap: 8px;
     padding: 12px 16px;
     border-bottom: 1px solid var(--border);
+}
+
+.history-select-btn {
+    margin-left: auto;
+    appearance: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--r-input);
+    padding: 0 12px;
+    height: 42px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+
+.history-select-btn:hover {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+}
+
+.history-selection-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-elevated);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    gap: 12px;
+}
+
+.history-selection-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-history-delete-selected {
+    appearance: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid var(--danger);
+    border-radius: var(--r-input);
+    padding: 0 12px;
+    height: 34px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.btn-history-delete-selected:hover:not(:disabled) {
+    background: rgba(var(--danger-rgb, 239, 68, 68), 0.1);
+}
+
+.btn-history-delete-selected:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-history-cancel-select {
+    appearance: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--r-input);
+    padding: 0 12px;
+    height: 34px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+
+.btn-history-cancel-select:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.history-table tr.selected td,
+.activity-log-card.selected {
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.col-select {
+    width: 36px;
+    padding-left: 12px !important;
 }
 
 .history-cat-select,
@@ -3571,7 +3665,7 @@ sliding-card[active] .focus-area-play-btn {
     padding: 0 20px 0 0;
     position: relative;
     margin-left: 22px; /* offset for disc overflow */
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 /* The oversized disc overflows the left edge */
@@ -4362,9 +4456,10 @@ sliding-card[active] .focus-area-play-btn {
 }
 
 .modal-overlay.open {
+    display: flex;
     opacity: 1;
     visibility: visible;
-    pointer-events: auto; /* Enable interactions when open */
+    pointer-events: auto;
 }
 
 /* Settings overlay - simple backdrop, no flex centering */
@@ -6779,4 +6874,74 @@ sliding-card [slot="menu"] span {
 #sidenavActivityBtn.active {
     color: var(--accent);
     background: var(--surface-elevated);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Panels ────────────────────────────────────────────────── */
+[data-theme="light"] .panel {
+    border: 1px solid var(--rule);
+}
+
+/* ── Timer panel — warm radial gradient so the ring interior
+      feels intentional rather than blank white ─────────────── */
+[data-theme="light"] .timer-panel {
+    background: radial-gradient(ellipse 75% 60% at 50% 44%, #FFFFFF 0%, #F5F2EE 100%);
+}
+
+/* ── Context strip — warm charcoal instead of cold black ───── */
+[data-theme="light"] .context-strip {
+    background: #28241F;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.16), 0 1px 4px rgba(0,0,0,0.10);
+}
+
+/* ── Music widget — match warm charcoal ────────────────────── */
+[data-theme="light"] .music-widget {
+    background: #28241F;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+[data-theme="light"] .music-disc {
+    background: #1C1916;
+    border-color: #3A342E;
+}
+
+/* ── Play button — soften the glow on light backgrounds ────── */
+[data-theme="light"] .btn-timer-primary {
+    box-shadow: 0 4px 18px rgba(207, 34, 46, 0.22), inset 0 2px 4px rgba(255,255,255,0.15);
+}
+[data-theme="light"] .btn-timer-primary.break-mode {
+    box-shadow: 0 4px 18px rgba(26, 127, 55, 0.22), inset 0 2px 4px rgba(255,255,255,0.15);
+}
+
+/* ── Timer stats strip — borderless, just quiet text ───────── */
+[data-theme="light"] .timer-stats-strip {
+    background: transparent;
+    border: 1px solid var(--rule);
+}
+
+/* ── Filter button active state ────────────────────────────── */
+[data-theme="light"] .history-filters .filter-btn.active {
+    background: var(--surface);
+    box-shadow: 0 1px 5px rgba(0,0,0,0.14);
+    color: var(--ink);
+    font-weight: 700;
+}
+
+/* ── Stat icon tints (stronger in light) ──────────────────── */
+[data-theme="light"] .stat-icon--blue   { background: rgba(9,105,218,0.10);  color: #0969da; }
+[data-theme="light"] .stat-icon--violet { background: rgba(130,80,220,0.10); color: #8250dc; }
+[data-theme="light"] .stat-icon--amber  { background: rgba(154,103,0,0.12);  color: #9a6700; }
+
+/* ── Hero badge ────────────────────────────────────────────── */
+[data-theme="light"] .hero-badge {
+    background: rgba(0,0,0,0.05);
+}
+
+/* ── Timer stats strip ─────────────────────────────────────── */
+[data-theme="light"] .timer-stats-strip {
+    background: var(--surface-elevated);
+    border: 1px solid var(--rule);
 }

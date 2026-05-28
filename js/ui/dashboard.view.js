@@ -38,7 +38,8 @@ export class DashboardView {
 
     static renderHistory(filter = 'today', options = {}) {
         const { sort = 'newest', category = null, page = 0,
-                pageSize = 20, callbacks = {} } = options;
+                pageSize = 20, callbacks = {},
+                selectionMode = false, selectedIds = new Set(), onSelect = null } = options;
         const list = document.getElementById('historyList');
         if (!list) return;
 
@@ -73,33 +74,49 @@ export class DashboardView {
 
         // Build table for desktop, cards for mobile
         if (this._isMobile()) {
-            // Mobile: render cards directly
             list.innerHTML = '';
             displaySessions.forEach(session => {
-                list.appendChild(this._createHistoryCard(session, callbacks));
+                list.appendChild(this._createHistoryCard(session, callbacks, selectionMode, selectedIds, onSelect));
             });
         } else {
-            // Desktop: render table
             const table = document.createElement('table');
             table.className = 'history-table';
+
             table.innerHTML = `
                 <thead>
                     <tr>
+                        <th class="col-select" style="display:${selectionMode ? '' : 'none'}">
+                            <input type="checkbox" id="historySelectAll" aria-label="Select all">
+                        </th>
                         <th class="col-indicator"></th>
                         <th class="col-area">Focus Area</th>
                         <th class="col-category">Category</th>
                         <th class="col-duration">Duration</th>
                         <th class="col-time">Finished</th>
-                        <th class="col-actions"></th>
+                        <th class="col-actions" style="display:${selectionMode ? 'none' : ''}"></th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             `;
             const tbody = table.querySelector('tbody');
-
             displaySessions.forEach(session => {
-                tbody.appendChild(this._createHistoryRow(session, callbacks));
+                tbody.appendChild(this._createHistoryRow(session, callbacks, selectionMode, selectedIds, onSelect));
             });
+
+            // Select-all wiring
+            const selectAllEl = table.querySelector('#historySelectAll');
+            if (selectAllEl && selectionMode) {
+                selectAllEl.checked = displaySessions.every(s => selectedIds.has(s.id));
+                selectAllEl.addEventListener('change', () => {
+                    displaySessions.forEach(s => {
+                        const isChecked = selectAllEl.checked;
+                        if (isChecked && !selectedIds.has(s.id)) onSelect?.(s.id);
+                        else if (!isChecked && selectedIds.has(s.id)) onSelect?.(s.id);
+                    });
+                    tbody.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = selectAllEl.checked);
+                    tbody.querySelectorAll('tr').forEach(r => r.classList.toggle('selected', selectAllEl.checked));
+                });
+            }
 
             list.innerHTML = '';
             list.appendChild(table);
@@ -176,19 +193,22 @@ export class DashboardView {
         return window.innerWidth <= 768;
     }
 
-    static _createHistoryRow(session, callbacks) {
+    static _createHistoryRow(session, callbacks, selectionMode = false, selectedIds = new Set(), onSelect = null) {
         if (this._isMobile()) {
-            return this._createHistoryCard(session, callbacks);
+            return this._createHistoryCard(session, callbacks, selectionMode, selectedIds, onSelect);
         }
 
         const tr = document.createElement('tr');
+        const isSelected = selectedIds.has(session.id);
+        if (isSelected) tr.classList.add('selected');
 
         const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
         const durationMin = Math.round(session.duration / 60);
 
-        const moreIcon = '<i class="ph ph-dots-three-vertical"></i>';
-
         tr.innerHTML = `
+            <td class="col-select" style="display:${selectionMode ? '' : 'none'}">
+                <input type="checkbox" aria-label="Select session"${isSelected ? ' checked' : ''}>
+            </td>
             <td class="col-indicator">
                 <div class="indicator-dot" style="background: ${session.taskColor || '#58a6ff'}"></div>
             </td>
@@ -204,38 +224,50 @@ export class DashboardView {
             <td class="col-time">
                 <i class="ph ph-calendar-check" style="margin-right:4px;opacity:0.7"></i>${timeStr}
             </td>
-            <td class="col-actions">
+            <td class="col-actions" style="display:${selectionMode ? 'none' : ''}">
                 <button class="action-btn more-btn" aria-label="More actions">
-                    ${moreIcon}
+                    <i class="ph ph-dots-three-vertical"></i>
                 </button>
             </td>
         `;
 
-        const moreBtn = tr.querySelector('.more-btn');
-        moreBtn.onclick = (e) => {
-            e.stopPropagation();
-            this._showSessionPopover(moreBtn, session, callbacks);
-        };
+        if (selectionMode) {
+            const cb = tr.querySelector('input[type="checkbox"]');
+            tr.onclick = (e) => {
+                if (e.target !== cb) cb.checked = !cb.checked;
+                tr.classList.toggle('selected', cb.checked);
+                onSelect?.(session.id);
+            };
+        } else {
+            const moreBtn = tr.querySelector('.more-btn');
+            moreBtn.onclick = (e) => {
+                e.stopPropagation();
+                this._showSessionPopover(moreBtn, session, callbacks);
+            };
+        }
 
         return tr;
     }
 
-    static _createHistoryCard(session, callbacks) {
+    static _createHistoryCard(session, callbacks, selectionMode = false, selectedIds = new Set(), onSelect = null) {
         const timeStr = callbacks.formatTimestamp ? callbacks.formatTimestamp(new Date(session.timestamp)) : session.timestamp;
         const durationMin = Math.round(session.duration / 60);
+        const isSelected = selectedIds.has(session.id);
 
         const card = document.createElement('div');
         card.className = 'activity-log-card';
+        if (isSelected) card.classList.add('selected');
 
         card.innerHTML = `
             <div class="activity-log-card-row activity-log-card-row-top">
                 <div class="activity-log-card-left">
-                    <div class="activity-log-card-dot" style="background: ${session.taskColor || '#58a6ff'}"></div>
+                    ${selectionMode
+                        ? `<input type="checkbox" class="card-select-cb" aria-label="Select session"${isSelected ? ' checked' : ''}>`
+                        : `<div class="activity-log-card-dot" style="background: ${session.taskColor || '#58a6ff'}"></div>`
+                    }
                     <div class="activity-log-card-title" title="${this._escapeHtml(session.taskName)}">${this._escapeHtml(session.taskName)}</div>
                 </div>
-                <button class="activity-log-card-more" aria-label="More actions">
-                    <i class="ph ph-dots-three-vertical"></i>
-                </button>
+                ${selectionMode ? '' : `<button class="activity-log-card-more" aria-label="More actions"><i class="ph ph-dots-three-vertical"></i></button>`}
             </div>
             <div class="activity-log-card-row activity-log-card-row-bottom">
                 <span class="activity-log-card-category">
@@ -252,11 +284,20 @@ export class DashboardView {
             </div>
         `;
 
-        const moreBtn = card.querySelector('.activity-log-card-more');
-        moreBtn.onclick = (e) => {
-            e.stopPropagation();
-            this._showSessionPopover(moreBtn, session, callbacks);
-        };
+        if (selectionMode) {
+            const cb = card.querySelector('.card-select-cb');
+            card.onclick = (e) => {
+                if (e.target !== cb) cb.checked = !cb.checked;
+                card.classList.toggle('selected', cb.checked);
+                onSelect?.(session.id);
+            };
+        } else {
+            const moreBtn = card.querySelector('.activity-log-card-more');
+            moreBtn.onclick = (e) => {
+                e.stopPropagation();
+                this._showSessionPopover(moreBtn, session, callbacks);
+            };
+        }
 
         return card;
     }

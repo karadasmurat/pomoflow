@@ -88,8 +88,7 @@ export let state = {
         shortBreakDuration: 5,
         longBreakDuration: 15,
         sessionsBeforeLongBreak: 4,
-        autoStartBreaks: false,
-        autoStartWork: false,
+        afterWorkSession: 'wait', // 'wait' | 'break' | 'focus'
         soundVolume: 100,
         blockReminderMinutes: 10,
         use12Hour: false,
@@ -118,7 +117,7 @@ export let state = {
         startTime: null,
         targetEndTime: null,
         activeTaskId: null,
-        queuedTaskId: null
+        queuedTaskId: null,
     },
     notifications: [],
     notificationPermission: 'default',

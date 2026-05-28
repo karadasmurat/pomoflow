@@ -175,9 +175,9 @@
       <div class="sidenav-header">
         <div class="sidenav-logo-wrapper">
           <div class="sidenav-logo-icon">
-            <i class="ph-fill ph-paw-print"></i>
+            <img src="assets/images/logo/shwn-icon.svg" width="32" height="32" alt="PomoFlow">
           </div>
-          <span class="sidenav-logo-text">Untitled UI</span>
+          <span class="sidenav-logo-text">PomoFlow</span>
         </div>
         <button class="sidenav-toggle-btn" id="sidenav-toggle-btn">
           <i class="ph ph-caret-left"></i>
@@ -725,7 +725,7 @@
                 <span class="activity-log-count" id="activityLogCount"></span>
               </button>
             </div>
-            <div class="history-log-controls">
+            <div class="history-log-controls" id="historyLogControls">
               <select id="historyCategoryFilter" class="history-cat-select">
                 <option value="">All Categories</option>
               </select>
@@ -733,6 +733,14 @@
                 Newest
                 <i class="ph ph-arrows-vertical"></i>
               </button>
+              <button id="historySelectBtn" class="history-select-btn">Select</button>
+            </div>
+            <div class="history-selection-bar" id="historySelectionBar" style="display:none">
+              <span id="historySelectedCount">0 selected</span>
+              <div class="history-selection-actions">
+                <button id="historyDeleteSelectedBtn" class="btn-history-delete-selected" disabled>Delete</button>
+                <button id="historyCancelSelectBtn" class="btn-history-cancel-select">Cancel</button>
+              </div>
             </div>
             <div class="history-list" id="historyList"></div>
             <div class="history-pagination" id="historyPagination" style="display:none">
@@ -1069,8 +1077,12 @@
 
         <div class="setting-group">
           <div class="setting-row">
-            <label class="setting-label">Auto-start Breaks</label>
-            <div class="setting-toggle" id="autoStartBreaks" role="switch" aria-checked="false"></div>
+            <label class="setting-label">After a focus session</label>
+            <select class="setting-select" id="afterWorkSession">
+              <option value="wait">Stop and wait</option>
+              <option value="break">Auto-start break</option>
+              <option value="focus">Keep focusing</option>
+            </select>
           </div>
           <div class="setting-row">
             <label class="setting-label">Pause music on break</label>
@@ -1078,12 +1090,6 @@
           </div>
         </div>
 
-        <div class="setting-group">
-          <div class="setting-row">
-            <label class="setting-label">Auto-start Focus Sessions</label>
-            <div class="setting-toggle" id="autoStartWork" role="switch" aria-checked="false"></div>
-          </div>
-        </div>
 
 
         <div class="setting-group">

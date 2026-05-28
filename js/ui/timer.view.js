@@ -9,15 +9,15 @@ export class TimerView {
         const timerProgress = document.getElementById('timerProgress');
         const textEl = document.getElementById('focusAreaText');
         const prefixEl = document.getElementById('focusAreaPrefix');
-        
+
         const remaining = Math.max(0, state.timerState.remainingTime);
         const mins = Math.floor(remaining / 60);
         const secs = remaining % 60;
         const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-        
+
         if (timeEl) timeEl.textContent = timeStr;
         document.title = `${timeStr} - PomoFlow`;
-        
+
         if (modeEl) {
             if (state.timerState.mode === 'work') {
                 modeEl.innerHTML = '<i class="ph ph-pulse"></i> Focus';
@@ -27,7 +27,7 @@ export class TimerView {
                 modeEl.classList.add('break-mode');
             }
         }
-        
+
         this._updateSessionDots();
         this._updateControls(startPauseText, playIcon);
         this._updateOrbiters();
@@ -164,8 +164,7 @@ export class TimerView {
 
     static _updateProgress(timerProgress) {
         if (!timerProgress) return;
-        
-        // Update accent color variables based on mode
+
         const container = timerProgress.closest('.timer-container');
         if (container) {
             const mode = state.timerState.mode;
@@ -180,4 +179,5 @@ export class TimerView {
         const progress = total > 0 ? (1 - (remaining / total)) * 282.7 : 0;
         timerProgress.style.strokeDashoffset = progress;
     }
+
 }

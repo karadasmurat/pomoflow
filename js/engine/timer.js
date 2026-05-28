@@ -89,8 +89,8 @@ class TimerEngine {
         this.playTone(1318, 0.2, 0.3);
     }
     start() {
-        mutations.updateTimer({ 
-            isRunning: true, 
+        mutations.updateTimer({
+            isRunning: true,
             startTime: Date.now(),
             targetEndTime: Date.now() + (state.timerState.remainingTime * 1000)
         });

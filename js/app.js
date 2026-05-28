@@ -26,6 +26,8 @@ let historySort = 'newest';
 let historyCategory = null;
 let historyPage = 0;
 const HISTORY_PAGE_SIZE = 20;
+let historySelectionMode = false;
+let historySelectedIds = new Set();
 let editingSessionId = null;
 let editingTaskId = null;
 let notificationView;
@@ -156,15 +158,46 @@ async function init() {
         if (avatarEl) {
             const avatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
             if (avatarUrl) {
-                fetch(avatarUrl, { mode: 'cors' })
-                    .then(r => r.blob())
-                    .then(blob => {
-                        const blobUrl = URL.createObjectURL(blob);
-                        const imgHtml = `<img src="${blobUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-                        avatarEl.innerHTML = imgHtml;
-                        if (mobileAvatarEl) mobileAvatarEl.innerHTML = imgHtml;
-                    })
-                    .catch(() => {}); // keep emoji fallback on error
+                const CACHE_KEY = 'pomoflow_avatar_data';
+                const CACHE_URL_KEY = 'pomoflow_avatar_url';
+                const cached = localStorage.getItem(CACHE_KEY);
+                const cachedUrl = localStorage.getItem(CACHE_URL_KEY);
+
+                const applyAvatar = (dataUrl) => {
+                    const imgHtml = `<img src="${dataUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                    avatarEl.innerHTML = imgHtml;
+                    if (mobileAvatarEl) mobileAvatarEl.innerHTML = imgHtml;
+                };
+
+                if (cached && cachedUrl === avatarUrl) {
+                    applyAvatar(cached);
+                } else {
+                    // Don't retry if we already failed with this URL recently (1 hour cooldown)
+                    const lastFailed = localStorage.getItem('pomoflow_avatar_failed_url');
+                    const lastFailedAt = parseInt(localStorage.getItem('pomoflow_avatar_failed_at') || '0');
+                    const cooldown = 60 * 60 * 1000;
+                    if (lastFailed === avatarUrl && Date.now() - lastFailedAt < cooldown) return;
+
+                    fetch(avatarUrl, { mode: 'cors' })
+                        .then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); })
+                        .then(blob => new Promise((res, rej) => {
+                            const reader = new FileReader();
+                            reader.onload = () => res(reader.result);
+                            reader.onerror = rej;
+                            reader.readAsDataURL(blob);
+                        }))
+                        .then(dataUrl => {
+                            localStorage.setItem(CACHE_KEY, dataUrl);
+                            localStorage.setItem(CACHE_URL_KEY, avatarUrl);
+                            localStorage.removeItem('pomoflow_avatar_failed_url');
+                            localStorage.removeItem('pomoflow_avatar_failed_at');
+                            applyAvatar(dataUrl);
+                        })
+                        .catch(() => {
+                            localStorage.setItem('pomoflow_avatar_failed_url', avatarUrl);
+                            localStorage.setItem('pomoflow_avatar_failed_at', Date.now());
+                        });
+                }
             }
         }
     });
@@ -292,9 +325,16 @@ function initMusicUI() {
     // Play / pause
     playBtn.addEventListener('click', () => {
         if (musicEngine.isLoading) return;
-        if (state.settings.music?.track === 'off') return;
-        if (musicEngine.isPlaying) musicEngine.pause();
-        else musicEngine.resume();
+        const track = state.settings.music?.track;
+        if (!track || track === 'off') return;
+        if (musicEngine.isPlaying) {
+            musicEngine.pause();
+        } else if (musicEngine.audioEl) {
+            musicEngine.resume();
+        } else {
+            const sound = _soundsList.find(s => s.id === track);
+            if (sound?.url) musicEngine.play(sound.url);
+        }
     });
 
     // Prev / next
@@ -648,6 +688,7 @@ function toggleTimer() {
     refreshUI();
 }
 
+
 function resetTimer() {
     timer.stop();
     timer.applyMode(state.timerState.mode);
@@ -699,14 +740,20 @@ function handleSessionComplete(isSkip = false) {
             timer.start();
             musicPlay();
         } else {
-            const shouldAutoStart = wasWork ? state.settings.autoStartBreaks : state.settings.autoStartWork;
-            if (shouldAutoStart) {
-                timer.applyMode(nextMode);
-                timer.start();
-                if (nextMode === 'work') musicPlay();
-                else if (wasWork && state.settings.music?.pauseOnBreak) musicPause();
-            } else {
-                if (wasWork && state.settings.music?.pauseOnBreak) musicPause();
+            if (wasWork) {
+                const afterWork = state.settings.afterWorkSession;
+                if (afterWork === 'focus') {
+                    // Skip break — start another work session immediately
+                    timer.applyMode('work');
+                    timer.start();
+                    musicPlay();
+                } else if (afterWork === 'break') {
+                    timer.applyMode(nextMode);
+                    timer.start();
+                    if (state.settings.music?.pauseOnBreak) musicPause();
+                } else {
+                    if (state.settings.music?.pauseOnBreak) musicPause();
+                }
             }
         }
     }
@@ -897,6 +944,36 @@ function deleteSession(id) {
             NotificationService.notifyAction('SESSION_DELETED');
         }
     });
+}
+
+function _updateSelectionBar() {
+    const count = historySelectedIds.size;
+    const countEl = document.getElementById('historySelectedCount');
+    const deleteBtn = document.getElementById('historyDeleteSelectedBtn');
+    if (countEl) countEl.textContent = count === 1 ? '1 selected' : `${count} selected`;
+    if (deleteBtn) deleteBtn.disabled = count === 0;
+}
+
+async function deleteSelectedSessions() {
+    try {
+        const ids = [...historySelectedIds];
+        if (ids.length === 0) return;
+        const conf = await confirmAction(`Delete ${ids.length} session${ids.length === 1 ? '' : 's'}?`, 'delete');
+        if (!conf) return;
+        const idSet = new Set(ids);
+        state.sessions = state.sessions.filter(s => !idSet.has(s.id));
+        if (dbManager.initialized) {
+            await Promise.all(ids.map(id => dbManager.deleteSession(id)));
+        }
+        historySelectionMode = false;
+        historySelectedIds.clear();
+        document.getElementById('historyLogControls')?.style.removeProperty('display');
+        document.getElementById('historySelectionBar')?.style.setProperty('display', 'none');
+        saveData();
+        refreshUI();
+    } catch (e) {
+        console.error('[deleteSelectedSessions] error:', e);
+    }
 }
 
 function deleteHistory() {
@@ -1201,10 +1278,12 @@ function openSettings() {
     document.getElementById('longBreakDuration').value = state.settings.longBreakDuration;
     document.getElementById('sessionsBeforeLongBreak').value = String(state.settings.sessionsBeforeLongBreak ?? 4);
 
+    // Initialize after-work-session selector
+    const afterWorkEl = document.getElementById('afterWorkSession');
+    if (afterWorkEl) afterWorkEl.value = state.settings.afterWorkSession ?? 'wait';
+
     // Initialize toggles
     const toggles = {
-        'autoStartBreaks': state.settings.autoStartBreaks,
-        'autoStartWork': state.settings.autoStartWork,
         'timeFormat': state.settings.use12Hour
     };
     Object.entries(toggles).forEach(([id, val]) => {
@@ -1314,8 +1393,7 @@ function closeSettings() {
         shortBreakDuration: parseInt(document.getElementById('shortBreakDuration').value),
         longBreakDuration: parseInt(document.getElementById('longBreakDuration').value),
         sessionsBeforeLongBreak: parseInt(document.getElementById('sessionsBeforeLongBreak').value),
-        autoStartBreaks: document.getElementById('autoStartBreaks')?.classList.contains('active'),
-        autoStartWork: document.getElementById('autoStartWork')?.classList.contains('active'),
+        afterWorkSession: document.getElementById('afterWorkSession')?.value ?? 'wait',
         use12Hour: document.getElementById('timeFormat')?.classList.contains('active'),
         activeHoursStart: parseInt(document.getElementById('activeHoursStart').value),
         activeHoursEnd: parseInt(document.getElementById('activeHoursEnd').value),
@@ -1489,7 +1567,6 @@ function confirmAction(msg, actionType = 'confirm') {
         const messageEl = document.getElementById('confirmMessage');
         const okBtn = document.getElementById('confirmOk');
         const cancelBtn = document.getElementById('confirmCancel');
-
         if (!modal || !messageEl || !okBtn || !cancelBtn) {
             resolve(confirm(msg));
             return;
@@ -1620,7 +1697,10 @@ function restoreTimerState() {
 
 // --- 6. EVENT LISTENERS ---
 
+let _listenersInitialized = false;
 function setupEventListeners() {
+    if (_listenersInitialized) return;
+    _listenersInitialized = true;
     const clickMap = {
         'startPauseBtn': toggleTimer,
         'resetBtn': resetTimer,
@@ -1816,10 +1896,23 @@ function setupEventListeners() {
         document.querySelectorAll('#historyDeleteRange .filter-btn').forEach(b => b.classList.toggle('active', b === btn));
     });
 
-    // Activity Log collapse toggle
-    document.getElementById('activityLogToggle')?.addEventListener('click', () => {
-        document.getElementById('activityLogCol')?.classList.toggle('collapsed');
+    // Multi-select in activity log
+    document.getElementById('historySelectBtn')?.addEventListener('click', () => {
+        historySelectionMode = true;
+        historySelectedIds.clear();
+        document.getElementById('historyLogControls').style.display = 'none';
+        document.getElementById('historySelectionBar').style.display = 'flex';
+        _updateSelectionBar();
+        refreshUI();
     });
+    document.getElementById('historyCancelSelectBtn')?.addEventListener('click', () => {
+        historySelectionMode = false;
+        historySelectedIds.clear();
+        document.getElementById('historyLogControls').style.removeProperty('display');
+        document.getElementById('historySelectionBar').style.display = 'none';
+        refreshUI();
+    });
+    document.getElementById('historyDeleteSelectedBtn')?.addEventListener('click', deleteSelectedSessions);
 
     // Category filter dropdown
     document.getElementById('historyCategoryFilter')?.addEventListener('change', e => {
@@ -1946,6 +2039,13 @@ function refreshUI() {
         category: historyCategory,
         page: historyPage,
         pageSize: HISTORY_PAGE_SIZE,
+        selectionMode: historySelectionMode,
+        selectedIds: historySelectedIds,
+        onSelect: (id) => {
+            if (historySelectedIds.has(id)) historySelectedIds.delete(id);
+            else historySelectedIds.add(id);
+            _updateSelectionBar();
+        },
         callbacks: { formatTimestamp, onDelete: deleteSession, onEdit: openSessionEditModal }
     });
     renderPlan();
