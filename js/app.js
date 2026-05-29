@@ -259,6 +259,7 @@ async function init() {
 
 const SOUNDS_CACHE_KEY = 'pf_sounds_cache';
 let _soundsList = []; // [{ id, title, url }] loaded from Supabase
+let _lastInteractionAt = Date.now();
 
 async function loadSoundsList() {
     // Load cache immediately
@@ -743,10 +744,13 @@ function handleSessionComplete(isSkip = false) {
             if (wasWork) {
                 const afterWork = state.settings.afterWorkSession;
                 if (afterWork === 'focus') {
-                    // Skip break — start another work session immediately
-                    timer.applyMode('work');
-                    timer.start();
-                    musicPlay();
+                    if (Date.now() - _lastInteractionAt >= _inactivityThresholdMs()) {
+                        _showStillFocusingPrompt();
+                    } else {
+                        timer.applyMode('work');
+                        timer.start();
+                        musicPlay();
+                    }
                 } else if (afterWork === 'break') {
                     timer.applyMode(nextMode);
                     timer.start();
@@ -1280,7 +1284,19 @@ function openSettings() {
 
     // Initialize after-work-session selector
     const afterWorkEl = document.getElementById('afterWorkSession');
-    if (afterWorkEl) afterWorkEl.value = state.settings.afterWorkSession ?? 'wait';
+    if (afterWorkEl) {
+        afterWorkEl.value = state.settings.afterWorkSession ?? 'wait';
+        afterWorkEl.onchange = () => {
+            const row = document.getElementById('inactivityCheckRow');
+            if (row) row.style.display = afterWorkEl.value === 'focus' ? '' : 'none';
+        };
+    }
+
+    const inactivityEl = document.getElementById('inactivityCheckMinutes');
+    if (inactivityEl) inactivityEl.value = String(state.settings.inactivityCheckMinutes ?? 120);
+
+    const inactivityRow = document.getElementById('inactivityCheckRow');
+    if (inactivityRow) inactivityRow.style.display = (state.settings.afterWorkSession ?? 'wait') === 'focus' ? '' : 'none';
 
     // Initialize toggles
     const toggles = {
@@ -1394,6 +1410,7 @@ function closeSettings() {
         longBreakDuration: parseInt(document.getElementById('longBreakDuration').value),
         sessionsBeforeLongBreak: parseInt(document.getElementById('sessionsBeforeLongBreak').value),
         afterWorkSession: document.getElementById('afterWorkSession')?.value ?? 'wait',
+        inactivityCheckMinutes: parseInt(document.getElementById('inactivityCheckMinutes')?.value ?? 120),
         use12Hour: document.getElementById('timeFormat')?.classList.contains('active'),
         activeHoursStart: parseInt(document.getElementById('activeHoursStart').value),
         activeHoursEnd: parseInt(document.getElementById('activeHoursEnd').value),
@@ -1689,10 +1706,82 @@ function renderAchievements() {
 function restoreTimerState() {
     if (state.timerState.isRunning && state.timerState.targetEndTime) {
         const diff = state.timerState.targetEndTime - Date.now();
-        if (diff > 0) { state.timerState.remainingTime = Math.ceil(diff / 1000); timer.start(); }
-        else { handleSessionComplete(); }
+        if (diff > 0) {
+            state.timerState.remainingTime = Math.ceil(diff / 1000);
+            timer.start();
+        } else {
+            // Session completed while away — zero remaining so saveSession() logs full duration
+            state.timerState.remainingTime = 0;
+            const elapsed = Math.abs(diff);
+            const STALE_MS = 5 * 60 * 1000;
+            if (state.timerState.mode === 'work' && elapsed > STALE_MS) {
+                mutations.updateTimer({ isRunning: false });
+                _promptStaleSession(elapsed);
+            } else {
+                handleSessionComplete();
+            }
+        }
     } else { timer.applyMode(state.timerState.mode); }
     TimerView.updateDisplay();
+}
+
+function _promptStaleSession(elapsedMs) {
+    const hours = Math.floor(elapsedMs / 3600000);
+    const mins = Math.floor((elapsedMs % 3600000) / 60000);
+    const agoText = hours > 0 ? `${hours}h ${mins}m ago` : `${mins}m ago`;
+    const activeTask = state.tasks.find(t => t.id === state.timerState.activeTaskId);
+    const taskText = activeTask ? ` on "${activeTask.name}"` : '';
+    confirmAction(`Your focus session${taskText} finished ${agoText}. Log it to your history?`)
+        .then(confirmed => confirmed ? handleSessionComplete() : handleSessionComplete(true));
+}
+
+function _inactivityThresholdMs() {
+    const d = state.settings.workDuration;
+    const checkMin = state.settings.inactivityCheckMinutes ?? 120;
+    return Math.ceil(checkMin / d) * d * 60 * 1000;
+}
+
+function _showStillFocusingPrompt() {
+    const modal = document.getElementById('stillFocusingModal');
+    const subtitle = document.getElementById('stillFocusingSubtitle');
+    const keepBtn = document.getElementById('stillFocusingKeep');
+    const stopBtn = document.getElementById('stillFocusingStop');
+    const countdownEl = document.getElementById('stillFocusingCountdown');
+    if (!modal) return;
+
+    const inactiveMs = Date.now() - _lastInteractionAt;
+    const h = Math.floor(inactiveMs / 3600000);
+    const m = Math.floor((inactiveMs % 3600000) / 60000);
+    subtitle.textContent = `You've been away for ${h > 0 ? `${h}h ${m}m` : `${m}m`}.`;
+
+    let remaining = 60;
+    countdownEl.textContent = remaining;
+    modal.classList.add('open');
+
+    const tick = setInterval(() => {
+        remaining--;
+        countdownEl.textContent = remaining;
+        if (remaining <= 0) dismiss(false);
+    }, 1000);
+
+    function dismiss(keepGoing) {
+        clearInterval(tick);
+        modal.classList.remove('open');
+        keepBtn.removeEventListener('click', onKeep);
+        stopBtn.removeEventListener('click', onStop);
+        if (keepGoing) {
+            _lastInteractionAt = Date.now();
+            timer.applyMode('work');
+            timer.start();
+            musicPlay();
+        }
+        refreshUI();
+    }
+
+    function onKeep() { dismiss(true); }
+    function onStop() { dismiss(false); }
+    keepBtn.addEventListener('click', onKeep);
+    stopBtn.addEventListener('click', onStop);
 }
 
 // --- 6. EVENT LISTENERS ---
@@ -1701,10 +1790,20 @@ let _listenersInitialized = false;
 function setupEventListeners() {
     if (_listenersInitialized) return;
     _listenersInitialized = true;
+    document.addEventListener('pointerdown', () => { _lastInteractionAt = Date.now(); });
+    document.addEventListener('keydown', () => { _lastInteractionAt = Date.now(); });
     const clickMap = {
         'startPauseBtn': toggleTimer,
         'resetBtn': resetTimer,
         'skipBtn': () => handleSessionComplete(true),
+        'indicatorRepeat': () => {
+            const next = state.settings.afterWorkSession === 'focus' ? 'wait' : 'focus';
+            state.settings.afterWorkSession = next;
+            const el = document.getElementById('afterWorkSession');
+            if (el) el.value = next;
+            saveData();
+            refreshUI();
+        },
         'themeToggle': () => SettingsService.toggleTheme(),
         'addFocusAreaBtn': addFocusArea,
         'toggleTaskPanelManagement': (e) => {
@@ -2053,6 +2152,12 @@ function refreshUI() {
     FocusView.updateLevelUI();
     updateProfileUI();
     renderUpcomingBlockStrip();
+    renderTimerIndicators();
+}
+
+function renderTimerIndicators() {
+    const repeatBtn = document.getElementById('indicatorRepeat');
+    if (repeatBtn) repeatBtn.classList.toggle('active', state.settings.afterWorkSession === 'focus');
 }
 
 // ── Auth UI ───────────────────────────────────────────────────────────────────

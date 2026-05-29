@@ -550,6 +550,13 @@
             </div>
           </div>
 
+          <!-- Dashboard indicator lights inside the ring -->
+          <div class="timer-indicators" id="timerIndicators">
+            <button class="timer-indicator" id="indicatorRepeat" title="Continue focusing after each session">
+              <i class="ph ph-repeat"></i>
+            </button>
+          </div>
+
           <div class="timer-duration-shortcuts orbit" id="durationOrbit">
             <!-- Main Toggle at 3 o'clock - Styled as Watch Crown -->
             <button class="duration-btn orbiter trigger" id="durationToggle" style="--angle: 90deg"
@@ -1084,6 +1091,18 @@
               <option value="focus">Keep focusing</option>
             </select>
           </div>
+          <div class="setting-row" id="inactivityCheckRow">
+            <div class="setting-label-col">
+              <span class="setting-label">Still focusing? check</span>
+              <span class="setting-hint">Pause auto-continue after this long without interaction</span>
+            </div>
+            <select class="setting-select" id="inactivityCheckMinutes">
+              <option value="60">1 hour</option>
+              <option value="90">1.5 hours</option>
+              <option value="120">2 hours</option>
+              <option value="180">3 hours</option>
+            </select>
+          </div>
           <div class="setting-row">
             <label class="setting-label">Pause music on break</label>
             <div class="setting-toggle" id="musicPauseOnBreak" role="switch" aria-checked="true"></div>
@@ -1291,6 +1310,18 @@
       <div class="confirm-buttons">
         <button class="btn-secondary" id="confirmCancel">Cancel</button>
         <button class="btn-danger" id="confirmOk"><i class="ph ph-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="stillFocusingModal">
+    <div class="modal still-focusing-modal">
+      <div class="still-focusing-icon"><i class="ph ph-moon"></i></div>
+      <p class="still-focusing-title">Still focusing?</p>
+      <p class="still-focusing-subtitle" id="stillFocusingSubtitle"></p>
+      <div class="still-focusing-actions">
+        <button class="btn-primary" id="stillFocusingKeep">Keep going</button>
+        <button class="btn-secondary" id="stillFocusingStop">Stop here (<span id="stillFocusingCountdown">60</span>s)</button>
       </div>
     </div>
   </div>

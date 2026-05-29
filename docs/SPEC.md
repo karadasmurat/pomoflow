@@ -86,9 +86,13 @@ Full-width stacked panels. Sidenav hidden. Persistent bottom tab bar (5 tabs): T
 ### Behavior
 - **Cycle**: N focus sessions → long break (N configurable, default 4)
 - **Engine**: Web Worker for background accuracy using target end-time
-- **Post-session**: Timer holds at 0:00; user manually advances
+- **Post-session**: Three modes controlled by "After a focus session" setting:
+  - `wait` (default) — timer holds at 0:00; user manually advances
+  - `break` — auto-starts the next break immediately
+  - `focus` — skips breaks and chains focus sessions continuously ("keep focusing")
 - **State restoration**: On reload, resumes using stored target end-time
-- **Auto-start**: Separate toggles for auto-start breaks and auto-start work
+- **Inactivity check**: When `focus` mode is active, the app tracks the last user interaction (pointer or keyboard). After `ceil(T / workDuration) × workDuration` minutes of no interaction (T = "Still focusing? check" setting, default 120 min), a prompt appears before the next session starts. The user must confirm to continue; if dismissed or ignored for 60 seconds, auto-chaining stops. No sessions are deleted — only future auto-starts are gated.
+- **Dashboard indicators**: Small icon lights sit inside the timer ring near 6 o'clock. The `repeat` icon illuminates (green) when `focus` mode is active; clicking it toggles the setting directly.
 
 ### Controls
 | Key | Action |
@@ -211,7 +215,7 @@ Full-width stacked panels. Sidenav hidden. Persistent bottom tab bar (5 tabs): T
 
 | Tab | Key options |
 |---|---|
-| **Time** | Focus/break durations, sessions per cycle, auto-start breaks, auto-start work, active hours, pause music on break |
+| **Time** | Focus/break durations, sessions per cycle, after-session mode (wait / break / focus), still-focusing check interval (1h–3h, visible only when mode is `focus`), active hours, pause music on break |
 | **Sound** | Volume (0–100%), test sound, notification permission, test notification |
 | **Music** | Track selector (from Supabase), pause on break |
 | **Share** | 4 templates: Intent, Session, Milestone, Mood. Variables: `{focusArea}`, `{duration}`, `{time}`, `{xp}`, `{avatar}`, `{mood}` |

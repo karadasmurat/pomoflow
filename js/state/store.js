@@ -89,6 +89,7 @@ export let state = {
         longBreakDuration: 15,
         sessionsBeforeLongBreak: 4,
         afterWorkSession: 'wait', // 'wait' | 'break' | 'focus'
+        inactivityCheckMinutes: 120,
         soundVolume: 100,
         blockReminderMinutes: 10,
         use12Hour: false,
